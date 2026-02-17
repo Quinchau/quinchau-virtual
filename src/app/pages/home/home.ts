@@ -2,12 +2,12 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SearchBox } from '../../components/search-box/search-box';
 import { ManagerState } from '../../services/manager-state';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, SearchBox], 
+  imports: [CommonModule, SearchBox, RouterLink], 
   templateUrl: './home.html',
 })
 export class Home {

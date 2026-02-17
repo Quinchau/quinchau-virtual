@@ -25,23 +25,29 @@ public readonly productIncludeStock = toSignal(
   { initialValue: false }
 );
 
+public readonly productModelFilter = toSignal(
+  this.route.queryParams.pipe(map(params => params['idmodelo'] || '')),
+  { initialValue: '' }
+);
 public readonly productsResource = rxResource({
-  params: () => {
-    const query = this.productSearchTerm();
-    const stock = this.productIncludeStock();
-
-    if (!query || query.trim().length === 0) {
-      return undefined; 
+  params: () => ({
+    query: this.productSearchTerm(),
+    stock: this.productIncludeStock(),
+    idmodelo: this.productModelFilter()
+  }),
+  stream: ({ params }) => {
+    // Solo detenemos la petición si ambos están vacíos
+    if (!params.query && !params.idmodelo) {
+      return of([]);
     }
 
-    return { query, stock };
+    return this.managerApis.getProducts(params.query, params.stock, params.idmodelo).pipe(
+      catchError(err => {
+        console.error('Error en el recurso:', err);
+        return of([]);
+      })
+    );
   },
-  stream: ({ params }) => this.managerApis.getProducts(params.query, params.stock).pipe(
-    catchError(err => {
-      console.error('Error en el recurso:', err);
-      return of([]);
-    })
-  ),
   defaultValue: []
 });
 
@@ -93,6 +99,25 @@ public readonly homeModelos = computed(() => this.homeResource.value().modelos);
 public readonly modelosDestacados = computed(() => 
   this.homeModelos().filter(m => m.show_web === '1')
 );
+
+public readonly modelosSecundarios = computed(() => 
+  this.homeModelos().filter(m => m.show_web === '0')
+);
+
+public readonly currentModel = computed(() => {
+  const id = this.productModelFilter();
+  if (!id) return null;
+
+  // Intentamos buscar primero en destacados (lo más probable)
+  let modelo = this.modelosDestacados().find(m => m.idmodelo === id);
+  
+  // Si no está ahí, buscamos en los secundarios
+  if (!modelo) {
+    modelo = this.modelosSecundarios().find(m => m.idmodelo === id);
+  }
+
+  return modelo || null;
+});
 
   
 

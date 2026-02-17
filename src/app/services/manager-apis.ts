@@ -47,13 +47,19 @@ export class ManagerApis {
 
   // --- MÉTODOS DE PRODUCTOS ---
 
-  public getProducts(searchTerm: string = '', includeStock: boolean = false): Observable<Product[]> {
-    let params = new HttpParams();
-    if (searchTerm) params = params.set('search', searchTerm);
-    if (includeStock) params = params.set('stock', '1');
-    
-    return this.http.get<Product[]>(`${this.baseUrl}/get-products.php`, { params });
-  }
+  public getProducts(
+  searchTerm: string = '', 
+  includeStock: boolean = false, 
+  idmodelo: string = ''
+): Observable<Product[]> {
+  let params = new HttpParams();
+
+  if (searchTerm) params = params.set('search', searchTerm);
+  if (includeStock) params = params.set('stock', '1');
+  if (idmodelo) params = params.set('idmodelo', idmodelo);
+
+  return this.http.get<Product[]>(`${this.baseUrl}/get-products.php`, { params });
+}
 
   public getProductDetail(stockid: string): Observable<ProductDetailData> {
     return this.http.get<ProductDetailData>(`${this.baseUrl}/product-detail.php`, {
