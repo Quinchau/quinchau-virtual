@@ -150,5 +150,3 @@ x-powered-by: PHP/5.6.40
 access-control-allow-origin: *
 
 [{"idbanner":"1","titulo":"Banner Azul Ondulado","descripcion":"Fondo decorativo azul para promociones","img_url":"https:\/\/quinchau.com\/weberp\/img\/b\/pngtree-blue-wavy-banner-background-blank-image_1608934.jpg","link_url":"\/categorias"},{"idbanner":"2","titulo":"Banner Morado","descripcion":"Dise\u00f1o elegante en tonos morados","img_url":"https:\/\/quinchau.com\/weberp\/img\/b\/images-banner-morado.jpg","link_url":"\/home"}]
-
-##### ----- ######
