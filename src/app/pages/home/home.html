@@ -1,0 +1,121 @@
+<main class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 min-h-screen ...">
+
+  <app-search-box class="lg:col-span-4" />
+
+  @if (managerState.productSearchTerm()) {
+    
+    <div class="lg:col-span-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+  @for (product of managerState.products(); track product.stockid) {
+  <div class="bg-white rounded-lg shadow-md overflow-hidden border border-black/5 p-4 flex flex-col justify-between h-full">
+    <div>
+      <div class="w-full h-32 bg-gray-100 mb-2 flex items-center justify-center rounded-md">
+         <img [src]="product.cover_image_id" class="object-contain h-full p-2" loading="lazy">
+      </div>
+      <p class="text-xs font-bold line-clamp-2 text-slate-700 leading-tight mb-2">{{ product.description }}</p>
+    </div>
+
+    <div class="flex items-center justify-between pt-2 border-t border-slate-50">
+  <p class="text-orange-600 font-black text-sm">${{ product.price_with_tax }}</p>
+  
+  <span 
+    [ngClass]="product.total_quantity > 0 ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-600'"
+    class="px-2 py-0.5 rounded text-[8px] font-black uppercase"
+  >
+    {{ product.total_quantity > 0 ? 'Disponible' : 'Sin Stock' }}
+  </span>
+</div>
+  </div>
+} @empty {
+    <div class="col-span-full py-20 text-center">
+      <p class="text-slate-400 font-bold">No se encontraron productos.</p>
+    </div>
+  }
+</div>
+    </div>
+
+  } @else {
+
+    <section class="lg:col-span-2 bg-white rounded-xl shadow-md border border-black/5 min-h-[160px] overflow-hidden">
+  
+  @if (managerState.homeResource.isLoading()) {
+    <div class="w-full h-full animate-pulse bg-slate-200 flex items-center justify-center">
+      <span class="text-slate-400 text-xs font-bold uppercase tracking-widest">Cargando Banners...</span>
+    </div>
+  } @else {
+    <div class="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide h-full">
+      @for (banner of managerState.homeBanners(); track banner.idbanner) {
+        <div class="snap-center shrink-0 w-full relative group cursor-pointer">
+          <img [src]="banner.img_url" 
+               [alt]="banner.titulo" 
+               class="w-full h-full object-cover aspect-video md:aspect-auto">
+          
+          <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-4">
+             <span class="text-[9px] font-black text-orange-400 uppercase tracking-widest mb-1">{{ banner.titulo }}</span>
+             <p class="text-white text-xs font-medium line-clamp-1 opacity-90">{{ banner.descripcion }}</p>
+          </div>
+        </div>
+      } @empty {
+        <div class="w-full h-full flex flex-col justify-center items-center p-6 text-center">
+          <p class="font-bold text-slate-300">No hay promociones activas</p>
+        </div>
+      }
+    </div>
+  }
+</section>
+
+    <section class="bg-white rounded-xl shadow-md border border-black/5 p-4 flex flex-col gap-3 overflow-hidden">
+  <span class="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Explorar Modelos</span>
+  
+  <div class="flex items-center gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2">
+    
+    @for (modelo of managerState.modelosDestacados(); track modelo.idmodelo) {
+      <div class="snap-center shrink-0 flex flex-col items-center gap-1 w-16">
+        <a [href]="modelo.url_filtro" 
+           [title]="modelo.seo_note"
+           class="w-14 h-14 rounded-full bg-slate-50 border-2 border-slate-100 flex items-center justify-center overflow-hidden hover:border-orange-400 transition-all active:scale-90">
+          
+          @if (modelo.img_url) {
+            <img [src]="modelo.img_url" 
+                 [alt]="modelo.alt_text" 
+                 class="w-full h-full object-cover">
+          } @else {
+            <span class="text-[10px] text-slate-400 font-black uppercase">{{ modelo.modeldescrip.substring(0,2) }}</span>
+          }
+        </a>
+        <span class="text-[9px] font-medium text-slate-600 truncate w-full text-center">
+          {{ modelo.modeldescrip }}
+        </span>
+      </div>
+    }
+
+    <div class="snap-center shrink-0 flex flex-col items-center gap-1 w-16">
+      <a href="/categorias" 
+         title="Ver todos los modelos"
+         class="w-14 h-14 rounded-full bg-orange-500 flex items-center justify-center text-white shadow-lg shadow-orange-100 hover:bg-orange-600 transition-transform active:scale-95">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" />
+        </svg>
+      </a>
+      <span class="text-[9px] font-bold text-orange-600 uppercase text-center">Más</span>
+    </div>
+
+  </div>
+</section>
+
+    <section class="row-span-2 bg-white rounded-xl shadow-md border border-black/5 overflow-hidden flex flex-col">
+      <div class="p-3 border-b border-slate-100 bg-slate-50/50">
+         <span class="text-[10px] font-bold text-slate-500 uppercase">Vista Rápida</span>
+      </div>
+      <div class="grid grid-cols-3 grid-rows-5 gap-1.5 flex-1 p-3 bg-slate-50">
+        @for (item of [].constructor(15); track $index) {
+          <div class="bg-white border border-slate-200 rounded flex items-center justify-center text-[10px] font-bold text-slate-400 shadow-sm hover:border-orange-200 transition-colors cursor-pointer">
+            {{ $index + 1 }}
+          </div>
+        }
+      </div>
+    </section>
+
+  }
+
+</main>

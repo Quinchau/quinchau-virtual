@@ -1,0 +1,70 @@
+<div class="fixed inset-0 bg-gray-900 bg-opacity-75 z-40 overflow-y-auto">
+  <div class="flex items-center justify-center min-h-screen">
+    <div class="relative bg-gray-100 rounded-lg shadow-xl p-6 md:p-8 m-4 w-full max-w-2xl text-gray-800">
+      <button
+        (click)="goBack()"
+        class="absolute top-4 right-4 text-gray-600 hover:text-gray-900 transition-colors focus:outline-none"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      @if (transferenciaDetalle$(); as t) {
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="md:col-span-1">
+            <div class="bg-white rounded-lg shadow-inner overflow-hidden">
+              <img [src]="t.imagenes[0]" alt="Imagen del producto" class="w-full h-auto object-cover rounded-lg">
+            </div>
+          </div>
+
+          <div class="md:col-span-1">
+            @if (t.tipo === 'ship') {
+              <h2 class="text-2xl font-bold mb-2">{{ t.stockid }} ({{ t.shiplocation }})</h2>
+              <p><span class="font-semibold text-gray-600">Producto:</span> {{ t.longdescription }}</p>
+              <h2 class="text-2xl font-bold mb-2">Disponible: {{ t.shiploc_qty }} ({{ t.units }})</h2>
+              <p><span class="font-semibold text-gray-600">Enviar A:</span> {{ t.recloc_name }}</p>
+            } @else {
+              <h2 class="text-2xl font-bold mb-2">{{ t.stockid }} ({{ t.reclocation }}) {{ t.units }}</h2>
+              <p><span class="font-semibold text-gray-600">Producto:</span> {{ t.longdescription }}</p>
+              <div class="grid grid-cols-2 gap-4">
+                <p><span class="font-semibold text-gray-600">Existencias Origen:</span> {{ t.recloc_qty ?? 'N/A' }}</p>
+                <p><span class="font-semibold text-gray-600">Viene De:</span> {{ t.shiploc_name }}</p>
+              </div>
+            }
+
+            <p class="mt-4"><span class="font-semibold text-gray-600">Cantidad:</span> {{ t.shipqty }}</p>
+            <p>
+              <span class="font-semibold text-gray-600">Estado:</span>
+              <span [ngClass]="{
+                'bg-gray-100 text-gray-800': t.status === 'Pendiente',
+                'bg-orange-100 text-orange-800': t.status === 'Recogido',
+                'bg-green-100 text-green-800': t.status === 'Entregado',
+                'bg-gray-100 text-gray-600': t.status === 'Devuelto',
+              }" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
+                {{ t.status }}
+              </span>
+            </p>
+            <p><span class="font-semibold text-gray-600">Creado por:</span> {{ t.user_name }}</p>
+            <p><span class="font-semibold text-gray-600">Fecha de Envío:</span> {{ t.shipdate }}</p>
+            <p><span class="font-semibold text-gray-600">Fecha de Recepción:</span> {{ t.recdate }}</p>
+            
+            <button
+              [disabled]="managerState.transferButtonInfo$().disabled"
+              (click)="onActionClick(managerState.transferButtonInfo$().action, managerState.transferButtonInfo$().nextStatus)"
+              [class.opacity-50]="managerState.transferButtonInfo$().disabled"
+              [class.cursor-not-allowed]="managerState.transferButtonInfo$().disabled"
+              class="mt-6 w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+            >
+              {{ managerState.transferButtonInfo$().label }}
+            </button>
+          </div>
+        </div>
+      } @else {
+        <div class="text-center p-12 text-gray-500">
+          <p class="font-medium text-lg">No se encontraron datos para esta transferencia.</p>
+        </div>
+      }
+    </div>
+  </div>
+</div>

@@ -1,0 +1,129 @@
+<div class="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+  <div class="bg-white rounded-lg shadow-xl p-6 sm:p-8 max-w-xl w-11/12 max-h-[80vh] overflow-y-auto relative">
+
+    <button (click)="closeModal()" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900 transition-colors duration-200">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+
+    @if (managerState.transferCompleted()) {
+      <div class="text-center py-4">
+        <p class="text-green-600 text-xl font-semibold">✅ Transferencia completada con éxito.</p>
+        <button
+          (click)="closeModal()"
+          class="mt-1 bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors duration-200">
+          Ir al listado
+        </button>
+      </div>
+    } @else if (managerState.loadingProductDetail()) {
+      <div class="text-center py-4">
+        <p class="text-gray-500 text-xl">Cargando detalles del producto...</p>
+      </div>
+    } @else if (managerState.currentProduct(); as product) {
+      <div class="bg-white rounded-lg shadow-lg p-1 sm:p-1 mb-1">
+        <h1 class="text-sm md:text-3xl font-bold text-gray-800 mb-1">{{ product.longdescription }}</h1>
+        <p class="text-gray-500 text-xs mb-1">SKU: {{ product.stockid }} --- {{ product.units }}</p>
+      </div>
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-1">
+        <div class="col-span-2 lg:col-span-2 bg-white rounded-lg shadow-md p-4">
+          <img [src]="product.cover_image_id" alt="Imagen de portada" class="cover-image w-full h-auto object-cover rounded-lg" />
+
+          @if (product.all_image_ids) {
+            <div class="flex flex-wrap gap-1 mt-0">
+              @for (image of product.all_image_ids; track image) {
+                <img [src]="image" alt="Imagen secundaria" class="w-6 h-6 object-cover rounded-md" />
+              }
+            </div>
+          }
+        </div>
+
+        <div class="col-span-2 lg:col-span-2 bg-white rounded-lg shadow-md p-1">
+          
+          @if (selectedLocation(); as loc) {
+            <div class="mt-1 p-1 border rounded-lg shadow-sm">
+              <h4 class="text-lg font-semibold text-gray-800 mb-2">Cantidad para Transferir</h4>
+              <p class="text-sm text-gray-500 mb-1">
+                @if (managerState.newTransferType() === 'ship') {
+                  Transfiriendo a: 
+                } @else {
+                  Recibiendo de:
+                }
+                <strong>{{ loc.locationname }}</strong> (Stock: {{ loc.qty }})
+              </p>
+
+              <div class="flex items-center space-x-1">
+                <button 
+                  (click)="decrement()"
+                  [disabled]="quantity() <= 1"
+                  class="p-1 border rounded-full text-blue-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+
+                <input 
+                  type="number"
+                  [value]="quantity()"
+                  (input)="onQuantityChange($event)"
+                  class="w-20 text-center border rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  min="1"
+                  [max]="availableStock()">
+
+                <button
+                  (click)="increment()"
+                  [disabled]="quantity() >= availableStock()"
+                  class="p-1 border rounded-full text-blue-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="mt-1">
+              <button
+                (click)="confirmTransfer()"
+                [disabled]="!isValidForm() || managerState.loadingCreateTransfer()"
+                class="w-full bg-blue-500 text-white font-bold py-1 px-4 rounded-lg hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                @if (managerState.loadingCreateTransfer()) {
+                  Procesando...
+                } @else {
+                  Confirmar Transferencia
+                }
+              </button>
+            </div>
+          } @else if (availableLocations().length > 0) {
+            <div class="mt-1">
+              @if (managerState.newTransferType() === 'ship') {
+                <h4 class="text-sm font-semibold text-gray-800 mb-1">ENVIAR A:</h4>
+              } @else {
+                <h4 class="text-sm font-semibold text-gray-800 mb-1">RECIBIR DESDE:</h4>
+              }
+              
+              <div class="flex flex-col space-y-1">
+                @for (loc of availableLocations(); track loc.loccode) {
+                  <button 
+                    (click)="selectLocation(loc)"
+                    class="p-1 border border-gray-200 rounded-lg text-left transition-colors duration-200
+                          hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <p class="font-medium text-gray-700">{{ loc.locationname }}</p>
+                    <p class="text-sm text-gray-500">Cantidad: {{ loc.qty }}</p>
+                  </button>
+                }
+              </div>
+            </div>
+          } @else {
+            <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p class="text-yellow-800">
+                No hay ubicaciones disponibles diferentes a tu ubicación actual 
+                <strong>({{ defaultLocation() }})</strong>
+              </p>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>
