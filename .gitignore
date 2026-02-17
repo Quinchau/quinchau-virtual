@@ -37,6 +37,10 @@ yarn-error.log
 testem.log
 /typings
 
+# Deploy files
+deploy*
+**/deploy*
+
 # System files
 .DS_Store
 Thumbs.db
