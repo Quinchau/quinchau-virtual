@@ -3,7 +3,7 @@ import { Injectable, inject, signal, computed, PLATFORM_ID } from '@angular/core
 import { ManagerApis } from './manager-apis';
 import { Transfer, TransferenciaDetalle, User, NewTransfer, Product, ProductDetailData, DashboardResponse, ProductFilter, HomeData } from '../models/transfer.model';
 import { TransferButtonInfo, getTransferButtonInfo } from '../data/transfer-actions';
-import { tap, catchError, of, throwError, finalize, map } from 'rxjs';
+import { tap, catchError, of, throwError, finalize, map, fromEvent, merge, startWith } from 'rxjs';
 import { isPlatformBrowser } from '@angular/common';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -92,7 +92,7 @@ public readonly productsResource = rxResource({
   defaultValue: { banners: [], modelos: [] } as HomeData
 });
 
-// Ahora value() ya se reconoce como HomeData
+
 public readonly homeBanners = computed(() => this.homeResource.value().banners);
 public readonly homeModelos = computed(() => this.homeResource.value().modelos);
 
@@ -119,7 +119,32 @@ public readonly currentModel = computed(() => {
   return modelo || null;
 });
 
-  
+ // --- GUEST USER ----
+
+public guestId = rxResource<string | null, void>({
+    stream: () => {
+      // Si no estamos en navegador, retornamos observable de null
+      if (!isPlatformBrowser(this.platformId)) {
+        return of(null);
+      }
+
+      // Observable que emite el valor de la cookie cada vez que cambia
+      return merge(
+        fromEvent(document, 'visibilitychange'),
+        fromEvent(window, 'focus'),
+        fromEvent(window, 'storage')
+      ).pipe(
+        startWith(null), // Emisión inicial
+        map(() => {
+          const match = document.cookie.match(/guest_id=([^;]+)/);
+          return match ? decodeURIComponent(match[1]) : null;
+        })
+      );
+    },
+    defaultValue: null
+  });
+
+  public guestIdSignal = this.guestId.value;
 
   constructor() {
     this.loadUserDataFromLocalStorage();
