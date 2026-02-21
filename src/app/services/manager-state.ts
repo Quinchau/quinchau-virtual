@@ -81,16 +81,69 @@ public readonly productsResource = rxResource({
 
   // --- HOME STATE ----
 
-  public readonly homeResource = rxResource<HomeData, unknown>({
+public readonly homeResource = rxResource<HomeData, unknown>({
   stream: () => this.managerApis.getHomeData().pipe(
+    tap((response: any) => {
+      // Debug: Ver TODO lo que llega
+      console.log('🔍 [HOME-RESOURCE] Respuesta COMPLETA recibida:', response);
+      
+      // Solo ejecutar en el navegador
+      if (!isPlatformBrowser(this.platformId)) return;
+      
+      // Verificar cookies ANTES de implantar
+      console.log('🔍 [HOME-RESOURCE] Cookies ANTES de implantar:', document.cookie || '(vacías)');
+      
+      // CASO 1: Visitante nuevo (token en response.identidad.token)
+      if (response.identidad?.token && response.identidad?.tipo === 'visitante_nuevo') {
+        console.log('🎯 Visitante NUEVO detectado - ID:', response.identidad.id);
+        console.log('🎯 Token recibido:', response.identidad.token.substring(0, 20) + '...');
+        
+        const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
+        document.cookie = `auth_token=${response.identidad.token}; Path=/; Max-Age=${thirtyDaysInSeconds}; SameSite=Lax; Secure`;
+        
+        // Verificar cookies DESPUÉS de implantar
+        console.log('🍪 Cookies DESPUÉS de implantar:', document.cookie || '(vacías)');
+        
+        // También almacenar en sessionStorage como respaldo
+        sessionStorage.setItem('auth_token', response.identidad.token);
+      }
+      
+      // CASO 2: Visitante existente (token en response.identidad con tipo visitante)
+      else if (response.identidad?.tipo === 'visitante') {
+        console.log('👋 Visitante EXISTENTE - ID:', response.identidad.id);
+      }
+      
+      // CASO 3: Usuario autenticado
+      else if (response.identidad?.tipo === 'usuario') {
+        console.log('👑 Usuario autenticado - ID:', response.identidad.id);
+      }
+      
+      // CASO 4: No hay token en ninguna parte
+      else {
+        console.log('⚠️ NO SE ENCONTRÓ TOKEN en la respuesta');
+        console.log('⚠️ Estructura identidad:', response.identidad);
+      }
+    }),
+    map((response: any): HomeData => {
+      // Construir objeto HomeData
+      const homeData: HomeData = {
+        banners: response.banners || [],
+        modelos: response.modelos || [],
+        identidad: response.identidad  // La identidad completa viene del backend
+      };
+      
+      return homeData;
+    }),
     catchError(err => {
-      console.error('Error cargando HomeData:', err);
-      // Retornamos el objeto vacío pero con la estructura correcta
+      console.error('❌ Error cargando HomeData:', err);
       return of({ banners: [], modelos: [] } as HomeData);
     })
   ),
   defaultValue: { banners: [], modelos: [] } as HomeData
 });
+
+// Computed para acceder fácilmente al visitante
+public readonly currentVisitante = computed(() => this.homeResource.value().visitante);
 
 
 public readonly homeBanners = computed(() => this.homeResource.value().banners);

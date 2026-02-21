@@ -94,9 +94,21 @@ export interface ProductFilter {
   stock: boolean;
 }
 
+export interface Visitante {
+  id: number;
+  tipo: 'visitante' | 'visitante_nuevo' | 'usuario';  // Añadimos tipo
+  token?: string;                                      // Token opcional (solo en nuevos)
+  nuevo?: boolean | number;                            // Indicador de nuevo visitante
+  payload?: any;                                       // Payload completo del JWT
+  session_key?: string;                                // Session key si existe
+}
+
 export interface HomeData {
-  banners: Banner[];
-  modelos: Modelo[];
+  banners: any[];                                       // Ajusta el tipo según tu estructura
+  modelos: any[];                                       // Ajusta el tipo según tu estructura
+  visitante?: Visitante;                                // Visitante (nuevo o existente)
+  identidad?: any;                                      // Para cuando viene identidad de usuario
+  _debug?: any;                                          // Para debug (opcional)
 }
 
 export interface Banner {

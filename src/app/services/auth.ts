@@ -5,6 +5,7 @@ import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { ManagerState } from './manager-state';
 import { Router } from '@angular/router';
 import { User } from '../models/transfer.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
     providedIn: 'root'
@@ -12,7 +13,7 @@ import { User } from '../models/transfer.model';
 export class AuthService {
 
     private http = inject(HttpClient);
-    private apiUrl = 'https://quinchau.com/webmaster2/api-quinchau-virtual/login.php';
+    private apiUrl = `${environment.apiUrl}/login.php`; 
     private platformId = inject(PLATFORM_ID);
     private document = inject(DOCUMENT);
     private managerState = inject(ManagerState);
@@ -53,23 +54,26 @@ export class AuthService {
     return hasToken;
 }
 
-    login(credentials: any): Observable<any> {
+   login(credentials: any): Observable<any> {
     return this.http.post<any>(this.apiUrl, credentials).pipe(
         tap((response) => {
-            if (isPlatformBrowser(this.platformId) && response.token) {
-                // 1. Persistencia de la sesión (Cookie)
+            if (isPlatformBrowser(this.platformId) && response.identidad?.token) {
+                // 1. ✅ Token está en response.identidad.token
+                const token = response.identidad.token;
                 const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
-                this.document.cookie = `auth_token=${response.token}; Path=/; Max-Age=${thirtyDaysInSeconds}; SameSite=Lax`;
-
-                // 2. Preparación del objeto de usuario con la interfaz completa
+                this.document.cookie = `auth_token=${token}; Path=/; Max-Age=${thirtyDaysInSeconds}; SameSite=Lax`;
+                
+                // 2. ✅ Datos de usuario están en response.datos_usuario
                 const userData: User = {
-                    realname: response.username, // Sincronizado con la respuesta del PHP
-                    defaultlocation: response.defaultlocation,
-                    fullaccess: Number(response.fullaccess) // Aseguramos que sea numérico
+                    realname: response.datos_usuario?.username || response.identidad?.nombre,
+                    defaultlocation: response.datos_usuario?.defaultlocation,
+                    fullaccess: Number(response.datos_usuario?.fullaccess || 0)
                 };
-
-                // 3. Sincronización del Estado Global (Signal)
+                
+                // 3. Sincronización del Estado Global
                 this.managerState.setUserData(userData);
+                
+                console.log('✅ Login exitoso - Usuario:', response.identidad.nombre);
             }
         })
     );
