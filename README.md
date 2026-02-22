@@ -150,3 +150,17 @@ x-powered-by: PHP/5.6.40
 access-control-allow-origin: *
 
 [{"idbanner":"1","titulo":"Banner Azul Ondulado","descripcion":"Fondo decorativo azul para promociones","img_url":"https:\/\/quinchau.com\/weberp\/img\/b\/pngtree-blue-wavy-banner-background-blank-image_1608934.jpg","link_url":"\/categorias"},{"idbanner":"2","titulo":"Banner Morado","descripcion":"Dise\u00f1o elegante en tonos morados","img_url":"https:\/\/quinchau.com\/weberp\/img\/b\/images-banner-morado.jpg","link_url":"\/home"}]
+
+#####
+curl -X POST https://gestion.quinchau.com/webmaster2/api-quinchau-virtual/create_order.php   -H "Origin: http://localhost:4200"   -H "Content-Type: application/json"   -H "Cookie: auth_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MCwidmlzaXRhbnRlX2lkIjoxMTAsInNlc3Npb25fa2V5IjoiNTdmMzYzYWMzZjRkZDIyMzMyYWZmMmJlMzc4ZGY0YjciLCJ0aXBvIjoidmlzaXRhbnRlIiwiZXhwIjoxNzc0MzE4NDc0fQ.CkdBPkCWSDkggreIXRYzzNObT1s1EtHTFeH2n-aWCmM"   -d '{
+    "productos": [
+      {
+        "stockid": "214-669",
+        "cantidad": 2,
+        "precio": 12.55,
+        "taxrate": 0.16
+      }
+    ],
+    "typeabbrev": "01"
+  }'
+{"exito":true,"cotizacion_id":2075,"cantidad_referencias":1,"mensaje":"Producto(s) agregado(s)"}

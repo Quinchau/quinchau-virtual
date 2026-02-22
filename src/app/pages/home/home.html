@@ -28,27 +28,29 @@
   <div class="lg:col-span-4">
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
       @for (product of managerState.products(); track product.stockid) {
-        <div class="bg-white rounded-lg shadow-md overflow-hidden border border-black/5 p-4 flex flex-col justify-between h-full hover:shadow-lg transition-shadow duration-300">
-          <div>
-            <div class="w-full h-32 bg-gray-100 mb-2 flex items-center justify-center rounded-md relative group">
-              <img [src]="product.cover_image_id" 
-                   class="object-contain h-full p-2 transition-transform group-hover:scale-110" 
-                   loading="lazy"
-                   [alt]="product.description">
-            </div>
-            <p class="text-xs font-bold line-clamp-2 text-slate-700 leading-tight mb-2">{{ product.description }}</p>
-          </div>
+        <a [routerLink]="product.url" 
+   class="block bg-white rounded-lg shadow-md overflow-hidden border border-black/5 p-4 flex flex-col justify-between h-full hover:shadow-lg transition-shadow duration-300">
+  
+  <div>
+    <div class="w-full h-32 bg-gray-100 mb-2 flex items-center justify-center rounded-md relative group">
+      <img [src]="product.cover_image_id" 
+           class="object-contain h-full p-2 transition-transform group-hover:scale-110" 
+           loading="lazy"
+           [alt]="product.description">
+    </div>
+    <p class="text-xs font-bold line-clamp-2 text-slate-700 leading-tight mb-2">{{ product.description }}</p>
+  </div>
 
-          <div class="flex items-center justify-between pt-2 border-t border-slate-50">
-            <p class="text-orange-600 font-black text-sm">${{ product.price_with_tax }}</p>
-            <span 
-              [ngClass]="product.total_quantity > 0 ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-600'"
-              class="px-2 py-0.5 rounded text-[8px] font-black uppercase"
-            >
-              {{ product.total_quantity > 0 ? 'Disponible' : 'Sin Stock' }}
-            </span>
-          </div>
-        </div>
+  <div class="flex items-center justify-between pt-2 border-t border-slate-50">
+    <p class="text-orange-600 font-black text-sm">${{ product.price_with_tax }}</p>
+    <span 
+      [ngClass]="product.total_quantity > 0 ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-600'"
+      class="px-2 py-0.5 rounded text-[8px] font-black uppercase"
+    >
+      {{ product.total_quantity > 0 ? 'Disponible' : 'Sin Stock' }}
+    </span>
+  </div>
+</a>
       } @empty {
         @if (managerState.productsResource.isLoading()) {
           <div class="col-span-full py-20 text-center animate-pulse">

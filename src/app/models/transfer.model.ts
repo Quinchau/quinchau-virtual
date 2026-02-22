@@ -65,6 +65,9 @@ export interface Product {
   latest_trandate: string;
   cover_image_id: string;
   all_image_ids: string | null;
+  url: string;
+  modelo_ids: number[];
+  modelos: string[];
 }
 
 export interface AvailableLocation {

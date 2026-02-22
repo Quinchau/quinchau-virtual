@@ -192,6 +192,37 @@ public guestId = rxResource<string | null, void>({
 
   public guestIdSignal = this.guestId.value;
 
+  // -- CARD PRODUCT --
+
+public readonly productSlug = signal<string>('');
+
+public readonly productCardResource = rxResource({
+  params: () => ({ slug: this.productSlug() }),
+  stream: ({ params }) => {
+    console.log('🔍 Stream ejecutándose con params:', params);
+    
+    // ✅ Cambiar la condición: si es undefined, no ejecutar
+    if (!params.slug) {
+      console.log('⏸️ Esperando slug válido...');
+      return of(null);
+    }
+    
+    console.log('🌐 Haciendo petición para slug:', params.slug);
+    return this.managerApis.getProductBySlug(params.slug).pipe(
+      tap(response => console.log('✅ Respuesta:', response)),
+      catchError(err => {
+        console.error('❌ Error:', err);
+        return of(null);
+      })
+    );
+  },
+  defaultValue: null
+});
+
+// Signals derivadas
+public readonly currentProductCard = this.productCardResource.value;
+public readonly loadingProductCard = this.productCardResource.isLoading;
+public readonly productCardError = this.productCardResource.error;
   constructor() {
     this.loadUserDataFromLocalStorage();
   }

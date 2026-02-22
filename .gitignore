@@ -36,6 +36,7 @@ yarn-error.log
 /libpeerconnection.log
 testem.log
 /typings
+Contexto_Desarrollo.md
 
 # Deploy files
 deploy*

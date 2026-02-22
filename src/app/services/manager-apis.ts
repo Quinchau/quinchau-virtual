@@ -71,4 +71,9 @@ export class ManagerApis {
   return this.http.get<HomeData>(`${this.baseUrl}/get_home_data.php`);
 
 }
+
+// En manager-apis.ts
+getProductBySlug(slug: string): Observable<Product> {
+  return this.http.get<Product>(`${this.baseUrl}/get-products.php?slug=${slug}`);
+}
 }
