@@ -84,16 +84,9 @@ public readonly productsResource = rxResource({
 public readonly homeResource = rxResource<HomeData, unknown>({
   stream: () => this.managerApis.getHomeData().pipe(
     tap((response: any) => {
-      // Debug: Ver TODO lo que llega
-      console.log('🔍 [HOME-RESOURCE] Respuesta COMPLETA recibida:', response);
       
-      // Solo ejecutar en el navegador
       if (!isPlatformBrowser(this.platformId)) return;
       
-      // Verificar cookies ANTES de implantar
-      console.log('🔍 [HOME-RESOURCE] Cookies ANTES de implantar:', document.cookie || '(vacías)');
-      
-      // CASO 1: Visitante nuevo (token en response.identidad.token)
       if (response.identidad?.token && response.identidad?.tipo === 'visitante_nuevo') {
         console.log('🎯 Visitante NUEVO detectado - ID:', response.identidad.id);
         console.log('🎯 Token recibido:', response.identidad.token.substring(0, 20) + '...');
@@ -121,7 +114,7 @@ public readonly homeResource = rxResource<HomeData, unknown>({
       // CASO 4: No hay token en ninguna parte
       else {
         console.log('⚠️ NO SE ENCONTRÓ TOKEN en la respuesta');
-        console.log('⚠️ Estructura identidad:', response.identidad);
+        
       }
     }),
     map((response: any): HomeData => {
