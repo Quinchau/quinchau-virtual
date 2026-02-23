@@ -22,11 +22,7 @@ export class ProductOrder {
   // Estado local
   quantity = signal<number>(1);
 
-  constructor() {
-    const slug = this.route.snapshot.params['slugId'];
-    console.log('📌 Slug en constructor:', slug);
-    this.state.productSlug.set(slug);
-  }
+  constructor() {}
 
   increment() {
     this.quantity.update(q => q + 1);

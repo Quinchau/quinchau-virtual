@@ -1,12 +1,12 @@
 // src/app/services/manager-state.ts
 import { Injectable, inject, signal, computed, PLATFORM_ID } from '@angular/core';
 import { ManagerApis } from './manager-apis';
-import { Transfer, TransferenciaDetalle, User, NewTransfer, Product, ProductDetailData, DashboardResponse, ProductFilter, HomeData } from '../models/transfer.model';
+import { Transfer, TransferenciaDetalle, User, NewTransfer, ProductDetailData, DashboardResponse, HomeData } from '../models/transfer.model';
 import { TransferButtonInfo, getTransferButtonInfo } from '../data/transfer-actions';
-import { tap, catchError, of, throwError, finalize, map, fromEvent, merge, startWith } from 'rxjs';
+import { tap, catchError, of, throwError, finalize, map, fromEvent, merge, startWith, filter } from 'rxjs';
 import { isPlatformBrowser } from '@angular/common';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 
 
 @Injectable({
@@ -194,22 +194,30 @@ public guestId = rxResource<string | null, void>({
 
   // -- CARD PRODUCT --
 
-public readonly productSlug = signal<string>('');
+public readonly productSlug = toSignal(
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd),
+      map(() => {
+        const urlTree = this.router.parseUrl(this.router.url);
+        const segments = urlTree.root.children['primary']?.segments || [];
+        const productoIndex = segments.findIndex(s => s.path === 'producto');
+        
+        if (productoIndex !== -1 && segments.length > productoIndex + 1) {
+          return segments[productoIndex + 1].path;
+        }
+        return '';
+      }),
+    ),
+    { initialValue: '' }
+  );
 
 public readonly productCardResource = rxResource({
   params: () => ({ slug: this.productSlug() }),
   stream: ({ params }) => {
-    console.log('🔍 Stream ejecutándose con params:', params);
-    
-    // ✅ Cambiar la condición: si es undefined, no ejecutar
     if (!params.slug) {
-      console.log('⏸️ Esperando slug válido...');
       return of(null);
     }
-    
-    console.log('🌐 Haciendo petición para slug:', params.slug);
     return this.managerApis.getProductBySlug(params.slug).pipe(
-      tap(response => console.log('✅ Respuesta:', response)),
       catchError(err => {
         console.error('❌ Error:', err);
         return of(null);
@@ -219,7 +227,6 @@ public readonly productCardResource = rxResource({
   defaultValue: null
 });
 
-// Signals derivadas
 public readonly currentProductCard = this.productCardResource.value;
 public readonly loadingProductCard = this.productCardResource.isLoading;
 public readonly productCardError = this.productCardResource.error;

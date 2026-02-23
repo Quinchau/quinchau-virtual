@@ -23,23 +23,19 @@ app.use(
   }),
 );
 
-// Solo lectura de cookies (no creación)
+
 app.use(cookieParser());
 
-// Middleware opcional de logging / transporte de guest_id
+
 app.use((req, _res, next) => {
   const guestId = req.cookies['guest_id'] || null;
 
-  console.log('\n=== [GUEST MIDDLEWARE] ===');
-  console.log(`🍪 guest_id recibido: ${guestId || 'NO'}`);
-
-  // Se expone al request solo como dato de contexto (no se genera ni modifica)
   (req as any).guestId = guestId;
 
   next();
 });
 
-// SSR handler
+
 app.use((req, res, next) => {
   angularApp
     .handle(req)
@@ -49,12 +45,12 @@ app.use((req, res, next) => {
     .catch(next);
 });
 
-// Arranque del servidor
+
 if (isMainModule(import.meta.url)) {
   const port = process.env['PORT'] || 4004;
   app.listen(port, () => {
     console.log(`\n🚀 Servidor SSR en http://localhost:${port}`);
-    console.log(`🍪 guest_id es gestionado por el backend (PHP), no por el SSR\n`);
+
   });
 }
 

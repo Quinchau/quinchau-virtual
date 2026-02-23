@@ -17,8 +17,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const state = inject(ManagerState);
   
   const isServer = isPlatformServer(platformId);
-  const tag = isServer ? '🚀 [SSR-INT]' : '🌐 [BROWSER-INT]';
-  
+  const tag = isServer ? '' : '';
   let cookieString = '';
 
   if (isServer) {
@@ -28,61 +27,28 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     cookieString = document.cookie;
   }
 
-  // ============================================
-  // DEBUG: VER TODAS LAS COOKIES CRUDAS
-  // ============================================
-  console.log(`${tag} 📦 COOKIES CRUDAS ENVIADAS:`, cookieString);
-  console.log(`${tag} 📦 ¿Contiene auth=?`, cookieString.includes('auth='));
-  console.log(`${tag} 📦 ¿Contiene auth_token=?`, cookieString.includes('auth_token='));
-  
-  // Listar todas las cookies individualmente
   const allCookies = cookieString.split(';').map(c => c.trim()).filter(c => c);
-  console.log(`${tag} 📦 Lista de cookies:`, allCookies);
 
-  // ============================================
-  // BUSCAR PRIMERO TOKEN DE USUARIO, LUEGO DE VISITANTE
-  // ============================================
   const userToken = extractFromCookie(cookieString, 'auth_token');
   const guestToken = extractFromCookie(cookieString, 'auth');
-  
-  // DEBUG: Mostrar valores exactos encontrados
-  console.log(`${tag} 🔍 Valor auth_token encontrado:`, userToken ? userToken.substring(0, 15) + '...' : 'null');
-  console.log(`${tag} 🔍 Valor auth encontrado:`, guestToken ? guestToken.substring(0, 15) + '...' : 'null');
-  
+
   // Priorizar token de usuario sobre visitante
   const token = userToken || guestToken;
   const tokenType = userToken ? 'usuario' : (guestToken ? 'visitante' : 'ninguno');
   
-  console.log(`${tag} 🔍 Analizando: ${req.url}`);
-  console.log(`${tag}   🍪 Cookies presentes:`, {
-    auth_token: userToken ? '✓' : '✗',
-    auth: guestToken ? '✓' : '✗'
-  });
-  console.log(`${tag}   🍪 Token usado: ${tokenType}${token ? ' (' + token.substring(0, 15) + '...)' : ''}`);
-
-  // ============================================
-  // VERIFICAR COINCIDENCIA DE TOKENS
-  // ============================================
   if (userToken && guestToken) {
-    console.log(`${tag} ⚠️ AMBAS COOKIES PRESENTES - Priorizando auth_token`);
   }
 
   let headers: { [name: string]: string } = {};
   
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
-    console.log(`${tag} 📤 Enviando token de ${tokenType} en header Authorization`);
+    
   } else {
     console.log(`${tag} ⚠️ No se envía token en header Authorization`);
   }
 
-  // ============================================
-  // DEBUG: MOSTRAR HEADERS FINALES
-  // ============================================
-  console.log(`${tag} 📤 Headers finales:`, {
-    Authorization: headers['Authorization'] ? 'Bearer ' + headers['Authorization'].substring(0, 20) + '...' : 'ninguno',
-    withCredentials: true
-  });
+  
 
   const cloned = req.clone({ 
     setHeaders: headers,
@@ -101,19 +67,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
           console.log(`${tag} ℹ️ Error 401 ignorado en ruta pública: ${currentUrl}`);
           return throwError(() => error);
         }
-        
-        console.log(`${tag} 🔐 Error 401 - Redirigiendo a login`);
-        
-        // DEBUG: Mostrar qué cookies se limpian
-        console.log(`${tag} 🧹 Limpiando cookies por error 401`);
-        
-        // Limpiar ambas cookies en caso de error 401
         document.cookie = 'auth_token=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT;';
         document.cookie = 'auth=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT;';
-        
-        // Verificar que se limpiaron
-        console.log(`${tag} 🍪 Cookies después de limpiar:`, document.cookie);
-        
+
         router.navigate(['/login'], { 
           queryParams: { returnUrl: currentUrl } 
         });
