@@ -68,6 +68,16 @@ export interface Product {
   url: string;
   modelo_ids: number[];
   modelos: string[];
+  qty_in_order: number;
+}
+
+export interface ProductListResponse {
+  productos: Product[];
+  identidad: Visitante;
+}
+
+export interface ProductDetailResponse extends Product {
+  identidad: Visitante;
 }
 
 export interface AvailableLocation {
@@ -99,19 +109,19 @@ export interface ProductFilter {
 
 export interface Visitante {
   id: number;
-  tipo: 'visitante' | 'visitante_nuevo' | 'usuario';  // Añadimos tipo
-  token?: string;                                      // Token opcional (solo en nuevos)
-  nuevo?: boolean | number;                            // Indicador de nuevo visitante
-  payload?: any;                                       // Payload completo del JWT
-  session_key?: string;                                // Session key si existe
+  tipo: 'visitante' | 'visitante_nuevo' | 'usuario';
+  token?: string;
+  nuevo?: boolean | number;
+  payload?: any;
+  session_key?: string;
 }
 
 export interface HomeData {
-  banners: any[];                                       // Ajusta el tipo según tu estructura
-  modelos: any[];                                       // Ajusta el tipo según tu estructura
-  visitante?: Visitante;                                // Visitante (nuevo o existente)
-  identidad?: any;                                      // Para cuando viene identidad de usuario
-  _debug?: any;                                          // Para debug (opcional)
+  banners: any[];
+  modelos: any[];
+  visitante?: Visitante;
+  identidad?: any;
+  _debug?: any;
 }
 
 export interface Banner {
@@ -127,8 +137,8 @@ export interface Modelo {
   idmarca: string;
   modeldescrip: string;
   img_url: string;
-  show_web: string; // Viene como string "0" o "1" desde PHP
-  url_filtro: string; // Nuestra URL absoluta
-  seo_note: string;   // Para el title del link
-  alt_text: string;   // Para la accesibilidad de la imagen
+  show_web: string;
+  url_filtro: string;
+  seo_note: string;
+  alt_text: string;
 }

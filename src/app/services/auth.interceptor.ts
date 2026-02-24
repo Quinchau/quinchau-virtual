@@ -1,11 +1,11 @@
-// src/app/interceptors/auth.interceptor.ts
 import { inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformServer, isPlatformBrowser } from '@angular/common';
-import { HttpInterceptorFn } from '@angular/common/http';
+import { HttpInterceptorFn, HttpResponse } from '@angular/common/http';
 import { REQUEST } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, throwError } from 'rxjs';
+import { catchError, throwError, tap } from 'rxjs';
 import { ManagerState } from './manager-state';
+import { AuthService } from '../services/auth'; // Asegura la ruta correcta
 
 interface ServerRequest {
   headers: { get: (name: string) => string | null };
@@ -15,9 +15,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const platformId = inject(PLATFORM_ID);
   const router = inject(Router);
   const state = inject(ManagerState);
+  const authService = inject(AuthService); // Inyectamos para poder reportar la identidad encontrada
   
   const isServer = isPlatformServer(platformId);
-  const tag = isServer ? '' : '';
+  const tag = isServer ? '[Server]' : '[Browser]';
   let cookieString = '';
 
   if (isServer) {
@@ -27,54 +28,43 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     cookieString = document.cookie;
   }
 
-  const allCookies = cookieString.split(';').map(c => c.trim()).filter(c => c);
-
   const userToken = extractFromCookie(cookieString, 'auth_token');
   const guestToken = extractFromCookie(cookieString, 'auth');
-
-  // Priorizar token de usuario sobre visitante
   const token = userToken || guestToken;
-  const tokenType = userToken ? 'usuario' : (guestToken ? 'visitante' : 'ninguno');
-  
-  if (userToken && guestToken) {
-  }
 
   let headers: { [name: string]: string } = {};
-  
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
-    
-  } else {
-    console.log(`${tag} ⚠️ No se envía token en header Authorization`);
   }
-
-  
 
   const cloned = req.clone({ 
     setHeaders: headers,
-    withCredentials: true // Importante para enviar/recibir cookies
+    withCredentials: true 
   });
 
   return next(cloned).pipe(
+    tap(event => {
+      if (event instanceof HttpResponse && !isServer) {
+        const body = event.body as any;
+        if (body && body.identidad && body.identidad.token) {
+          authService.handleIdentityResponse(body);
+        }
+      }
+    }),
     catchError((error) => {
       if (!isServer && error.status === 401) {
         const currentUrl = router.url;
-        
         const publicRoutes = ['/home', '/', '/login', '/register', '/productos'];
         const isPublicRoute = publicRoutes.some(route => currentUrl.includes(route));
         
-        if (isPublicRoute) {
-          console.log(`${tag} ℹ️ Error 401 ignorado en ruta pública: ${currentUrl}`);
-          return throwError(() => error);
-        }
-        document.cookie = 'auth_token=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT;';
-        document.cookie = 'auth=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT;';
+        if (isPublicRoute) return throwError(() => error);
 
-        router.navigate(['/login'], { 
-          queryParams: { returnUrl: currentUrl } 
-        });
+        // Limpieza de tokens caducados
+        document.cookie = 'auth_token=; Path=/; Max-Age=0;';
+        document.cookie = 'auth=; Path=/; Max-Age=0;';
+
+        router.navigate(['/login'], { queryParams: { returnUrl: currentUrl } });
       }
-      
       return throwError(() => error);
     })
   );

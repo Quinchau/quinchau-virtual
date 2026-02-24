@@ -1,5 +1,5 @@
 // src/app/services/manager-state.ts
-import { Injectable, inject, signal, computed, PLATFORM_ID } from '@angular/core';
+import { Injectable, inject, signal, computed, PLATFORM_ID, linkedSignal } from '@angular/core';
 import { ManagerApis } from './manager-apis';
 import { Transfer, TransferenciaDetalle, User, NewTransfer, ProductDetailData, DashboardResponse, HomeData } from '../models/transfer.model';
 import { TransferButtonInfo, getTransferButtonInfo } from '../data/transfer-actions';
@@ -8,6 +8,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 
+type ActionStatus = 'idle' | 'loading' | 'success' | 'error';
 
 @Injectable({
   providedIn: 'root',
@@ -101,28 +102,24 @@ public readonly homeResource = rxResource<HomeData, unknown>({
         sessionStorage.setItem('auth_token', response.identidad.token);
       }
       
-      // CASO 2: Visitante existente (token en response.identidad con tipo visitante)
       else if (response.identidad?.tipo === 'visitante') {
         console.log('👋 Visitante EXISTENTE - ID:', response.identidad.id);
       }
       
-      // CASO 3: Usuario autenticado
       else if (response.identidad?.tipo === 'usuario') {
         console.log('👑 Usuario autenticado - ID:', response.identidad.id);
       }
       
-      // CASO 4: No hay token en ninguna parte
       else {
         console.log('⚠️ NO SE ENCONTRÓ TOKEN en la respuesta');
         
       }
     }),
     map((response: any): HomeData => {
-      // Construir objeto HomeData
       const homeData: HomeData = {
         banners: response.banners || [],
         modelos: response.modelos || [],
-        identidad: response.identidad  // La identidad completa viene del backend
+        identidad: response.identidad
       };
       
       return homeData;
@@ -154,10 +151,8 @@ public readonly currentModel = computed(() => {
   const id = this.productModelFilter();
   if (!id) return null;
 
-  // Intentamos buscar primero en destacados (lo más probable)
   let modelo = this.modelosDestacados().find(m => m.idmodelo === id);
   
-  // Si no está ahí, buscamos en los secundarios
   if (!modelo) {
     modelo = this.modelosSecundarios().find(m => m.idmodelo === id);
   }
@@ -169,18 +164,16 @@ public readonly currentModel = computed(() => {
 
 public guestId = rxResource<string | null, void>({
     stream: () => {
-      // Si no estamos en navegador, retornamos observable de null
       if (!isPlatformBrowser(this.platformId)) {
         return of(null);
       }
 
-      // Observable que emite el valor de la cookie cada vez que cambia
       return merge(
         fromEvent(document, 'visibilitychange'),
         fromEvent(window, 'focus'),
         fromEvent(window, 'storage')
       ).pipe(
-        startWith(null), // Emisión inicial
+        startWith(null),
         map(() => {
           const match = document.cookie.match(/guest_id=([^;]+)/);
           return match ? decodeURIComponent(match[1]) : null;
@@ -192,7 +185,7 @@ public guestId = rxResource<string | null, void>({
 
   public guestIdSignal = this.guestId.value;
 
-  // -- CARD PRODUCT --
+  // -- CART PRODUCT --
 
 public readonly productSlug = toSignal(
     this.router.events.pipe(
@@ -230,9 +223,61 @@ public readonly productCardResource = rxResource({
 public readonly currentProductCard = this.productCardResource.value;
 public readonly loadingProductCard = this.productCardResource.isLoading;
 public readonly productCardError = this.productCardResource.error;
-  constructor() {
+
+  // -- ADD TO CARD --
+
+public addStatus = linkedSignal<string | undefined, ActionStatus>({
+  source: () => this.currentProductCard()?.stockid,
+  computation: () => 'idle'
+});
+
+public addCurrentProductToCart(): void {
+  const p = this.currentProductCard();
+  
+  if (!p || p.qty_in_order < 1) return;
+  this.addStatus.set('loading');
+
+  const payload = {
+    productos: [{
+      stockid: p.stockid,
+      cantidad: p.qty_in_order,
+      precio: p.price_with_tax,
+      taxrate: 0.16
+    }],
+    typeabbrev: "01"
+  };
+
+  this.managerApis.addToCart(payload).subscribe({
+    next: (response) => {
+      if (response.exito) {
+        this.addStatus.set('success');
+      } else {
+        this.addStatus.set('error');
+      }
+    },
+    error: (err) => {
+      console.error('Error al añadir al carrito:', err);
+      this.addStatus.set('error');
+    }
+  });
+}
+
+
+constructor() {
     this.loadUserDataFromLocalStorage();
   }
+
+updateProductQuantity(newQuantity: number) {
+  const currentProduct = this.currentProductCard();
+  if (currentProduct) {
+    this.currentProductCard.set({
+      ...currentProduct,
+      qty_in_order: newQuantity
+    });
+    
+    console.log(`✅ Cantidad actualizada: ${currentProduct.stockid} = ${newQuantity}`);
+  }
+}
 
 public resetProductFilters(): void {
     this.router.navigate([], {

@@ -1,43 +1,65 @@
 // product-order.ts
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { ManagerState } from '../../services/manager-state';
 
 @Component({
   selector: 'app-product-order',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './product-order.html',
 })
 export class ProductOrder {
   private state = inject(ManagerState);
-  private route = inject(ActivatedRoute);
   
-  // ✅ Signals del estado - DEFINIDAS CORRECTAMENTE
-  product = this.state.currentProductCard;
-  loadingProductCard = this.state.loadingProductCard;  // ← DEBE EXISTIR EN EL ESTADO
-  error = this.state.productCardError;                 // ← DEBE EXISTIR EN EL ESTADO
-  
-  // Estado local
-  quantity = signal<number>(1);
 
-  constructor() {}
+  product = this.state.currentProductCard;
+  loadingProductCard = this.state.loadingProductCard;
+  error = this.state.productCardError;
+
+  get quantity(): number {
+    return this.product()?.qty_in_order || 1;
+  }
+
+  set quantity(value: number) {
+    const currentProduct = this.product();
+    if (!currentProduct) return;
+    
+ 
+    const numValue = Number(value);
+    if (isNaN(numValue)) return;
+    
+
+    const clampedValue = Math.max(1, Math.min(numValue, currentProduct.total_quantity));
+    
+
+    this.state.updateProductQuantity(clampedValue);
+  }
 
   increment() {
-    this.quantity.update(q => q + 1);
+    const currentProduct = this.product();
+    if (currentProduct) {
+      this.quantity = currentProduct.qty_in_order + 1;
+    }
   }
 
   decrement() {
-    this.quantity.update(q => Math.max(1, q - 1));
+    const currentProduct = this.product();
+    if (currentProduct) {
+      this.quantity = currentProduct.qty_in_order - 1;
+    }
   }
 
   confirm() {
-    console.log('Producto a añadir:', this.product());
-    console.log('Cantidad:', this.quantity());
+  // Solo disparamos si no estamos ya cargando
+  if (this.state.addStatus() !== 'loading') {
+    this.state.addCurrentProductToCart();
   }
+}
 
   cancel() {
-    console.log('Operación cancelada');
+    console.log('❌ Operación cancelada');
+    
   }
 }

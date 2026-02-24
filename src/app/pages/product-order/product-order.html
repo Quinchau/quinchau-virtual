@@ -46,6 +46,14 @@
       </div>
     }
 
+    <!-- Mensaje de carrito pendiente (NUEVO) -->
+    @if (p.qty_in_order > 1) {
+      <div class="mb-4 p-3 bg-blue-50 text-blue-700 text-sm rounded-lg flex items-center gap-2">
+        <span class="text-xl">🛒</span>
+        <span>Ya tenías <strong>{{ p.qty_in_order }}</strong> unidades en tu carrito pendiente</span>
+      </div>
+    }
+
     <!-- Tags -->
     @if (p.tags) {
       <div class="mb-4 text-xs text-slate-500">
@@ -53,48 +61,64 @@
       </div>
     }
 
+    <!-- Control de cantidad con INPUT NUMÉRICO y ngModel -->
     <div class="flex items-center justify-between mb-6">
       <span class="text-sm font-medium text-slate-600">Cantidad:</span>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2">
         <button (click)="decrement()" 
-                [disabled]="quantity() <= 1"
-                class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-200 disabled:opacity-50">
+                [disabled]="quantity <= 1"
+                class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed">
           −
         </button>
-        <span class="w-12 text-center font-medium">{{ quantity() }}</span>
+        
+        <!-- INPUT con ngModel - BINDEADO DIRECTAMENTE A quantity (getter/setter) -->
+        <input type="number" 
+               [ngModel]="quantity" 
+               (ngModelChange)="quantity = $event"
+               min="1" 
+               [max]="p.total_quantity"
+               [disabled]="p.total_quantity === 0"
+               class="w-20 text-center border border-slate-300 rounded-lg py-1 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-slate-100 disabled:cursor-not-allowed">
+        
         <button (click)="increment()"
-                class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-200">
+                [disabled]="quantity >= p.total_quantity"
+                class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed">
           +
         </button>
       </div>
     </div>
 
-    <!-- Stock disponible -->
-    @if (p.total_quantity > 0) {
-      <p class="text-xs text-green-600 mb-2">
-        {{ p.total_quantity }} unidades disponibles
+    <!-- Stock disponible con indicador visual -->
+    <div class="flex justify-between items-center mb-2">
+      <p class="text-xs" [class.text-green-600]="p.total_quantity > 0" [class.text-red-600]="p.total_quantity === 0">
+        {{ p.total_quantity > 0 ? p.total_quantity + ' unidades disponibles' : 'Sin stock disponible' }}
       </p>
-    } @else {
-      <p class="text-xs text-red-600 mb-2">
-        Sin stock disponible
-      </p>
-    }
+      
+      <!-- Advertencia de stock bajo -->
+      @if (p.total_quantity > 0 && p.total_quantity < 5) {
+        <span class="text-xs text-orange-600 font-medium">
+          ⚡ ¡Últimas unidades!
+        </span>
+      }
+    </div>
 
+    <!-- Total calculado -->
     <div class="flex justify-between text-lg font-bold mb-6">
       <span>Total:</span>
       <span class="text-orange-600">
-        ${{ (p.price_with_tax * quantity()).toFixed(2) }}
+        ${{ (p.price_with_tax * quantity).toFixed(2) }}
       </span>
     </div>
 
+    <!-- Botones de acción -->
     <div class="flex gap-3">
       <button (click)="cancel()"
-              class="flex-1 py-3 rounded-lg bg-slate-200 text-slate-700 font-medium hover:bg-slate-300">
+              class="flex-1 py-3 rounded-lg bg-slate-200 text-slate-700 font-medium hover:bg-slate-300 transition-colors">
         Cancelar
       </button>
       <button (click)="confirm()"
               [disabled]="p.total_quantity === 0"
-              class="flex-1 py-3 rounded-lg bg-orange-500 text-white font-medium hover:bg-orange-600 disabled:opacity-50">
+              class="flex-1 py-3 rounded-lg bg-orange-500 text-white font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
         Añadir al carrito
       </button>
     </div>

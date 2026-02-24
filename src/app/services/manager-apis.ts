@@ -1,11 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { catchError, map, Observable, of } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { 
   NewTransfer, Product, TransferenciaDetalle, 
   ProductDetailData, DashboardResponse, Banner, 
-  HomeData
+  HomeData,
+  ProductListResponse
 } from '../models/transfer.model';
 
 @Injectable({
@@ -47,7 +48,7 @@ export class ManagerApis {
 
   // --- MÉTODOS DE PRODUCTOS ---
 
-  public getProducts(
+public getProducts(
   searchTerm: string = '', 
   includeStock: boolean = false, 
   idmodelo: string = ''
@@ -58,7 +59,15 @@ export class ManagerApis {
   if (includeStock) params = params.set('stock', '1');
   if (idmodelo) params = params.set('idmodelo', idmodelo);
 
-  return this.http.get<Product[]>(`${this.baseUrl}/get-products.php`, { params });
+  return this.http.get<ProductListResponse>(`${this.baseUrl}/get-products.php`, { params }).pipe(
+    map(res => {
+      return res?.productos ?? [];
+    }),
+    catchError(error => {
+      console.error('Error recuperando productos:', error);
+      return of([]);
+    })
+  );
 }
 
   public getProductDetail(stockid: string): Observable<ProductDetailData> {
@@ -75,5 +84,11 @@ export class ManagerApis {
 // En manager-apis.ts
 getProductBySlug(slug: string): Observable<Product> {
   return this.http.get<Product>(`${this.baseUrl}/get-products.php?slug=${slug}`);
+}
+
+public addToCart(orderData: { productos: any[], typeabbrev: string }): Observable<any> {
+  return this.http.post(`${this.baseUrl}/create_order.php`, orderData, {
+    withCredentials: true // Importante si usas cookies de sesión
+  });
 }
 }
