@@ -1,10 +1,10 @@
 // src/app/services/manager-state.ts
 import { Injectable, inject, signal, computed, PLATFORM_ID, linkedSignal } from '@angular/core';
 import { ManagerApis } from './manager-apis';
-import { Transfer, TransferenciaDetalle, User, NewTransfer, ProductDetailData, DashboardResponse, HomeData } from '../models/transfer.model';
+import { Transfer, TransferenciaDetalle, User, NewTransfer, ProductDetailData, DashboardResponse, HomeData, Visitante, Product } from '../models/transfer.model';
 import { TransferButtonInfo, getTransferButtonInfo } from '../data/transfer-actions';
 import { tap, catchError, of, throwError, finalize, map, fromEvent, merge, startWith, filter } from 'rxjs';
-import { isPlatformBrowser } from '@angular/common';
+import { isPlatformBrowser, Location } from '@angular/common';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 
@@ -16,6 +16,7 @@ type ActionStatus = 'idle' | 'loading' | 'success' | 'error';
 export class ManagerState {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private location = inject(Location);
   public readonly productSearchTerm = toSignal(
   this.route.queryParams.pipe(map(params => params['q'] || '')),
   { initialValue: '' }
@@ -37,12 +38,18 @@ public readonly productsResource = rxResource({
     idmodelo: this.productModelFilter()
   }),
   stream: ({ params }) => {
-    // Solo detenemos la petición si ambos están vacíos
     if (!params.query && !params.idmodelo) {
       return of([]);
     }
 
     return this.managerApis.getProducts(params.query, params.stock, params.idmodelo).pipe(
+      tap((response: {productos: Product[], identidad?: any}) => {
+        // Actualizar el contador del carrito si viene en la respuesta
+        if (response?.identidad?.cantidad_referencias !== undefined) {
+          this.cartCount.set(response.identidad.cantidad_referencias);
+        }
+      }),
+      map(response => response.productos),
       catchError(err => {
         console.error('Error en el recurso:', err);
         return of([]);
@@ -79,12 +86,16 @@ public readonly productsResource = rxResource({
   public readonly loadingCreateTransfer = signal<boolean>(false);
   public readonly transferCompleted = signal<boolean>(false);
   public readonly newTransferType = signal<'ship' | 'rec' | null>(null);
+  public readonly identidad = signal<Visitante | null>(null);
+  public readonly cartCount = signal(0);
+
 
   // --- HOME STATE ----
 
 public readonly homeResource = rxResource<HomeData, unknown>({
   stream: () => this.managerApis.getHomeData().pipe(
     tap((response: any) => {
+      this.cartCount.set(response.identidad?.cantidad_referencias ?? 0);
       
       if (!isPlatformBrowser(this.platformId)) return;
       
@@ -101,6 +112,7 @@ public readonly homeResource = rxResource<HomeData, unknown>({
         // También almacenar en sessionStorage como respaldo
         sessionStorage.setItem('auth_token', response.identidad.token);
       }
+      
       
       else if (response.identidad?.tipo === 'visitante') {
         console.log('👋 Visitante EXISTENTE - ID:', response.identidad.id);
@@ -249,12 +261,19 @@ public addCurrentProductToCart(): void {
 
   this.managerApis.addToCart(payload).subscribe({
     next: (response) => {
-      if (response.exito) {
-        this.addStatus.set('success');
-      } else {
-        this.addStatus.set('error');
-      }
-    },
+  if (response.exito) {
+    this.addStatus.set('success');
+
+    // Solo actualizamos el contador con el valor que el servidor nos acaba de confirmar
+    if (response.identidad?.cantidad_referencias !== undefined) {
+      this.cartCount.set(response.identidad.cantidad_referencias);
+    }
+    this.location.back();
+
+  } else {
+    this.addStatus.set('error');
+  }
+},
     error: (err) => {
       console.error('Error al añadir al carrito:', err);
       this.addStatus.set('error');
@@ -476,5 +495,6 @@ public updateTransferStatus(idtransfer: string, newStatus: string) {
  public setNewTransferType(type: 'ship' | 'rec'): void {
     this.newTransferType.set(type);
   } 
+
 
 }

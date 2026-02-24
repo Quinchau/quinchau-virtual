@@ -20,8 +20,7 @@ export class Header {
     const user = this.state.currentUser();
     return user ? this.ALLOWED_LEVELS.includes(user.fullaccess) : false;
   });
-  public cartCount = signal(1);
-
+  
   public userLevelDisplay = computed(() => 
     this.state.currentUser()?.fullaccess ?? 'Invitado'
   );

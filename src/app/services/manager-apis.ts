@@ -52,7 +52,7 @@ public getProducts(
   searchTerm: string = '', 
   includeStock: boolean = false, 
   idmodelo: string = ''
-): Observable<Product[]> {
+): Observable<{productos: Product[], identidad?: any}> {  // ← Tipo modificado
   let params = new HttpParams();
 
   if (searchTerm) params = params.set('search', searchTerm);
@@ -60,12 +60,13 @@ public getProducts(
   if (idmodelo) params = params.set('idmodelo', idmodelo);
 
   return this.http.get<ProductListResponse>(`${this.baseUrl}/get-products.php`, { params }).pipe(
-    map(res => {
-      return res?.productos ?? [];
-    }),
+    map(res => ({
+      productos: res?.productos ?? [],
+      identidad: res?.identidad
+    })),
     catchError(error => {
       console.error('Error recuperando productos:', error);
-      return of([]);
+      return of({ productos: [], identidad: null });
     })
   );
 }

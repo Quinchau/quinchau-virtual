@@ -73,7 +73,7 @@ export interface Product {
 
 export interface ProductListResponse {
   productos: Product[];
-  identidad: Visitante;
+  identidad?: Visitante;
 }
 
 export interface ProductDetailResponse extends Product {
@@ -110,6 +110,7 @@ export interface ProductFilter {
 export interface Visitante {
   id: number;
   tipo: 'visitante' | 'visitante_nuevo' | 'usuario';
+  cantidad_referencias?: number;
   token?: string;
   nuevo?: boolean | number;
   payload?: any;
