@@ -9,11 +9,13 @@ import { ProductDetail } from './pages/product-detail/product-detail';
 import { Transfers } from './pages/transfers/transfers';
 import { adminGuard } from './guards/admin.guard';
 import { ProductOrder } from './pages/product-order/product-order';
+import { CartComponent } from './pages/checkout/checkout';
 
 export const routes: Routes = [
 { path: 'producto/:slugId', component: ProductOrder },
 { path: 'login', component: LoginComponent },
 { path: 'home', component: Home },
+{ path: 'checkout', component: CartComponent },
 { path: 'dashboard',
   component: Dashboard,canActivate: [adminGuard] },
 { path: 'new-transfer', component: NewTransferComponent, canActivate: [authGuard],

@@ -82,7 +82,7 @@ public getProducts(
 
 }
 
-// En manager-apis.ts
+
 getProductBySlug(slug: string): Observable<Product> {
   return this.http.get<Product>(`${this.baseUrl}/get-products.php?slug=${slug}`);
 }
@@ -92,4 +92,12 @@ public addToCart(orderData: { productos: any[], typeabbrev: string }): Observabl
     withCredentials: true // Importante si usas cookies de sesión
   });
 }
+
+getCart(): Observable<any> {
+  return this.http.get(`${this.baseUrl}/checkout.php`, {
+    withCredentials: true
+  });
+}
+
+
 }

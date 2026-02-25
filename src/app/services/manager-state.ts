@@ -8,6 +8,7 @@ import { isPlatformBrowser, Location } from '@angular/common';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 
+
 type ActionStatus = 'idle' | 'loading' | 'success' | 'error';
 
 @Injectable({
@@ -88,6 +89,10 @@ public readonly productsResource = rxResource({
   public readonly newTransferType = signal<'ship' | 'rec' | null>(null);
   public readonly identidad = signal<Visitante | null>(null);
   public readonly cartCount = signal(0);
+  public readonly cartData = computed(() => this.cartResource.value());
+
+// 2. Derivadas listas para el consumo
+
 
 
   // --- HOME STATE ----
@@ -281,6 +286,59 @@ public addCurrentProductToCart(): void {
   });
 }
 
+//---- CHECKOUT ----/ 
+
+private readonly isCheckoutPath = toSignal(
+  this.router.events.pipe(
+    filter(event => event instanceof NavigationEnd),
+    map((event: NavigationEnd) => event.urlAfterRedirects.includes('/checkout'))
+  ),
+  { initialValue: false }
+);
+
+public readonly cartResource = rxResource({
+  params: () => ({
+    onCheckout: this.isCheckoutPath(),
+    refresh: this.refreshCartTrigger()
+  }),
+  stream: ({ params }) => {
+    // Si no estamos en checkout y no hay trigger manual, no pedimos nada
+    if (!params.onCheckout && params.refresh === 0) {
+      return of(this.defaultCartResponse);
+    }
+
+    console.log('🛒 Disparando petición de carrito por navegación o refresco');
+    return this.managerApis.getCart().pipe(
+      catchError(err => {
+        console.error('Error recuperando carrito:', err);
+        return of(this.defaultCartResponse);
+      })
+    );
+  }
+});
+private readonly defaultCartResponse: CartResponse = {
+    exito: false,
+    cotizacion_id: 0,
+    items: [],
+    total: 0,
+    cantidad_items: 0,
+    identidad: null
+  };
+
+public readonly cartItems = computed(() => this.cartData()?.items ?? []);
+public readonly cartTotal = computed(() => this.cartData()?.total ?? 0);
+public readonly cartIsEmpty = computed(() => 
+  !this.cartResource.isLoading() && this.cartItems().length === 0
+);
+public readonly cartIsLoading = this.cartResource.isLoading;
+public readonly cartErrorMessage = computed(() => {
+  return this.cartResource.error() ? 'No pudimos recuperar tu carrito.' : null;
+});
+
+public retryCartLoad(): void {
+  this.cartResource.reload();
+}
+private refreshCartTrigger = signal(0);
 
 constructor() {
     this.loadUserDataFromLocalStorage();
