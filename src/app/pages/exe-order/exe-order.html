@@ -1,0 +1,80 @@
+<div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+  
+  <div 
+    class="absolute inset-0 bg-slate-900/40 backdrop-blur-md transition-opacity"
+    (click)="close.emit()">
+  </div>
+
+  <div class="relative bg-white/90 backdrop-blur-xl rounded-[2.5rem] shadow-2xl w-full max-w-md p-8 border border-white/20 transform transition-all">
+    
+    <header class="text-center mb-8">
+      <div class="bg-blue-600 w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4 rotate-3 shadow-lg shadow-blue-200">
+        <span class="text-white font-black text-xl">#</span>
+      </div>
+      <h2 class="text-2xl font-black text-slate-800 uppercase tracking-tight">Finalizar Compra</h2>
+      <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">
+        Orden: {{ state.cartResource.value()?.cotizacion_id }}
+      </p>
+    </header>
+
+    <div class="space-y-4">
+      
+      <div class="grid grid-cols-2 gap-3">
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] font-black text-slate-400 uppercase ml-2">Nombre</label>
+          <input 
+            type="text"
+            (input)="nombre.set($any($event.target).value)"
+            placeholder="Ej. Juan"
+            class="bg-slate-100 border-none rounded-2xl px-4 py-3 text-slate-700 font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] font-black text-slate-400 uppercase ml-2">Apellido</label>
+          <input 
+            type="text"
+            (input)="apellido.set($any($event.target).value)"
+            placeholder="Ej. Perez"
+            class="bg-slate-100 border-none rounded-2xl px-4 py-3 text-slate-700 font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="text-[10px] font-black text-slate-400 uppercase ml-2">WhatsApp / Teléfono</label>
+        <div class="flex gap-2">
+          <select 
+            (change)="codigoArea.set($any($event.target).value)"
+            class="bg-slate-100 border-none rounded-2xl px-3 py-3 text-slate-600 font-bold focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer">
+            @for (cod of codigos(); track cod) {
+              <option [value]="cod">{{ cod }}</option>
+            }
+          </select>
+          <input 
+            type="tel"
+            maxlength="7"
+            (input)="telefono.set($any($event.target).value)"
+            placeholder="1234567"
+            class="flex-grow bg-slate-100 border-none rounded-2xl px-4 py-3 text-slate-700 font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+        </div>
+        <p class="text-[9px] text-slate-400 ml-2 italic">* Ingresa solo los 7 dígitos de tu número</p>
+      </div>
+
+    </div>
+
+    <div class="mt-8 space-y-3">
+      <button 
+        [disabled]="!isFormValid()"
+        (click)="procesarCompra()"
+        class="w-full bg-blue-600 disabled:bg-slate-200 disabled:text-slate-400 text-white font-black py-4 rounded-2xl shadow-xl shadow-blue-200 transition-all active:scale-95 flex items-center justify-center gap-2">
+        <span>CONFIRMAR Y ENVIAR</span>
+        <span class="text-sm opacity-50">(${{ state.cartTotal() }})</span>
+      </button>
+
+      <button 
+        (click)="close.emit()"
+        class="w-full text-slate-400 text-[10px] font-black py-2 uppercase tracking-tighter hover:text-rose-500 transition-colors">
+        Volver al carrito
+      </button>
+    </div>
+
+  </div>
+</div><p>exe-order works!</p>

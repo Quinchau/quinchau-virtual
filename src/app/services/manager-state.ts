@@ -340,6 +340,21 @@ public retryCartLoad(): void {
 }
 private refreshCartTrigger = signal(0);
 
+public executeOrder(datos: any) {
+  return this.managerApis.executeCheckout(datos).pipe(
+    tap(res => {
+      if (res.exito) {
+        // Actualizamos el valor del recurso localmente a null o vacío
+        // Esto dispara la reactividad en toda la App SIN hacer peticiones
+        this.cartResource.value.set(null);
+        this.cartCount.set(0); 
+      }
+    })
+  );
+}
+
+//--- OTROS METODOS --- //
+
 constructor() {
     this.loadUserDataFromLocalStorage();
   }
