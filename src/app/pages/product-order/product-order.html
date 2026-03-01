@@ -46,7 +46,7 @@
       </div>
     }
 
-    <!-- Mensaje de carrito pendiente (NUEVO) -->
+    <!-- Mensaje de carrito pendiente -->
     @if (p.qty_in_order > 1) {
       <div class="mb-4 p-3 bg-blue-50 text-blue-700 text-sm rounded-lg flex items-center gap-2">
         <span class="text-xl">🛒</span>
@@ -61,7 +61,7 @@
       </div>
     }
 
-    <!-- Control de cantidad con INPUT NUMÉRICO y ngModel -->
+    <!-- Control de cantidad -->
     <div class="flex items-center justify-between mb-6">
       <span class="text-sm font-medium text-slate-600">Cantidad:</span>
       <div class="flex items-center gap-2">
@@ -71,7 +71,6 @@
           −
         </button>
         
-        <!-- INPUT con ngModel - BINDEADO DIRECTAMENTE A quantity (getter/setter) -->
         <input type="number" 
                [ngModel]="quantity" 
                (ngModelChange)="quantity = $event"
@@ -88,13 +87,12 @@
       </div>
     </div>
 
-    <!-- Stock disponible con indicador visual -->
+    <!-- Stock disponible -->
     <div class="flex justify-between items-center mb-2">
       <p class="text-xs" [class.text-green-600]="p.total_quantity > 0" [class.text-red-600]="p.total_quantity === 0">
         {{ p.total_quantity > 0 ? p.total_quantity + ' unidades disponibles' : 'Sin stock disponible' }}
       </p>
       
-      <!-- Advertencia de stock bajo -->
       @if (p.total_quantity > 0 && p.total_quantity < 5) {
         <span class="text-xs text-orange-600 font-medium">
           ⚡ ¡Últimas unidades!
@@ -123,4 +121,11 @@
       </button>
     </div>
   }
+</div>
+
+<div 
+  [class.hidden]="!navService.isLayerPresent('checkout')"
+  class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+>
+  <app-exe-order />
 </div>

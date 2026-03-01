@@ -1,5 +1,5 @@
 export const environment = {
-  production: false,
+  production: true,
 
   apiUrlBrowser: 'https://quinchau.com/webmaster2/api-quinchau-virtual',
 

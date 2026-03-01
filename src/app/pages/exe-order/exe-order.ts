@@ -4,62 +4,56 @@ import { ManagerState } from '../../services/manager-state';
 @Component({
   selector: 'app-exe-order',
   standalone: true,
-  imports: [],
+  imports: [], 
   templateUrl: './exe-order.html',
 })
-
-
 export class ExeOrderComponent {
   protected state = inject(ManagerState);
-  isPending = signal(false);
 
-  close = output<void>();
+  // Eventos de salida (API del componente)
+  public close = output<void>();
+  public registroCompleto = output<{ nombre: string, telefono: string }>();
 
-  nombre = signal('');
-  apellido = signal('');
-  codigoArea = signal('414');
-  telefono = signal('');
+  // Signals de estado interno (Formulario)
+  public nombre = signal('');
+  public apellido = signal('');
+  public codigoArea = signal('414');
+  public telefono = signal('');
+  public codigos = signal(['414', '424', '416', '426', '412', '422']);
 
-  codigos = signal(['414', '424', '416', '426', '412', '422']);
-
-  // Validación reactiva
-  isFormValid = computed(() => {
+  /**
+   * Justificación: Validamos el formulario de forma reactiva.
+   * Al usar computed, Angular solo recalcula si cambian los signals.
+   */
+  public isFormValid = computed(() => {
     const soloNumeros = /^\d+$/;
-    return (
-      this.nombre().trim().length > 2 &&
-      this.apellido().trim().length > 2 &&
-      this.telefono().length === 7 &&
-      soloNumeros.test(this.telefono())
-    );
+    const nombreValido = this.nombre().trim().length > 2;
+    const apellidoValido = this.apellido().trim().length > 2;
+    const telefonoValido = this.telefono().length === 7 && soloNumeros.test(this.telefono());
+    
+    return nombreValido && apellidoValido && telefonoValido;
   });
 
+  /**
+   * Justificación: Centralizamos la emisión de datos.
+   * El componente no sabe qué pasará después, solo cumple su contrato.
+   */
+  confirmarIdentidad() {
+    if (!this.isFormValid()) return;
 
-procesarCompra() {
-  if (!this.isFormValid() || this.isPending()) return;
+    const datosVisitante = {
+      nombre: `${this.nombre().trim()} ${this.apellido().trim()}`,
+      telefono: `${this.codigoArea()}${this.telefono()}`
+    };
 
-  const idActual = this.state.cartResource.value()?.cotizacion_id;
-  if (!idActual) return; // Seguridad extra
+    this.registroCompleto.emit(datosVisitante);
+  }
 
-  this.isPending.set(true); // Bloqueamos el botón
-
-  const datosFinales = {
-    cotizacion_id: idActual,
-    nombre: `${this.nombre()} ${this.apellido()}`,
-    telefono: `${this.codigoArea()}${this.telefono()}`
-  };
-
-  this.state.executeOrder(datosFinales).subscribe({
-    next: (res) => {
-      if (res.exito) {
-        alert('¡Pedido realizado con éxito!');
-        this.close.emit();
-      }
-      this.isPending.set(false);
-    },
-    error: (err) => {
-      console.error('Error en checkout', err);
-      this.isPending.set(false);
-    }
-  });
-}
+  /**
+   * Justificación: Proporcionamos un método explícito para el cierre
+   * que puede ser llamado desde el HTML (clic en fondo o botón cancelar).
+   */
+  cancelar() {
+    this.close.emit();
+  }
 }

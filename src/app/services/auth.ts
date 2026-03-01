@@ -12,7 +12,7 @@ import { environment } from '../../environments/environment';
 })
 export class AuthService {
   private http = inject(HttpClient);
-  private apiUrl = `${environment.apiUrl}/login.php`;
+  private apiUrl = `${environment.apiUrlBrowser}/login.php`;
   private platformId = inject(PLATFORM_ID);
   private document = inject(DOCUMENT);
   private managerState = inject(ManagerState);

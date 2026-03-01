@@ -69,6 +69,7 @@ export interface Product {
   modelo_ids: number[];
   modelos: string[];
   qty_in_order: number;
+  slug: string;
 }
 
 export interface ProductListResponse {

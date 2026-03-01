@@ -1,5 +1,4 @@
 <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
-  
   <div 
     class="absolute inset-0 bg-slate-900/40 backdrop-blur-md transition-opacity"
     (click)="close.emit()">
@@ -11,14 +10,13 @@
       <div class="bg-blue-600 w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4 rotate-3 shadow-lg shadow-blue-200">
         <span class="text-white font-black text-xl">#</span>
       </div>
-      <h2 class="text-2xl font-black text-slate-800 uppercase tracking-tight">Finalizar Compra</h2>
-      <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">
-        Orden: {{ state.cartResource.value()?.cotizacion_id }}
+      <h2 class="text-2xl font-black text-slate-800 uppercase tracking-tight">Datos del pedido...</h2>
+      <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">
+        A quien contactaremos para coordinar la entrega?
       </p>
     </header>
 
     <div class="space-y-4">
-      
       <div class="grid grid-cols-2 gap-3">
         <div class="flex flex-col gap-1">
           <label class="text-[10px] font-black text-slate-400 uppercase ml-2">Nombre</label>
@@ -57,24 +55,22 @@
         </div>
         <p class="text-[9px] text-slate-400 ml-2 italic">* Ingresa solo los 7 dígitos de tu número</p>
       </div>
-
     </div>
 
     <div class="mt-8 space-y-3">
       <button 
         [disabled]="!isFormValid()"
-        (click)="procesarCompra()"
+        (click)="confirmarIdentidad()"
         class="w-full bg-blue-600 disabled:bg-slate-200 disabled:text-slate-400 text-white font-black py-4 rounded-2xl shadow-xl shadow-blue-200 transition-all active:scale-95 flex items-center justify-center gap-2">
-        <span>CONFIRMAR Y ENVIAR</span>
-        <span class="text-sm opacity-50">(${{ state.cartTotal() }})</span>
+        <span>CONTINUAR Y AÑADIR</span>
       </button>
 
       <button 
         (click)="close.emit()"
         class="w-full text-slate-400 text-[10px] font-black py-2 uppercase tracking-tighter hover:text-rose-500 transition-colors">
-        Volver al carrito
+        Cancelar
       </button>
     </div>
 
   </div>
-</div><p>exe-order works!</p>
+</div>

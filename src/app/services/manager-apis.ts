@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { catchError, map, Observable, of } from 'rxjs';
 import { environment } from '../../environments/environment';
@@ -8,13 +8,15 @@ import {
   HomeData,
   ProductListResponse
 } from '../models/transfer.model';
+import { isPlatformServer } from '@angular/common';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ManagerApis {
   private http = inject(HttpClient);
-  private readonly baseUrl = environment.apiUrl;
+  private platformId = inject(PLATFORM_ID);
+  private get baseUrl() { return isPlatformServer(this.platformId) ? environment.apiUrlServer : environment.apiUrlBrowser; }
 
   public getTransfers(): Observable<DashboardResponse> {
     return this.http.get<DashboardResponse>(`${this.baseUrl}/transfers.php`, {

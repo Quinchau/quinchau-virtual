@@ -3,7 +3,7 @@ import { Injectable, inject, signal, computed, PLATFORM_ID, linkedSignal } from 
 import { ManagerApis } from './manager-apis';
 import { Transfer, TransferenciaDetalle, User, NewTransfer, ProductDetailData, DashboardResponse, HomeData, Visitante, Product } from '../models/transfer.model';
 import { TransferButtonInfo, getTransferButtonInfo } from '../data/transfer-actions';
-import { tap, catchError, of, throwError, finalize, map, fromEvent, merge, startWith, filter } from 'rxjs';
+import { tap, catchError, of, throwError, finalize, map, fromEvent, merge, startWith, filter, Observable, switchMap } from 'rxjs';
 import { isPlatformBrowser, Location } from '@angular/common';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
@@ -204,40 +204,59 @@ public guestId = rxResource<string | null, void>({
 
   // -- CART PRODUCT --
 
-public readonly productSlug = toSignal(
-    this.router.events.pipe(
-      filter(event => event instanceof NavigationEnd),
-      map(() => {
-        const urlTree = this.router.parseUrl(this.router.url);
-        const segments = urlTree.root.children['primary']?.segments || [];
-        const productoIndex = segments.findIndex(s => s.path === 'producto');
-        
-        if (productoIndex !== -1 && segments.length > productoIndex + 1) {
-          return segments[productoIndex + 1].path;
-        }
-        return '';
-      }),
-    ),
-    { initialValue: '' }
-  );
+private manualSlugToLoad = signal<string>('');
+
+public loadProductRemotely(slug: string): void {
+  this.manualSlugToLoad.set(slug);
+}
 
 public readonly productCardResource = rxResource({
-  params: () => ({ slug: this.productSlug() }),
+  // 1. Justificación: Definimos el parámetro que queremos observar.
+  // Usamos un objeto para que sea escalable.
+  params: () => ({ slug: this.manualSlugToLoad() }),
+
+  // 2. Justificación: Usamos stream porque nos permite transformar 
+  // el parámetro en un flujo de datos usando operadores de RxJS.
   stream: ({ params }) => {
+    // 3. Fundamento: Si no hay slug, emitimos null inmediatamente.
     if (!params.slug) {
       return of(null);
     }
+
+    // 4. Justificación: Llamamos a la API. Usamos pipe para 
+    // actualizar nuestra signal principal de forma reactiva.
     return this.managerApis.getProductBySlug(params.slug).pipe(
-      catchError(err => {
-        console.error('❌ Error:', err);
-        return of(null);
-      })
+      tap(producto => {
+        if (producto) this.currentProductCard.set(producto);
+      }),
+      catchError(() => of(null))
     );
   },
   defaultValue: null
 });
 
-public readonly currentProductCard = this.productCardResource.value;
+public selectProductFromHome(product: Product): void {
+  // Justificación: Seteamos el producto inmediatamente (Reactividad instantánea)
+  this.currentProductCard.set(product);
+  
+  // Justificación: Actualizamos la URL para que el navegador sepa dónde estamos
+  // pero sin disparar una navegación que destruya el Home.
+  const url = `/producto/${product.slug}`;
+  history.pushState({ modal: true }, '', url);
+}
+
+public closeProductDetail(): void {
+  // 1. Justificación: Limpiamos la Signal. Esto cierra el @if en el HTML.
+  this.currentProductCard.set(null);
+
+  // 2. Justificación: Limpiamos la URL. 
+  // Usamos replaceState para que el 'atrás' no vuelva a abrir el producto.
+  if (typeof window !== 'undefined') {
+    window.history.replaceState({}, '', '/home'); 
+  }
+}
+
+public currentProductCard = signal<Product | null>(null);
 public readonly loadingProductCard = this.productCardResource.isLoading;
 public readonly productCardError = this.productCardResource.error;
 
@@ -248,13 +267,17 @@ public addStatus = linkedSignal<string | undefined, ActionStatus>({
   computation: () => 'idle'
 });
 
-public addCurrentProductToCart(): void {
+public addCurrentProductToCart(registro?: any): Observable<any> {
   const p = this.currentProductCard();
   
-  if (!p || p.qty_in_order < 1) return;
+  if (!p || p.qty_in_order < 1) {
+    return throwError(() => new Error('No product or invalid quantity'));
+  }
+  
   this.addStatus.set('loading');
 
-  const payload = {
+  // 1. Creamos el objeto base
+  const payload: any = {
     productos: [{
       stockid: p.stockid,
       cantidad: p.qty_in_order,
@@ -264,26 +287,42 @@ public addCurrentProductToCart(): void {
     typeabbrev: "01"
   };
 
-  this.managerApis.addToCart(payload).subscribe({
-    next: (response) => {
-  if (response.exito) {
-    this.addStatus.set('success');
-
-    // Solo actualizamos el contador con el valor que el servidor nos acaba de confirmar
-    if (response.identidad?.cantidad_referencias !== undefined) {
-      this.cartCount.set(response.identidad.cantidad_referencias);
-    }
-    this.location.back();
-
-  } else {
-    this.addStatus.set('error');
+  // 2. Justificación: Si recibimos datos del modal, los inyectamos en el payload.
+  // Esto permite que el PHP ejecute la creación del visitante y la orden en un solo viaje.
+  if (registro) {
+    payload.registro = registro;
   }
-},
-    error: (err) => {
-      console.error('Error al añadir al carrito:', err);
+
+  return this.managerApis.addToCart(payload).pipe(
+    switchMap((response) => {
+      if (!response.exito) {
+        this.addStatus.set('error');
+        return throwError(() => ({
+          requiere_registro: !!response.requiere_registro,
+          mensaje: response.mensaje
+        }));
+      }
+
+      // 3. Justificación: Éxito total. Si el PHP nos dio un Token nuevo por el registro, 
+      // debemos guardarlo para que futuras peticiones ya estén identificadas.
+      if (response.identidad?.token) {
+        localStorage.setItem('token', response.identidad.token);
+      }
+
+      this.addStatus.set('success');
+      
+      if (response.identidad?.cantidad_referencias !== undefined) {
+        this.cartCount.set(response.identidad.cantidad_referencias);
+      }
+
+      this.location.back();
+      return of(response);
+    }),
+    catchError((err) => {
       this.addStatus.set('error');
-    }
-  });
+      return throwError(() => err);
+    })
+  );
 }
 
 //---- CHECKOUT ----/ 
@@ -299,10 +338,17 @@ private readonly isCheckoutPath = toSignal(
 public readonly cartResource = rxResource({
   params: () => ({
     onCheckout: this.isCheckoutPath(),
-    refresh: this.refreshCartTrigger()
+    refresh: this.refreshCartTrigger(),
+    // Detectamos la plataforma
+    isBrowser: isPlatformBrowser(this.platformId)
   }),
   stream: ({ params }) => {
-    // Si no estamos en checkout y no hay trigger manual, no pedimos nada
+    // 1. FUNDAMENTAL: Si no es el navegador, devolvemos el default de inmediato
+    if (!params.isBrowser) {
+      return of(this.defaultCartResponse);
+    }
+
+    // 2. Lógica para el cliente
     if (!params.onCheckout && params.refresh === 0) {
       return of(this.defaultCartResponse);
     }
