@@ -103,13 +103,8 @@ getCart(): Observable<any> {
 
 //---CHECKOUT---//
 
-public executeCheckout(checkoutData: { 
-  cotizacion_id: number, 
-  nombre: string, 
-  telefono: string,
-  prefijo?: string 
-}): Observable<any> {
-  return this.http.post(`${this.baseUrl}/exe-checkout.php`, checkoutData, {
+public executeCheckout(cotizacion_id: number): Observable<any> {
+  return this.http.post(`${this.baseUrl}/exe-checkout.php`, { cotizacion_id }, {
     withCredentials: true
   });
 }

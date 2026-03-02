@@ -10,49 +10,52 @@ import { ManagerState } from '../../services/manager-state';
 export class ExeOrderComponent {
   protected state = inject(ManagerState);
 
-  // Eventos de salida (API del componente)
   public close = output<void>();
-  public registroCompleto = output<{ nombre: string, telefono: string }>();
+  public registroCompleto = output<{ 
+  nombre: string, 
+  prefijo: string, 
+  numero: string 
+}>();
 
-  // Signals de estado interno (Formulario)
   public nombre = signal('');
   public apellido = signal('');
   public codigoArea = signal('414');
   public telefono = signal('');
   public codigos = signal(['414', '424', '416', '426', '412', '422']);
 
-  /**
-   * Justificación: Validamos el formulario de forma reactiva.
-   * Al usar computed, Angular solo recalcula si cambian los signals.
-   */
-  public isFormValid = computed(() => {
-    const soloNumeros = /^\d+$/;
-    const nombreValido = this.nombre().trim().length > 2;
-    const apellidoValido = this.apellido().trim().length > 2;
-    const telefonoValido = this.telefono().length === 7 && soloNumeros.test(this.telefono());
-    
-    return nombreValido && apellidoValido && telefonoValido;
-  });
 
-  /**
-   * Justificación: Centralizamos la emisión de datos.
-   * El componente no sabe qué pasará después, solo cumple su contrato.
-   */
+ public isFormValid = computed(() => {
+  const soloNumeros = /^\d+$/;
+
+  // 1. Validamos identidad
+  const nombreValido = this.nombre().trim().length > 2;
+  const apellidoValido = this.apellido().trim().length > 2;
+
+  // 2. Validamos componentes del teléfono por separado
+  const codigoValido = this.codigos().includes(this.codigoArea());
+  const numeroCuerpoValido = this.telefono().trim().length === 7 && soloNumeros.test(this.telefono().trim());
+
+  // 3. Resultado final: La unión de todas las verdades
+  return nombreValido && apellidoValido && codigoValido && numeroCuerpoValido;
+});
+
+  
   confirmarIdentidad() {
-    if (!this.isFormValid()) return;
-
-    const datosVisitante = {
-      nombre: `${this.nombre().trim()} ${this.apellido().trim()}`,
-      telefono: `${this.codigoArea()}${this.telefono()}`
-    };
-
-    this.registroCompleto.emit(datosVisitante);
+    console.log('--- HIJO: Intentando emitir registroCompleto ---');
+  if (!this.isFormValid()) {
+    console.log('--- HIJO: Formulario no válido, abortando ---');
+    return;
   }
+    const datosVisitante = {
+    nombre: `${this.nombre().trim()} ${this.apellido().trim()}`,
+    prefijo: this.codigoArea(),
+    numero: this.telefono()
+  };
 
-  /**
-   * Justificación: Proporcionamos un método explícito para el cierre
-   * que puede ser llamado desde el HTML (clic en fondo o botón cancelar).
-   */
+  this.registroCompleto.emit(datosVisitante);
+}
+
+
   cancelar() {
     this.close.emit();
   }

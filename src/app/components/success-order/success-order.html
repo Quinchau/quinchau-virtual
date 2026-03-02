@@ -1,0 +1,37 @@
+<div class="flex flex-col items-center justify-center py-12 px-4 text-center animate-in fade-in zoom-in duration-500">
+  
+  <div class="relative mb-8">
+    <div class="absolute inset-0 bg-green-500 rounded-full animate-ping opacity-20"></div>
+    <div class="relative w-24 h-24 bg-green-500 text-white rounded-full flex items-center justify-center text-5xl shadow-xl shadow-green-200">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+  </div>
+
+  <h2 class="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">
+    ¡Pedido Recibido!
+  </h2>
+  
+  <div class="mt-4 bg-slate-100 px-4 py-2 rounded-full inline-flex items-center gap-2 border border-slate-200">
+    <span class="text-slate-500 font-bold text-xs uppercase tracking-widest">Cotización</span>
+    <span class="text-blue-600 font-black font-mono text-lg">#{{ orderId() }}</span>
+  </div>
+
+  <p class="text-slate-500 mt-6 max-w-sm leading-relaxed">
+    Hemos registrado tu solicitud correctamente. Nuestro equipo de ventas revisará los repuestos y <span class="font-bold text-slate-800">te contactará vía telefónica</span> para coordinar el pago y la entrega.
+  </p>
+
+  <div class="mt-8 w-full max-w-xs bg-blue-50 border border-blue-100 rounded-2xl p-4 flex gap-4 items-center text-left">
+    <div class="text-2xl">📱</div>
+    <p class="text-xs text-blue-800 leading-snug">
+      Mantente atento a tu teléfono, solemos responder en menos de 30 minutos.
+    </p>
+  </div>
+
+  <button 
+    (click)="volver()" 
+    class="mt-10 w-full max-w-xs bg-slate-900 text-white py-4 rounded-2xl font-black hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 active:scale-95">
+    VOLVER AL CATÁLOGO
+  </button>
+</div><p>success-order works!</p>

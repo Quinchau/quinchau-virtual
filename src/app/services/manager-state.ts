@@ -7,6 +7,7 @@ import { tap, catchError, of, throwError, finalize, map, fromEvent, merge, start
 import { isPlatformBrowser, Location } from '@angular/common';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
+import { CartResponse } from '../models/cart-checkout.models';
 
 
 type ActionStatus = 'idle' | 'loading' | 'success' | 'error';
@@ -45,7 +46,6 @@ public readonly productsResource = rxResource({
 
     return this.managerApis.getProducts(params.query, params.stock, params.idmodelo).pipe(
       tap((response: {productos: Product[], identidad?: any}) => {
-        // Actualizar el contador del carrito si viene en la respuesta
         if (response?.identidad?.cantidad_referencias !== undefined) {
           this.cartCount.set(response.identidad.cantidad_referencias);
         }
@@ -91,10 +91,6 @@ public readonly productsResource = rxResource({
   public readonly cartCount = signal(0);
   public readonly cartData = computed(() => this.cartResource.value());
 
-// 2. Derivadas listas para el consumo
-
-
-
   // --- HOME STATE ----
 
 public readonly homeResource = rxResource<HomeData, unknown>({
@@ -104,29 +100,15 @@ public readonly homeResource = rxResource<HomeData, unknown>({
       
       if (!isPlatformBrowser(this.platformId)) return;
       
-      if (response.identidad?.token && response.identidad?.tipo === 'visitante_nuevo') {
-        console.log('🎯 Visitante NUEVO detectado - ID:', response.identidad.id);
-        console.log('🎯 Token recibido:', response.identidad.token.substring(0, 20) + '...');
-        
-        const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
-        document.cookie = `auth_token=${response.identidad.token}; Path=/; Max-Age=${thirtyDaysInSeconds}; SameSite=Lax; Secure`;
-        
-        // Verificar cookies DESPUÉS de implantar
-        console.log('🍪 Cookies DESPUÉS de implantar:', document.cookie || '(vacías)');
-        
-        // También almacenar en sessionStorage como respaldo
-        sessionStorage.setItem('auth_token', response.identidad.token);
-      }
-      
-      
-      else if (response.identidad?.tipo === 'visitante') {
+      if (response.identidad?.token) {
+    this.actualizarIdentidad(response.identidad.token, response.identidad);
+  }
+       else if (response.identidad?.tipo === 'visitante') {
         console.log('👋 Visitante EXISTENTE - ID:', response.identidad.id);
       }
-      
       else if (response.identidad?.tipo === 'usuario') {
         console.log('👑 Usuario autenticado - ID:', response.identidad.id);
       }
-      
       else {
         console.log('⚠️ NO SE ENCONTRÓ TOKEN en la respuesta');
         
@@ -149,31 +131,23 @@ public readonly homeResource = rxResource<HomeData, unknown>({
   defaultValue: { banners: [], modelos: [] } as HomeData
 });
 
-// Computed para acceder fácilmente al visitante
 public readonly currentVisitante = computed(() => this.homeResource.value().visitante);
-
-
 public readonly homeBanners = computed(() => this.homeResource.value().banners);
 public readonly homeModelos = computed(() => this.homeResource.value().modelos);
-
 public readonly modelosDestacados = computed(() => 
   this.homeModelos().filter(m => m.show_web === '1')
 );
-
 public readonly modelosSecundarios = computed(() => 
   this.homeModelos().filter(m => m.show_web === '0')
 );
-
 public readonly currentModel = computed(() => {
   const id = this.productModelFilter();
   if (!id) return null;
-
   let modelo = this.modelosDestacados().find(m => m.idmodelo === id);
   
   if (!modelo) {
     modelo = this.modelosSecundarios().find(m => m.idmodelo === id);
   }
-
   return modelo || null;
 });
 
@@ -202,7 +176,7 @@ public guestId = rxResource<string | null, void>({
 
   public guestIdSignal = this.guestId.value;
 
-  // -- CART PRODUCT --
+  // -- CARD PRODUCT --
 
 private manualSlugToLoad = signal<string>('');
 
@@ -211,20 +185,11 @@ public loadProductRemotely(slug: string): void {
 }
 
 public readonly productCardResource = rxResource({
-  // 1. Justificación: Definimos el parámetro que queremos observar.
-  // Usamos un objeto para que sea escalable.
   params: () => ({ slug: this.manualSlugToLoad() }),
-
-  // 2. Justificación: Usamos stream porque nos permite transformar 
-  // el parámetro en un flujo de datos usando operadores de RxJS.
   stream: ({ params }) => {
-    // 3. Fundamento: Si no hay slug, emitimos null inmediatamente.
     if (!params.slug) {
       return of(null);
     }
-
-    // 4. Justificación: Llamamos a la API. Usamos pipe para 
-    // actualizar nuestra signal principal de forma reactiva.
     return this.managerApis.getProductBySlug(params.slug).pipe(
       tap(producto => {
         if (producto) this.currentProductCard.set(producto);
@@ -236,21 +201,14 @@ public readonly productCardResource = rxResource({
 });
 
 public selectProductFromHome(product: Product): void {
-  // Justificación: Seteamos el producto inmediatamente (Reactividad instantánea)
   this.currentProductCard.set(product);
   
-  // Justificación: Actualizamos la URL para que el navegador sepa dónde estamos
-  // pero sin disparar una navegación que destruya el Home.
   const url = `/producto/${product.slug}`;
   history.pushState({ modal: true }, '', url);
 }
 
 public closeProductDetail(): void {
-  // 1. Justificación: Limpiamos la Signal. Esto cierra el @if en el HTML.
   this.currentProductCard.set(null);
-
-  // 2. Justificación: Limpiamos la URL. 
-  // Usamos replaceState para que el 'atrás' no vuelva a abrir el producto.
   if (typeof window !== 'undefined') {
     window.history.replaceState({}, '', '/home'); 
   }
@@ -275,9 +233,7 @@ public addCurrentProductToCart(registro?: any): Observable<any> {
   }
   
   this.addStatus.set('loading');
-
-  // 1. Creamos el objeto base
-  const payload: any = {
+    const payload: any = {
     productos: [{
       stockid: p.stockid,
       cantidad: p.qty_in_order,
@@ -286,10 +242,7 @@ public addCurrentProductToCart(registro?: any): Observable<any> {
     }],
     typeabbrev: "01"
   };
-
-  // 2. Justificación: Si recibimos datos del modal, los inyectamos en el payload.
-  // Esto permite que el PHP ejecute la creación del visitante y la orden en un solo viaje.
-  if (registro) {
+    if (registro) {
     payload.registro = registro;
   }
 
@@ -303,17 +256,11 @@ public addCurrentProductToCart(registro?: any): Observable<any> {
         }));
       }
 
-      // 3. Justificación: Éxito total. Si el PHP nos dio un Token nuevo por el registro, 
-      // debemos guardarlo para que futuras peticiones ya estén identificadas.
-      if (response.identidad?.token) {
-        localStorage.setItem('token', response.identidad.token);
-      }
-
       this.addStatus.set('success');
       
-      if (response.identidad?.cantidad_referencias !== undefined) {
-        this.cartCount.set(response.identidad.cantidad_referencias);
-      }
+  if (response.identidad?.token) {
+  this.actualizarIdentidad(response.identidad.token, response.identidad);
+}
 
       this.location.back();
       return of(response);
@@ -339,16 +286,12 @@ public readonly cartResource = rxResource({
   params: () => ({
     onCheckout: this.isCheckoutPath(),
     refresh: this.refreshCartTrigger(),
-    // Detectamos la plataforma
     isBrowser: isPlatformBrowser(this.platformId)
   }),
   stream: ({ params }) => {
-    // 1. FUNDAMENTAL: Si no es el navegador, devolvemos el default de inmediato
     if (!params.isBrowser) {
       return of(this.defaultCartResponse);
     }
-
-    // 2. Lógica para el cliente
     if (!params.onCheckout && params.refresh === 0) {
       return of(this.defaultCartResponse);
     }
@@ -386,14 +329,17 @@ public retryCartLoad(): void {
 }
 private refreshCartTrigger = signal(0);
 
-public executeOrder(datos: any) {
-  return this.managerApis.executeCheckout(datos).pipe(
+public finishOrder() {
+  const id = this.cartData().cotizacion_id;
+  if (!id) return;
+
+  return this.managerApis.executeCheckout(id).pipe(
     tap(res => {
       if (res.exito) {
-        // Actualizamos el valor del recurso localmente a null o vacío
-        // Esto dispara la reactividad en toda la App SIN hacer peticiones
-        this.cartResource.value.set(null);
+        // Limpiamos el contador y disparamos el refresh para que el componente vea el carrito vacío
         this.cartCount.set(0); 
+        this.refreshCartTrigger.update(n => n + 1);
+        // Aquí podrías limpiar también datos temporales si fuera necesario
       }
     })
   );
@@ -405,6 +351,18 @@ constructor() {
     this.loadUserDataFromLocalStorage();
   }
 
+// --- IMPLANTAR TOKENS --- //
+
+private actualizarIdentidad(token: string, identidad?: any) {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const thirtyDays = 30 * 24 * 60 * 60;
+    document.cookie = `auth_token=${token}; Path=/; Max-Age=${thirtyDays}; SameSite=Lax; Secure`;
+    
+    if (identidad?.cantidad_referencias !== undefined) {
+      this.cartCount.set(identidad.cantidad_referencias);
+    }
+}
+
 updateProductQuantity(newQuantity: number) {
   const currentProduct = this.currentProductCard();
   if (currentProduct) {
@@ -412,9 +370,7 @@ updateProductQuantity(newQuantity: number) {
       ...currentProduct,
       qty_in_order: newQuantity
     });
-    
-    console.log(`✅ Cantidad actualizada: ${currentProduct.stockid} = ${newQuantity}`);
-  }
+    }
 }
 
 public resetProductFilters(): void {
@@ -423,7 +379,8 @@ public resetProductFilters(): void {
       queryParams: { q: null, stock: null },
       queryParamsHandling: 'merge'
     });
-  }
+}
+
 public searchProducts(term: string): void {
   this.router.navigate([], {
     relativeTo: this.route,
@@ -439,6 +396,7 @@ public toggleProductStock(include: boolean): void {
       queryParamsHandling: 'merge'
     });
   }
+
 private loadUserDataFromLocalStorage(): void {
   if (isPlatformBrowser(this.platformId)) {
     const savedData = localStorage.getItem('user_data');
@@ -447,13 +405,12 @@ private loadUserDataFromLocalStorage(): void {
       try {
         const user: User = JSON.parse(savedData);
         
-        // Verificamos que el objeto tenga las propiedades que necesitamos
         if (user && user.realname && user.defaultlocation) {
           this.currentUser.set(user);
         }
       } catch (error) {
         console.error('Error al parsear el usuario del localStorage', error);
-        localStorage.removeItem('user_data'); // Limpiamos si hay datos corruptos
+        localStorage.removeItem('user_data');
       }
     }
   }
@@ -462,20 +419,15 @@ private loadUserDataFromLocalStorage(): void {
 public loadTransfers(): void {
   this.managerApis.getTransfers().subscribe({
     next: (response: DashboardResponse) => {
-      // 1. Extraemos los datos según la nueva estructura del ng-state
       const transfers = response.transfers || [];
-      const user = response.userData; // <--- Sincronizado con tu PHP
-
-      // 2. Poblamos las Signals
+      const user = response.userData;
       this.transfers.set(transfers);
       this.currentUser.set(user);
 
-      // 3. Persistencia en navegador (solo si hay datos)
       if (user && isPlatformBrowser(this.platformId)) {
         localStorage.setItem('user_data', JSON.stringify(user));
       }
       
-      //console.log('Estado actualizado con éxito:', { user, transfersCount: transfers.length });
     },
     error: (err) => {
       console.error('Error al hidratar el Dashboard:', err);
@@ -495,15 +447,12 @@ public loadTransferenciaDetalle(id: string): void {
   }
 
   setUserData(data: User | null): void {
-  // 1. Actualizamos el Signal (la reactividad del Header depende de esto)
   this.currentUser.set(data);
   
   if (isPlatformBrowser(this.platformId)) {
     if (data) {
-      // Si hay datos, los guardamos
       localStorage.setItem('user_data', JSON.stringify(data));
     } else {
-      // Si es null (logout), limpiamos el rastro
       localStorage.removeItem('user_data');
     }
   }
@@ -556,11 +505,9 @@ public updateTransferStatus(idtransfer: string, newStatus: string) {
   }
 
   public loadProductDetail(stockid: string): void {
-  // 1. Se activa la signal de carga al inicio del método
   this.loadingProductDetail.set(true);
   
   this.managerApis.getProductDetail(stockid).pipe(
-   // 2. Finalize se ejecuta al completar o fallar
    finalize(() => this.loadingProductDetail.set(false))
   ).subscribe({
    next: (data) => {
@@ -593,7 +540,7 @@ public updateTransferStatus(idtransfer: string, newStatus: string) {
         this.loadingCreateTransfer.set(false);
         this.clearNewTransfer();
         this.currentProduct.set(null);
-        this.transferCompleted.set(true); // ← Aquí se activa
+        this.transferCompleted.set(true);
       },
       error: (err) => {
         console.error('Error al crear la transferencia', err);

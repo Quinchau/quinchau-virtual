@@ -109,9 +109,7 @@
   </svg>
 </button>
 
-@if (isModalOpen()) {
-  <app-exe-order (close)="cerrarModal()" />
-}
+
           
           <p class="text-[10px] text-center text-slate-500 mt-4 uppercase tracking-tighter">
   Cotización ID: #{{ state.cartData().cotizacion_id }}
@@ -122,3 +120,10 @@
     </div>
   }
 </div>
+
+@if (orderFinished()) {
+  <app-success-order 
+    [orderId]="lastOrderId()!" 
+    (onReturn)="nav.back()" />
+} @else {
+  }

@@ -10,11 +10,18 @@ interface CartItem {
   image: string | null;
 }
 
-interface CartResponse {
+
+export interface CartResponse {
   exito: boolean;
   cotizacion_id: number;
   items: CartItem[];
   total: number;
   cantidad_items: number;
   identidad: any;
+}
+
+export interface DatosRegistro {
+  nombre: string;
+  prefijo: string;
+  numero: string;
 }
