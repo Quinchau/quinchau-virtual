@@ -1,4 +1,5 @@
-import { Component, input, output } from '@angular/core';
+import { Component, input, inject } from '@angular/core';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-success-order',
@@ -7,9 +8,9 @@ import { Component, input, output } from '@angular/core';
 })
 export class SuccessOrder {
   readonly orderId = input.required<number>();
-  readonly onReturn = output<void>();
+  private router = inject(Router);
 
   volver() {
-    this.onReturn.emit();
+    this.router.navigate(['/home']);
   }
 }

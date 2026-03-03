@@ -1,129 +1,122 @@
-<div class="container mx-auto px-4 py-8 max-w-6xl">
-  <header class="mb-8">
-    <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Finalizar Pedido</h1>
-    <p class="text-slate-500 mt-2">Revisa tus productos antes de confirmar la compra.</p>
-  </header>
+  <div class="container mx-auto px-4 py-8 max-w-6xl">
+    <header class="mb-8">
+      <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Finalizar Pedido</h1>
+      <p class="text-slate-500 mt-2">Revisa tus productos antes de confirmar la compra.</p>
+    </header>
 
-  @if (state.cartIsLoading()) {
-    <div class="flex flex-col items-center justify-center py-24 space-y-4">
-      <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-      <p class="text-slate-500 font-medium animate-pulse">Sincronizando carrito...</p>
-    </div>
-  } 
-  
-  @else if (state.cartErrorMessage()) {
-    <div class="bg-red-50 border border-red-200 rounded-2xl p-8 text-center max-w-md mx-auto">
-      <div class="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-        <span class="text-red-600 text-2xl">⚠️</span>
+    @if (state.cartIsLoading()) {
+      <div class="flex flex-col items-center justify-center py-24 space-y-4">
+        <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        <p class="text-slate-500 font-medium animate-pulse">Sincronizando carrito...</p>
       </div>
-      <h3 class="text-red-800 font-bold text-lg">Hubo un problema</h3>
-      <p class="text-red-600/80 mb-6">{{ state.cartErrorMessage() }}</p>
-      <button 
-        (click)="state.retryCartLoad()"
-        class="bg-white border border-red-200 text-red-600 px-6 py-2 rounded-xl font-semibold hover:bg-red-50 transition-colors">
-        Reintentar conexión
-      </button>
-    </div>
-  }
-
-  @else if (state.cartIsEmpty()) {
-    <div class="bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl py-20 text-center">
-      <div class="text-6xl mb-4">🛒</div>
-      <h2 class="text-xl font-bold text-slate-800">Tu carrito está vacío</h2>
-      <p class="text-slate-500 mb-8">Parece que aún no has añadido repuestos a tu cotización.</p>
-      <a href="/productos" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all">
-        Explorar Catálogo
-      </a>
-    </div>
-  } 
-
-  @else {
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-      
-      <section class="lg:col-span-8 space-y-4">
-        @for (item of state.cartItems(); track item.item_id) {
-          <article class="group bg-white border border-slate-100 rounded-2xl p-4 flex flex-col sm:flex-row gap-6 shadow-sm hover:shadow-md transition-shadow">
-            <div class="w-full sm:w-32 h-32 bg-slate-50 rounded-xl overflow-hidden flex-shrink-0">
-              <img [src]="item.image" [alt]="item.description" class="w-full h-full object-contain mix-blend-multiply p-2 transition-transform group-hover:scale-105">
-            </div>
-
-            <div class="flex-grow flex flex-col justify-between">
-              <div>
-                <div class="flex justify-between items-start gap-2">
-                  <h3 class="font-bold text-slate-800 text-lg leading-tight uppercase">{{ item.description }}</h3>
-                  <span class="bg-slate-100 text-slate-500 text-[10px] px-2 py-1 rounded font-mono uppercase">{{ item.stockid }}</span>
-                </div>
-                <p class="text-slate-400 text-sm mt-1 line-clamp-2">{{ item.longdescription }}</p>
-              </div>
-
-              <div class="flex items-center justify-between mt-4">
-                <div class="flex items-center space-x-4 bg-slate-50 rounded-lg px-3 py-1 border border-slate-100">
-                  <span class="text-xs text-slate-400 uppercase font-bold italic">Cant.</span>
-                  <span class="font-black text-slate-700">{{ item.quantity }}</span>
-                  <span class="text-slate-300">|</span>
-                  <span class="text-sm text-slate-600">{{ item.price | currency }}</span>
-                </div>
-
-                <div class="text-right">
-                  <p class="text-xs text-slate-400 uppercase font-bold">Subtotal</p>
-                  <p class="text-xl font-black text-blue-600 leading-none">{{ item.subtotal | currency }}</p>
-                </div>
-              </div>
-            </div>
-          </article>
-        }
-      </section>
-
-      <aside class="lg:col-span-4 sticky top-8">
-        <div class="bg-slate-900 rounded-3xl p-6 text-white shadow-2xl shadow-slate-300">
-          <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
-            Resumen de Cuenta
-          </h2>
-
-          <div class="space-y-4 border-b border-white/10 pb-6">
-            <div class="flex justify-between text-slate-400">
-              <span>Items en total</span>
-              <span class="font-mono text-white">{{ state.cartItems().length }}</span>
-            </div>
-            <div class="flex justify-between text-slate-400">
-              <span>Impuestos (IVA 16%)</span>
-              <span class="font-mono text-white italic">Incluido</span>
-            </div>
-          </div>
-
-          <div class="py-6 mb-2">
-            <div class="flex justify-between items-end">
-              <span class="text-slate-400 font-bold uppercase text-xs tracking-widest">Total a pagar</span>
-              <span class="text-4xl font-black text-blue-400 tracking-tighter">
-                {{ state.cartTotal() | currency }}
-              </span>
-            </div>
-          </div>
-
-          <button 
-  (click)="abrirFinalizacion()"
-  class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl transition-all transform active:scale-95 flex items-center justify-center gap-3">
-  <span>PROCESAR COMPRA</span>
-  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-    <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
-  </svg>
-</button>
-
-
-          
-          <p class="text-[10px] text-center text-slate-500 mt-4 uppercase tracking-tighter">
-  Cotización ID: #{{ state.cartData().cotizacion_id }}
-</p>
+    } 
+    
+    @else if (state.cartErrorMessage()) {
+      <div class="bg-red-50 border border-red-200 rounded-2xl p-8 text-center max-w-md mx-auto">
+        <div class="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+          <span class="text-red-600 text-2xl">⚠️</span>
         </div>
-      </aside>
+        <h3 class="text-red-800 font-bold text-lg">Hubo un problema</h3>
+        <p class="text-red-600/80 mb-6">{{ state.cartErrorMessage() }}</p>
+        <button 
+          (click)="state.retryCartLoad()"
+          class="bg-white border border-red-200 text-red-600 px-6 py-2 rounded-xl font-semibold hover:bg-red-50 transition-colors">
+          Reintentar conexión
+        </button>
+      </div>
+    }
 
-    </div>
-  }
-</div>
+    @else if (state.cartIsEmpty()) {
+      <div class="bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl py-20 text-center">
+        <div class="text-6xl mb-4">🛒</div>
+        <h2 class="text-xl font-bold text-slate-800">Tu carrito está vacío</h2>
+        <p class="text-slate-500 mb-8">Parece que aún no has añadido repuestos a tu cotización.</p>
+        <a href="/productos" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all">
+          Explorar Catálogo
+        </a>
+      </div>
+    } 
 
-@if (orderFinished()) {
-  <app-success-order 
-    [orderId]="lastOrderId()!" 
-    (onReturn)="nav.back()" />
-} @else {
-  }
+    @else {
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <section class="lg:col-span-8 space-y-4">
+          @for (item of state.cartItems(); track item.item_id) {
+            <article class="group bg-white border border-slate-100 rounded-2xl p-4 flex flex-col sm:flex-row gap-6 shadow-sm hover:shadow-md transition-shadow">
+              <div class="w-full sm:w-32 h-32 bg-slate-50 rounded-xl overflow-hidden flex-shrink-0">
+                <img [src]="item.image" [alt]="item.description" class="w-full h-full object-contain mix-blend-multiply p-2 transition-transform group-hover:scale-105">
+              </div>
+
+              <div class="flex-grow flex flex-col justify-between">
+                <div>
+                  <div class="flex justify-between items-start gap-2">
+                    <h3 class="font-bold text-slate-800 text-lg leading-tight uppercase">{{ item.description }}</h3>
+                    <span class="bg-slate-100 text-slate-500 text-[10px] px-2 py-1 rounded font-mono uppercase">{{ item.stockid }}</span>
+                  </div>
+                  <p class="text-slate-400 text-sm mt-1 line-clamp-2">{{ item.longdescription }}</p>
+                </div>
+
+                <div class="flex items-center justify-between mt-4">
+                  <div class="flex items-center space-x-4 bg-slate-50 rounded-lg px-3 py-1 border border-slate-100">
+                    <span class="text-xs text-slate-400 uppercase font-bold italic">Cant.</span>
+                    <span class="font-black text-slate-700">{{ item.quantity }}</span>
+                    <span class="text-slate-300">|</span>
+                    <span class="text-sm text-slate-600">{{ item.price | currency }}</span>
+                  </div>
+
+                  <div class="text-right">
+                    <p class="text-xs text-slate-400 uppercase font-bold">Subtotal</p>
+                    <p class="text-xl font-black text-blue-600 leading-none">{{ item.subtotal | currency }}</p>
+                  </div>
+                </div>
+              </div>
+            </article>
+          }
+        </section>
+
+        <aside class="lg:col-span-4 sticky top-8">
+          <div class="bg-slate-900 rounded-3xl p-6 text-white shadow-2xl shadow-slate-300">
+            <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+              Resumen de Cuenta
+            </h2>
+
+            <div class="space-y-4 border-b border-white/10 pb-6">
+              <div class="flex justify-between text-slate-400">
+                <span>Items en total</span>
+                <span class="font-mono text-white">{{ state.cartItems().length }}</span>
+              </div>
+              <div class="flex justify-between text-slate-400">
+                <span>Impuestos (IVA 16%)</span>
+                <span class="font-mono text-white italic">Incluido</span>
+              </div>
+            </div>
+
+            <div class="py-6 mb-2">
+              <div class="flex justify-between items-end">
+                <span class="text-slate-400 font-bold uppercase text-xs tracking-widest">Total a pagar</span>
+                <span class="text-4xl font-black text-blue-400 tracking-tighter">
+                  {{ state.cartTotal() | currency }}
+                </span>
+              </div>
+            </div>
+
+            <button 
+    (click)="abrirFinalizacion()"
+    class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl transition-all transform active:scale-95 flex items-center justify-center gap-3">
+    <span>PROCESAR COMPRA</span>
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+    </svg>
+  </button>
+
+
+            
+            <p class="text-[10px] text-center text-slate-500 mt-4 uppercase tracking-tighter">
+    Cotización ID: #{{ state.cartData().cotizacion_id }}
+  </p>
+          </div>
+        </aside>
+
+      </div>
+    }
+  </div>

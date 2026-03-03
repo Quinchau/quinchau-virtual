@@ -15,7 +15,16 @@ export const routes: Routes = [
 { path: 'producto/:slugId', component: ProductOrder },
 { path: 'login', component: LoginComponent },
 { path: 'home', component: Home },
+{ path: 'category', 
+    loadComponent: () => import('./pages/category/category').then(m => m.Category) 
+  },
 { path: 'checkout', component: CartComponent },
+{
+  path: 'success/:id',
+  loadComponent: () =>
+    import('./components/success-order/success-order').then(m => m.SuccessOrder)
+},
+
 { path: 'dashboard',
   component: Dashboard,canActivate: [adminGuard] },
 { path: 'new-transfer', component: NewTransferComponent, canActivate: [authGuard],

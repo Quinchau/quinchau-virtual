@@ -23,3 +23,4 @@
 - **RxResource API (tu interés específico)**: https://angular.dev/api/core/rxjs-interop/rxResource
 - **Notas de lanzamiento (cambios en v21)**: https://github.com/angular/angular/blob/main/CHANGELOG.md
 - **Estilos con Tailwind**: https://tailwindcss.com/docs/guides/angular
+- **Estructura** 
