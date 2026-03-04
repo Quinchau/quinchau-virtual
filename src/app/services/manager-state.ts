@@ -91,6 +91,25 @@ public readonly productsResource = rxResource({
   public readonly cartCount = signal(0);
   public readonly cartData = computed(() => this.cartResource.value());
 
+  // --- COMPANY CONFIG --- //
+
+public readonly currentCoyCode = signal<number>(1);
+public readonly configResource = rxResource({
+  params: () => ({ coy: this.currentCoyCode() }),
+  stream: ({ params }) => {
+    return this.managerApis.getCompanyConfig(params.coy).pipe(
+      catchError(err => {
+        console.error('❌ Error en configResource:', err);
+        return of(null);
+      })
+    );
+  }
+});
+
+public readonly company = computed(() => this.configResource.value() ?? null);
+public readonly whatsappNumber = computed(() => this.company()?.telephone ?? '');
+public readonly companyName = computed(() => this.company()?.coyname ?? 'Cargando...');
+
   // --- HOME STATE ----
 
 public readonly homeResource = rxResource<HomeData, unknown>({

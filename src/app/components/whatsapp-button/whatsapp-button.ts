@@ -1,18 +1,35 @@
-import { Component, computed, input } from '@angular/core';
+// src/app/components/whatsapp-button/whatsapp-button.ts
+
+import { Component, computed, inject, input } from '@angular/core';
+import { ManagerState } from '../../services/manager-state';
 
 @Component({
   selector: 'app-whatsapp-button',
-  // No necesitamos imports aquí si solo usamos HTML estándar y signals
+  standalone: true,
   templateUrl: './whatsapp-button.html',
 })
 export class WhatsappButton {
-  // Inputs requeridos siguiendo tu flujo de aprendizaje
-  phoneNumber = input.required<string>();
-  message = input<string>('Hola! Me gustaría realizar una consulta.');
+  private state = inject(ManagerState);
 
-  // Signal computada para la URL
-  whatsappUrl = computed(() => {
-    const url = 'https://wa.me/';
-    return `${url}${this.phoneNumber()}?text=${encodeURIComponent(this.message())}`;
+  // CORRECTO: Es una referencia a la Signal del Estado, NO un input.
+  protected phoneNumber = this.state.whatsappNumber;
+
+
+  // CORRECTO: Es un input opcional con valor por defecto.
+  public message = input<string>('¡Hola! Me gustaría recibir más información.');
+
+  public whatsappUrl = computed(() => {
+    const baseUrl = 'https://wa.me/';
+    const phone = this.phoneNumber();
+    if (!phone) return '';
+    
+    return `${baseUrl}${phone}?text=${encodeURIComponent(this.message())}`;
   });
+
+  public openWhatsapp(): void {
+    const url = this.whatsappUrl();
+    if (url) {
+      window.open(url, '_blank');
+    }
+  }
 }

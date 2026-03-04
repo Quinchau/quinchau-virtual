@@ -9,6 +9,8 @@ import {
   ProductListResponse
 } from '../models/transfer.model';
 import { isPlatformServer } from '@angular/common';
+import { CompanyConfig, ConfigResponse } from '../models/company_config.model';
+
 
 @Injectable({
   providedIn: 'root',
@@ -107,6 +109,19 @@ public executeCheckout(cotizacion_id: number): Observable<any> {
   return this.http.post(`${this.baseUrl}/exe-checkout.php`, { cotizacion_id }, {
     withCredentials: true
   });
+}
+
+//---COMPANY_CONFIG---//
+
+public getCompanyConfig(coycode: number): Observable<CompanyConfig | null> {
+  const params = new HttpParams().set('coycode', coycode.toString());
+
+  return this.http.get<CompanyConfig>(`${this.baseUrl}/get_config.php`, { params }).pipe(
+    catchError(error => {
+      console.error('❌ Error en getCompanyConfig:', error);
+      return of(null);
+    })
+  );
 }
 
 
