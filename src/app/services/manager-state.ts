@@ -137,6 +137,8 @@ public readonly homeResource = rxResource<HomeData, unknown>({
       const homeData: HomeData = {
         banners: response.banners || [],
         modelos: response.modelos || [],
+        categorias: response.categorias || [], 
+        marcas: response.marcas || [],
         identidad: response.identidad
       };
       
@@ -363,6 +365,7 @@ public finishOrder() {
     })
   );
 }
+
 
 //--- OTROS METODOS --- //
 

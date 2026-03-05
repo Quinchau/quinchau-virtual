@@ -1,29 +1,32 @@
-import { Component, signal, linkedSignal } from '@angular/core';
+import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
+
+import { CategoriaNavegacion } from '../../models/transfer.model';
+import { RouterLink } from '@angular/router';
+import { ManagerState } from '../../services/manager-state';
 
 @Component({
   selector: 'app-categorias',
   standalone: true,
-  imports: [],
+  imports: [RouterLink],
   templateUrl: './category.html',
-  styles: ``
 })
-export class Category {
-  // Lista de categorías (en un escenario real vendría de un servicio)
-  categorias = signal(['Electrónica', 'Hogar', 'Moda', 'Deportes']);
-  
-  // Signal para la categoría seleccionada
-  categoriaSeleccionada = signal<string>(this.categorias()[0]);
 
-  // LinkedSignal: Si la lista de categorías cambia, reseteamos la selección a la primera
-  subcategoriasActuales = linkedSignal({
-    source: this.categoriaSeleccionada,
-    computation: (cat) => {
-      // Lógica de ejemplo: simula obtener subcategorías basadas en la selección
-      return [`Sub 1 de ${cat}`, `Sub 2 de ${cat}`, `Sub 3 de ${cat}`, `Sub 4 de ${cat}`, `Sub 5 de ${cat}`, `Sub 6 de ${cat}`, `Sub 7 de ${cat}`, `Sub 8 de ${cat}`, `Sub 9 de ${cat}`, `Sub 10 de ${cat}`, `Sub 11 de ${cat}`, `Sub 12 de ${cat}`];
+
+export class Category {
+  private state = inject(ManagerState);
+
+  categorias = computed(() => this.state.homeResource.value()?.categorias || []);
+
+  categoriaSeleccionada = linkedSignal({
+    source: this.categorias,
+    computation: (listaActual: CategoriaNavegacion[], anterior?: { value: CategoriaNavegacion | null }) => {
+      return listaActual.length > 0 ? (anterior?.value ?? listaActual[0]) : null;
     }
   });
 
-  seleccionarCategoria(cat: string) {
+  subcategoriasActuales = computed(() => this.categoriaSeleccionada()?.marcas || []);
+
+  seleccionarCategoria(cat: CategoriaNavegacion) {
     this.categoriaSeleccionada.set(cat);
   }
 }

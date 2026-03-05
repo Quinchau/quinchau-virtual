@@ -119,11 +119,28 @@ export interface Visitante {
 }
 
 export interface HomeData {
-  banners: any[];
-  modelos: any[];
+  banners: Banner[];
+  modelos: Modelo[];
   visitante?: Visitante;
-  identidad?: any;
+  identidad?: Visitante;
+  categorias?: CategoriaNavegacion[];
+  marcas?: MarcaConModelos[];
   _debug?: any;
+}
+
+export interface CategoriaNavegacion {
+  nombre: string;
+  slug: string;
+  url: string;
+  marcas: MarcaConModelos[];
+}
+
+export interface MarcaConModelos {
+  nombre: string;
+  slug: string;
+  url_seo: string;
+  img_url?: string;
+  modelos: Modelo[];
 }
 
 export interface Banner {
@@ -138,9 +155,11 @@ export interface Modelo {
   idmodelo: string;
   idmarca: string;
   modeldescrip: string;
+  marcadescrip: string;
+  categorydescription: string;
   img_url: string;
   show_web: string;
-  url_filtro: string;
+  url_app: string;
   seo_note: string;
   alt_text: string;
 }
