@@ -52,16 +52,16 @@ export class ProductOrder {
   }
 
   // --- Add to cart con datos del modal ---
-  confirmConRegistro(datos: any) {
-  this.state.addCurrentProductToCart(datos).subscribe({
-    next: (res) => {
-      console.log('🟢 Añadido al carrito con registro:', res);
-      this.nav.back(); // ← Cierra producto y volvemos a home
-    },
-    error: (err) => {
-      console.error('❌ Error tras registro:', err);
-      // Nos quedamos en producto, correcto
-    }
+confirmConRegistro(datos: any) {
+this.state.addCurrentProductToCart(datos).subscribe({
+  next: (res) => {
+    console.log('🟢 Añadido al carrito con registro:', res);
+    this.nav.back(); // ← Cierra producto y volvemos a home
+  },
+error: (err) => { 
+  console.error('❌ Error tras registro:', err);
+  // Nos quedamos en producto, correcto
+}
   });
 }
 

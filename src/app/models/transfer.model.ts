@@ -163,3 +163,17 @@ export interface Modelo {
   seo_note: string;
   alt_text: string;
 }
+
+export interface MarcaBackend {
+  nombre: string;
+  slug: string;
+  url_seo: string;
+  modelos: Modelo[];
+}
+
+export interface CategoriaBackend {
+  nombre: string;
+  slug: string;
+  url: string;
+  marcas: MarcaBackend[];
+}

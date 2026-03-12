@@ -1,69 +1,106 @@
 <div class="flex flex-row h-screen w-full font-sans overflow-hidden">
 
-    <!--BLOQUE CATEGORIAS-->
-  
+  <!-- BLOQUE CATEGORÍAS -->
   <aside class="w-[20%] min-w-[90px] max-w-[200px] bg-gray-200 shadow-xl flex flex-col border-r border-gray-100/50">
-       
-  <ul class="flex-1 overflow-y-auto py-2 no-scrollbar">
-    @for (cat of categorias(); track cat.slug; let last = $last) {
-      <li class="flex flex-col">
-        
-        <button 
-          (click)="seleccionarCategoria(cat)"
-          [class.bg-white]="categoriaSeleccionada() === cat"
-          [class.font-bold]="categoriaSeleccionada() === cat"
-          [class.border-l-orange-500]="categoriaSeleccionada() === cat"
-          [class.border-l-transparent]="categoriaSeleccionada() !== cat"
-          class="w-full text-left text-black text-[11px] md:text-base px-4 py-6 md:py-8 transition-all duration-200 active:scale-95 hover:bg-gray-400/50 border-l-4 uppercase">
-          {{ cat.nombre }}
-        </button>
+    <ul class="flex-1 overflow-y-auto py-2 no-scrollbar">
+      @for (cat of categorias(); track cat.slug; let last = $last) {
+        <li class="flex flex-col">
 
-        @if (!last) {
-          <div class="w-full h-[1px] bg-gray-400/50"></div>
-        }
-        
-      </li>
-    }
-  </ul>
-</aside>
+          <button 
+            (click)="seleccionarCategoria(cat)"
+            [class.bg-white]="categoriaSeleccionada() === cat"
+            [class.font-bold]="categoriaSeleccionada() === cat"
+            [class.border-l-orange-500]="categoriaSeleccionada() === cat"
+            [class.border-l-transparent]="categoriaSeleccionada() !== cat"
+            class="w-full text-left text-black text-[11px] md:text-base px-4 py-6 md:py-8 transition-all duration-200 active:scale-95 hover:bg-gray-400/50 border-l-4 uppercase">
+            {{ cat.nombre }}
+          </button>
 
-<!--BLOQUE SUB CATEGORIAS-->
-
-<main class="flex-1 bg-white overflow-y-auto p-2 md:p-6 no-scrollbar">
-
-  <section class="grid grid-cols-3 gap-2 md:gap-4">
-    @for (marca of subcategoriasActuales(); track marca.slug) {
-      
-      <a [routerLink]="marca.url_seo" 
-         class="flex flex-col items-center group cursor-pointer active:scale-95 transition-transform">
-        
-        <div class="w-16 h-16 md:w-24 md:h-24 rounded-full bg-white/40 backdrop-blur-sm border-2 border-yellow-500/50 overflow-hidden flex items-center justify-center shadow-sm group-hover:border-blue-900 transition-colors">
-          
-          @if (marca.img_url) {
-            <img [src]="marca.img_url" 
-                 [alt]="marca.nombre" 
-                 class="w-full h-full object-cover">
-          } @else {
-            <span class="text-[10px] text-yellow-800 font-bold uppercase">
-              {{ marca.nombre.substring(0, 3) }}
-            </span>
+          @if (!last) {
+            <div class="w-full h-[1px] bg-gray-400/50"></div>
           }
 
-        </div>
+        </li>
+      }
+    </ul>
+  </aside>
 
-        <p class="mt-2 text-[10px] md:text-sm font-extrabold text-blue-900 text-center leading-tight break-words max-w-full uppercase">
-          {{ marca.nombre }}
-        </p>
-        
-      </a>
+  <!-- BLOQUE PRINCIPAL -->
+  <main class="flex-1 bg-white overflow-y-auto p-2 md:p-6 no-scrollbar">
 
-    } @empty {
-      <div class="col-span-3 flex flex-col items-center justify-center py-20 opacity-40">
-        <p class="text-blue-900 text-xs font-bold italic">Sin marcas en esta categoría</p>
-      </div>
+    <!-- ⭐ SI NO HAY MARCA SELECCIONADA → MOSTRAR MARCAS -->
+    @if (!marcaSeleccionada()) {
+      <section class="grid grid-cols-3 gap-2 md:gap-4">
+        @for (marca of subcategoriasActuales(); track marca.slug) {
+
+          <div 
+            (click)="seleccionarMarca(marca)"
+            class="flex flex-col items-center group cursor-pointer active:scale-95 transition-transform"
+          >
+
+            <div class="w-16 h-16 md:w-24 md:h-24 rounded-full bg-white/40 backdrop-blur-sm border-2 border-yellow-500/50 overflow-hidden flex items-center justify-center shadow-sm group-hover:border-blue-900 transition-colors">
+
+              @if (marca.img_url) {
+                <img 
+                  [src]="marca.img_url" 
+                  [alt]="marca.nombre" 
+                  class="w-full h-full object-cover"
+                >
+              } @else {
+                <span class="text-[10px] text-yellow-800 font-bold uppercase">
+                  {{ marca.nombre.substring(0, 3) }}
+                </span>
+              }
+
+            </div>
+
+            <p class="mt-2 text-[10px] md:text-sm font-extrabold text-blue-900 text-center uppercase">
+              {{ marca.nombre }}
+            </p>
+
+          </div>
+
+        } @empty {
+          <div class="col-span-3 flex flex-col items-center justify-center py-20 opacity-40">
+            <p class="text-blue-900 text-xs font-bold italic">Sin marcas en esta categoría</p>
+          </div>
+        }
+      </section>
     }
-  </section>
 
-</main>
+    <!-- ⭐ SI HAY MARCA SELECCIONADA → MOSTRAR MODELOS -->
+    @if (marcaSeleccionada()) {
+      <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+  @for (modelo of modelosActuales(); track modelo.idmodelo) {
+
+    <a 
+      [routerLink]="['/', ...limpiarUrl(modelo.url_app).split('/') ]"
+      class="flex flex-col items-center group cursor-pointer active:scale-95 transition-transform"
+    >
+
+      <div class="w-16 h-16 md:w-24 md:h-24 rounded-full bg-white/40 backdrop-blur-sm border-2 border-yellow-500/50 overflow-hidden flex items-center justify-center shadow-sm group-hover:border-blue-900 transition-colors">
+
+        <img 
+          [src]="modelo.img_url" 
+          [alt]="modelo.modeldescrip" 
+          class="w-full h-full object-cover"
+        >
+
+      </div>
+
+      <p class="mt-2 text-[10px] md:text-sm font-extrabold text-blue-900 text-center uppercase leading-tight break-words max-w-full">
+        {{ modelo.modeldescrip }}
+      </p>
+
+    </a>
+
+  }
+
+</section>
+
+    }
+
+  </main>
 
 </div>

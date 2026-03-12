@@ -19,6 +19,7 @@ export class ManagerApis {
   private http = inject(HttpClient);
   private platformId = inject(PLATFORM_ID);
   private get baseUrl() { return isPlatformServer(this.platformId) ? environment.apiUrlServer : environment.apiUrlBrowser; }
+  private get nodeBaseUrl() { return isPlatformServer(this.platformId) ? environment.nodeApiUrlServer : environment.nodeApiUrlBrowser; }
 
   public getTransfers(): Observable<DashboardResponse> {
     return this.http.get<DashboardResponse>(`${this.baseUrl}/transfers.php`, {
@@ -124,5 +125,12 @@ public getCompanyConfig(coycode: number): Observable<CompanyConfig | null> {
   );
 }
 
+/**
+   * Envía los datos de registro al nuevo backend en Node.js
+   * @param userData { phone, password, realname, email }
+   */
+  public registerUser(userData: any): Observable<any> {
+    return this.http.post(`${this.nodeBaseUrl}/register`, userData);
+  }
 
 }

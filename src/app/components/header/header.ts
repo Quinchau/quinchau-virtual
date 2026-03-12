@@ -1,8 +1,9 @@
-import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
-import { AuthService } from '../../services/auth';
+import { Component, computed, effect, inject, linkedSignal, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { AuthService } from '../../services/auth';
 import { ManagerState } from '../../services/manager-state';
+import { CategoriaNavegacion, MarcaConModelos, Modelo } from '../../models/transfer.model';
 
 @Component({
   selector: 'app-header',
@@ -11,42 +12,74 @@ import { ManagerState } from '../../services/manager-state';
   templateUrl: './header.html',
 })
 export class Header {
-  public isCatalogOpen = signal(false);
   public state = inject(ManagerState);
   private authService = inject(AuthService);
+
   private readonly ALLOWED_LEVELS = [8, 10];
+
   public isMenuOpen = signal(false);
-  public isLogged = computed(() => !!this.state.currentUser());
+  public isCatalogOpen = signal(false);
+
   readonly categoriasData = computed(() => this.state.homeResource.value()?.categorias ?? []);
+
+  public isLogged = computed(() => !!this.state.currentUser());
+  public userLevelDisplay = computed(() => this.state.currentUser()?.fullaccess ?? 'Invitado');
   public canSeeDashboard = computed(() => {
     const user = this.state.currentUser();
     return user ? this.ALLOWED_LEVELS.includes(user.fullaccess) : false;
   });
 
-  public categoriaActiva = linkedSignal({
-  source: () => this.isCatalogOpen(),
-  computation: (isOpen, previous) => isOpen ? (previous?.value ?? null) : null
-});
 
-public marcaActiva = linkedSignal({
+  // --- LÓGICA REACTIVA EN CASCADA ---
+
+  // Categoría activa debe ser un signal normal
+  public categoriaActiva = signal<CategoriaNavegacion | null>(null);
+
+  public marcaActiva = linkedSignal<CategoriaNavegacion | null, MarcaConModelos | null>({
   source: () => this.categoriaActiva(),
-  computation: () => null
-});
-  
-  public userLevelDisplay = computed(() => 
-    this.state.currentUser()?.fullaccess ?? 'Invitado'
-  );
+  computation: (categoria, previous) => {
+    if (!categoria) return null;
 
-  toggleCatalog(): void {
-    this.isCatalogOpen.update(v => !v);
+    const marcaPrev = previous?.value;
+    if (marcaPrev && !categoria.marcas.some(m => m.nombre === marcaPrev.nombre)) {
+      return null;
+    }
+
+    return marcaPrev ?? null;
+  }
+});
+
+  // Modelo activo depende de la marca
+  public modeloActivo = linkedSignal<MarcaConModelos | null, Modelo | null>({
+    source: () => this.marcaActiva(),
+    computation: (marca, previous) => marca ? previous?.value ?? null : null
+  });
+
+  // Lista derivada para el tercer nivel del menú
+  public modelosDisponibles = computed(() => this.marcaActiva()?.modelos ?? []);
+
+  // --- HANDLERS ---
+
+  toggleMenu() { this.isMenuOpen.update(v => !v); }
+
+  toggleCatalog() { this.isCatalogOpen.update(v => !v); }
+
+  seleccionarCategoria(cat: CategoriaNavegacion) {
+    console.log('👉 CLICK categoria:', cat.nombre);
+    this.categoriaActiva.update(actual =>
+      actual?.nombre === cat.nombre ? null : cat
+    );
   }
 
-  onLogoutClick(): void {
+  seleccionarMarca(marca: MarcaConModelos) {
+    console.log('👉 CLICK marca:', marca.nombre);
+    this.marcaActiva.update(actual =>
+      actual?.nombre === marca.nombre ? null : marca
+    );
+  }
+
+  onLogoutClick() {
     this.isMenuOpen.set(false);
     this.authService.logout();
-  }
-
-  toggleMenu(): void {
-    this.isMenuOpen.update(v => !v);
   }
 }

@@ -8,6 +8,7 @@ import { isPlatformBrowser, Location } from '@angular/common';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { CartResponse } from '../models/cart-checkout.models';
+import { RegisterRequest, RegisterResponse } from '../models/register-models';
 
 
 type ActionStatus = 'idle' | 'loading' | 'success' | 'error';
@@ -16,6 +17,7 @@ type ActionStatus = 'idle' | 'loading' | 'success' | 'error';
   providedIn: 'root',
 })
 export class ManagerState {
+  
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private location = inject(Location);
@@ -584,5 +586,30 @@ public updateTransferStatus(idtransfer: string, newStatus: string) {
     this.newTransferType.set(type);
   } 
 
+public executeRegister(requestData: RegisterRequest): Observable<RegisterResponse> {
+  return this.managerApis.registerUser(requestData).pipe(
+    tap((res: RegisterResponse) => {
+      // SI LA RESPUESTA ES EXITOSA:
+      if (res.status === 'Success' && res.auth_token) {
+        
+        this.actualizarIdentidad(res.auth_token, res.user);
 
+         if (res.user) {
+          const userForState: User = {
+          realname: res.user.name,
+          defaultlocation: '', 
+          fullaccess: res.user.access
+        };
+          this.setUserData(userForState);
+        }
+
+      }
+    }),
+    // 5. Manejo de errores para que el componente pueda reaccionar
+    catchError((err) => {
+      console.error('❌ Error en el proceso de registro:', err);
+      return throwError(() => err);
+    })
+  );
+}
 }

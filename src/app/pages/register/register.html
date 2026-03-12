@@ -1,0 +1,96 @@
+<div class="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-8">
+  <div class="max-w-lg w-full space-y-6 bg-white p-8 rounded-3xl shadow-2xl border border-gray-100">
+    
+    <div class="text-center">
+      <h2 class="text-2xl font-bold text-gray-900 tracking-tight">Crea tu cuenta Quinchau</h2>
+      <p class="mt-2 text-sm text-gray-500">Regístrate para gestionar tus pedidos y envíos</p>
+    </div>
+
+    <form class="space-y-4" [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+      
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-400 uppercase mb-1 ml-1">Nombre</label>
+          <input formControlName="firstName" type="text" 
+            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none text-gray-700 placeholder:text-gray-300" 
+            placeholder="Ej. Pedro">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-400 uppercase mb-1 ml-1">Apellido</label>
+          <input formControlName="lastName" type="text" 
+            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none text-gray-700 placeholder:text-gray-300" 
+            placeholder="Pérez">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-gray-400 uppercase mb-1 ml-1">Teléfono Móvil</label>
+        <div class="flex gap-2">
+          <select formControlName="area" 
+            class="w-1/3 bg-gray-50 border border-gray-200 rounded-xl px-3 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-gray-700">
+            @for (area of phoneAreas; track area) {
+              <option [value]="area">{{ area }}</option>
+            }
+          </select>
+          <input formControlName="phoneNum" type="text" maxlength="7"
+            class="w-2/3 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none text-gray-700 placeholder:text-gray-300"
+            placeholder="1234567">
+        </div>
+        @if (registerForm.get('phoneNum')?.touched && registerForm.get('phoneNum')?.invalid) {
+          <p class="text-[10px] text-red-500 mt-1 ml-1 italic">El número debe tener exactamente 7 dígitos</p>
+        }
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-gray-400 uppercase mb-1 ml-1">Correo Electrónico</label>
+        <input formControlName="email" type="email" 
+          class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none text-gray-700 placeholder:text-gray-300" 
+          placeholder="usuario@correo.com">
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-400 uppercase mb-1 ml-1">Contraseña</label>
+          <input formControlName="password" type="password" 
+            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none text-gray-700 placeholder:text-gray-300" 
+            placeholder="Mín. 6 caracteres">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-400 uppercase mb-1 ml-1">Repetir</label>
+          <input formControlName="confirmPassword" type="password" 
+            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none text-gray-700 placeholder:text-gray-300" 
+            placeholder="Confirmar">
+        </div>
+      </div>
+
+      @if (registerForm.errors?.['passwordMismatch'] && registerForm.get('confirmPassword')?.touched) {
+        <div class="text-xs text-red-500 text-center bg-red-50 p-2 rounded-lg border border-red-100 animate-pulse">
+          Las contraseñas no coinciden
+        </div>
+      }
+
+      @if (errorMessage()) {
+        <div class="p-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm text-center">
+          {{ errorMessage() }}
+        </div>
+      }
+
+      <button type="submit" 
+        [disabled]="registerForm.invalid || isLoading()"
+        class="w-full py-4 mt-2 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center">
+        @if (isLoading()) {
+          <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        } @else {
+          Confirmar Registro
+        }
+      </button>
+    </form>
+    
+    <p class="text-[10px] text-center text-gray-400">
+      Al registrarte, aceptas nuestros términos de servicio.
+    </p>
+  </div>
+</div>

@@ -1,10 +1,11 @@
-import { Component, inject, effect, PLATFORM_ID, signal } from '@angular/core';
+import { Component, inject, effect, PLATFORM_ID, signal, computed } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { SearchBox } from '../../components/search-box/search-box';
 import { ManagerState } from '../../services/manager-state';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { ProductOrder } from '../product-order/product-order';
 import { LayerHistoryService } from '../../services/LayerHistoryService';
+import { Modelo, MarcaBackend, CategoriaBackend} from '../../models/transfer.model';
 
 
 @Component({
@@ -20,24 +21,57 @@ export class Home {
   private platformId = inject(PLATFORM_ID);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-
-   private currentPath = signal('');
+  private currentPath = signal('');
+  public mostrarCopiado = signal(false);
 
 constructor() {
   effect(() => {
-    // Justificación: En lugar de mirar la "punta" de la pila (currentLayer),
-    // miramos si la capa 'producto' todavía EXISTE en la torre.
-    const estaProductoEnPila = this.navService.isLayerPresent('producto');
-    const tieneProductoCargado = !!this.managerState.currentProductCard();
+  const modeloSlug = this.route.snapshot.paramMap.get('modelo');
+  if (!modeloSlug) return;
 
-    // Justificación: Solo limpiamos si el estado dice que hay producto
-    // pero la navegación dice que ya no debería estar ahí.
-    if (!estaProductoEnPila && tieneProductoCargado) {
-      console.log('🏠 Limpieza final: El producto ya no está en la pila');
-      this.managerState.currentProductCard.set(null);
-    }
+  const home = this.managerState.homeResource.value();
+  if (!home) return;
+
+  const modelos = home.modelos;
+  if (!modelos) return;
+
+  // Extraer idmodelo desde el slug: "bws100-8" → "8"
+  const idmodelo = modeloSlug.split('-').pop();
+  if (!idmodelo) return;
+
+  const modelo = modelos.find(m => m.idmodelo === idmodelo);
+  if (!modelo) return;
+
+  // 🔥 Aquí está la magia:
+  // Activamos el filtro de productos usando query params
+  this.router.navigate([], {
+    relativeTo: this.route,
+    queryParams: { idmodelo },
+    queryParamsHandling: 'merge'
+  });
+});
+
+}
+
+onlyStock = signal(false);
+
+toggleOnlyStock() {
+  const newValue = !this.onlyStock();
+  this.onlyStock.set(newValue);
+
+  this.router.navigate([], {
+    relativeTo: this.route,
+    queryParams: { stock: newValue ? 'true' : null },
+    queryParamsHandling: 'merge'
   });
 }
+
+filteredProducts = computed(() => {
+  const list = this.managerState.products() || [];
+  return this.onlyStock()
+    ? list.filter(p => p.total_quantity > 0)
+    : list;
+});
 
 public handleProductSelection(producto: any, event: Event): void {
   event.preventDefault();
@@ -111,25 +145,45 @@ this.navService.push('producto');
   }, 0);
 }
 
-/**
- * Versión mejorada del slugify con manejo de errores
- */
-private slugify(text: string): string {
-  if (!text) return 'producto';
-  
-  try {
-    return text.toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "") // Quitar acentos
-      .replace(/[^a-z0-9\s-]/g, "")    // Solo caracteres válidos
-      .trim()
-      .replace(/\s+/g, '-')             // Espacios a guiones
-      .substring(0, 100);               // Limitar longitud
-  } catch (error) {
-    console.error('Error en slugify:', error);
-    return 'producto-' + Date.now();
-  }
+copiarUrl() {
+  if (typeof window === 'undefined') return;
+
+  const url = window.location.href;
+  navigator.clipboard.writeText(url).then(() => {
+    this.mostrarCopiado.set(true);
+    setTimeout(() => this.mostrarCopiado.set(false), 1500);
+  });
 }
+
+public slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+public getCategoriaDeModelo(modelo: Modelo): CategoriaBackend | null {
+  const categorias = this.managerState.homeResource.value()?.categorias as CategoriaBackend[];
+  if (!categorias) return null;
+
+  const marcaSlug = this.slugify(modelo.marcadescrip);
+
+  return categorias.find(cat =>
+    cat.marcas?.some((m: MarcaBackend) => m.slug === marcaSlug)
+  ) || null;
+}
+
+public getMarcaDeModelo(modelo: Modelo): MarcaBackend | null {
+  const categoria = this.getCategoriaDeModelo(modelo);
+  if (!categoria) return null;
+
+  const marcaSlug = this.slugify(modelo.marcadescrip);
+
+  return categoria.marcas.find((m: MarcaBackend) => m.slug === marcaSlug) || null;
+}
+
 
   public clearSearch(): void {
     this.router.navigate([], {

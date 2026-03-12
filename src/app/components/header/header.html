@@ -1,6 +1,7 @@
 <header class="flex items-center justify-around bg-[#FB923C] px-1 py-3 shadow-md relative min-h-[75px]">
-  
-  <a [routerLink]="['/home']" 
+
+  <!-- HOME -->
+  <a [routerLink]="['/home']"
      class="flex flex-col items-center min-w-[60px] text-white hover:bg-orange-600 rounded-xl transition-all p-1"
      title="inicio">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7">
@@ -10,7 +11,8 @@
     <span class="text-[10px] font-bold lowercase tracking-tighter">Inicio</span>
   </a>
 
-  <a [routerLink]="['/category']" 
+  <!-- CATEGORÍAS -->
+  <a [routerLink]="['/category']"
      class="flex flex-col items-center min-w-[60px] text-white hover:bg-orange-600 rounded-xl transition-all p-1"
      title="categorías">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7">
@@ -19,26 +21,28 @@
     <span class="text-[10px] font-bold lowercase tracking-tighter">Categorías</span>
   </a>
 
-  <a [routerLink]="['/checkout']" 
-   class="flex flex-col items-center min-w-[60px] text-white hover:bg-orange-600 rounded-xl transition-all p-1"
-   title="carrito">
-  
-  <div class="relative flex items-center justify-center w-7 h-7">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7">
-      <path d="M2.25 2.25a.75.75 0 0 0 0 1.5h1.35l3.42 10.26a2.25 2.25 0 0 0 2.13 1.54h11.2a.75.75 0 0 0 0-1.5H9.15a.75.75 0 0 1-.71-.51L5.02 3.03A.75.75 0 0 0 4.31 2.25H2.25Z" />
-      <path d="M7.5 21a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0ZM16.5 21a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0Z" />
-    </svg>
+  <!-- CARRITO -->
+  <a [routerLink]="['/checkout']"
+     class="flex flex-col items-center min-w-[60px] text-white hover:bg-orange-600 rounded-xl transition-all p-1"
+     title="carrito">
 
-    <span class="absolute -top-1.5 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-black text-white border-2 border-[#FB923C] z-10 shadow-sm">
-      {{ state.cartCount() }}
-    </span>
-  </div>
+    <div class="relative flex items-center justify-center w-7 h-7">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7">
+        <path d="M2.25 2.25a.75.75 0 0 0 0 1.5h1.35l3.42 10.26a2.25 2.25 0 0 0 2.13 1.54h11.2a.75.75 0 0 0 0-1.5H9.15a.75.75 0 0 1-.71-.51L5.02 3.03A.75.75 0 0 0 4.31 2.25H2.25Z" />
+        <path d="M7.5 21a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0ZM16.5 21a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0Z" />
+      </svg>
 
-  <span class="text-[10px] font-bold lowercase tracking-tighter mt-0.5">Carrito</span>
-</a>
+      <span class="absolute -top-1.5 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-black text-white border-2 border-[#FB923C] z-10 shadow-sm">
+        {{ state.cartCount() }}
+      </span>
+    </div>
 
+    <span class="text-[10px] font-bold lowercase tracking-tighter mt-0.5">Carrito</span>
+  </a>
+
+  <!-- DASHBOARD -->
   @if (canSeeDashboard()) {
-    <a [routerLink]="['/dashboard']" 
+    <a [routerLink]="['/dashboard']"
        class="flex flex-col items-center min-w-[60px] text-white hover:bg-orange-600 rounded-xl transition-all p-1"
        title="dashboard">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7">
@@ -48,63 +52,135 @@
     </a>
   }
 
+  <!-- MENÚ HAMBURGUESA -->
   <div class="relative flex flex-col items-center">
-  <button (click)="toggleMenu()" 
-          class="flex flex-col items-center min-w-[60px] text-white hover:bg-orange-600 rounded-xl transition-all p-1 relative z-[110]"
-          title="Abrir menú">
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-    </svg>
-    <span class="text-[10px] font-bold lowercase tracking-tighter">Menú</span>
-  </button>
+    <button (click)="toggleMenu()"
+            class="flex flex-col items-center min-w-[60px] text-white hover:bg-orange-600 rounded-xl transition-all p-1 relative z-[110]"
+            title="Abrir menú">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+      </svg>
+      <span class="text-[10px] font-bold lowercase tracking-tighter">Menú</span>
+    </button>
 
-  @if (isMenuOpen()) {
-    <div class="absolute right-0 top-[110%] w-60 bg-white rounded-xl shadow-2xl py-2 z-[120] border border-gray-100 overflow-hidden text-left animate-in fade-in slide-in-from-top-2 duration-200">
-      
-      <button (click)="toggleCatalog(); $event.stopPropagation()" 
-              class="w-full text-left px-4 py-3 text-sm font-medium text-gray-700 hover:bg-orange-50 flex justify-between items-center transition-all group">
-        <div class="flex items-center gap-3">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-orange-500">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H18a2.25 2.25 0 0 1-2.25-2.25v-2.25Z" />
+    <!-- MENÚ CATALOGO (CORREGIDO, SIN ANIMACIONES) -->
+    @if (isMenuOpen()) {
+      <div class="absolute right-0 top-[110%] w-60 bg-white rounded-xl shadow-2xl py-2 z-[120] border border-gray-100 overflow-hidden text-left">
+
+        <button (click)="toggleCatalog(); $event.stopPropagation()"
+                class="w-full text-left px-4 py-3 text-sm font-medium text-gray-700 hover:bg-orange-50 flex justify-between items-center group border-b border-gray-50">
+
+          <div class="flex items-center gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                 stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-orange-500">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H18a2.25 2.25 0 0 1-2.25-2.25v-2.25Z" />
+            </svg>
+            <span class="font-bold text-gray-800">Catálogo</span>
+          </div>
+
+          <svg [class.rotate-90]="isCatalogOpen()"
+               class="w-4 h-4 transition-transform duration-200 text-gray-400"
+               fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M8.25 4.5l7.5 7.5-7.5 7.5" />
           </svg>
-          <span class="font-bold text-gray-800">Catálogo</span>
-        </div>
-        <svg [class.rotate-90]="isCatalogOpen()" 
-             class="w-4 h-4 transition-transform duration-200 text-gray-400" 
-             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-        </svg>
-      </button>
+        </button>
 
-      @if (isCatalogOpen()) {
-        <div class="bg-gray-50/50 py-1 animate-in slide-in-from-top-1">
-           <p class="px-12 py-2 text-[11px] text-gray-400 italic">Cargando categorías...</p>
-        </div>
-      }
+        <div [class.hidden]="!isCatalogOpen()" class="bg-gray-50/50 flex flex-col max-h-[70vh] overflow-y-auto">
 
-      <div class="border-t border-gray-100 my-1"></div>
+          @for (cat of categoriasData(); track cat.nombre) {
 
-      @if (isLogged()) {
-        <div class="px-4 py-3 bg-gray-50/80 border-b border-gray-100 mb-1">
-          <p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Sesión Activa</p>
-          <span class="text-[9px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded border border-orange-200 font-mono font-bold">
-            Nivel {{ userLevelDisplay() }}
-          </span>
-          <p class="text-sm text-gray-800 truncate font-bold">{{ state.currentUser()?.realname }}</p>
-        </div>
-        
-        <a [routerLink]="['/mis-datos']" (click)="isMenuOpen.set(false)" class="block px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600">Mis Datos</a>
-        <a [routerLink]="['/mis-pedidos']" (click)="isMenuOpen.set(false)" class="block px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600">Mis Pedidos</a>
-        
-        <div class="border-t border-gray-100 mt-1 pt-1">
-          <button (click)="onLogoutClick()" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium">Cerrar Sesión</button>
-        </div>
-      } @else {
-        <a [routerLink]="['/login']" (click)="isMenuOpen.set(false)" class="block px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 font-medium font-bold text-center">Iniciar Sesión</a>
-      }
-    </div>
+            <button (click)="seleccionarCategoria(cat); $event.stopPropagation()"
+                    class="w-full text-left px-12 py-3 text-sm flex justify-between items-center border-l-4 transition-all"
+                    [class.border-orange-500]="categoriaActiva()?.nombre === cat.nombre"
+                    [class.bg-orange-50]="categoriaActiva()?.nombre === cat.nombre"
+                    [class.border-transparent]="categoriaActiva()?.nombre !== cat.nombre">
+              <span [class.font-bold]="categoriaActiva()?.nombre === cat.nombre"
+                    class="text-gray-700">
+                {{ cat.nombre }}
+              </span>
+            </button>
 
-    <div class="fixed inset-0 z-[105] bg-black/5" (click)="isMenuOpen.set(false)"></div>
-  }
-</div>
-</header>
+            @if (categoriaActiva()?.nombre === cat.nombre) {
+              <div class="bg-white py-1">
+
+                @for (marca of cat.marcas; track marca.nombre) {
+
+                  <button (click)="seleccionarMarca(marca); $event.stopPropagation()"
+                          class="w-full text-left px-16 py-2.5 text-[13px] flex justify-between items-center group hover:bg-orange-50/30">
+
+                    <div class="flex items-center gap-2">
+                      @if (marca.img_url) {
+                        <img [src]="marca.img_url" [alt]="marca.nombre"
+                             class="w-5 h-5 object-contain grayscale group-hover:grayscale-0">
+                      }
+                      <span [class.text-orange-600]="marcaActiva()?.nombre === marca.nombre"
+                            [class.font-semibold]="marcaActiva()?.nombre === marca.nombre"
+                            class="text-gray-600">
+                        {{ marca.nombre }}
+                      </span>
+                    </div>
+
+                    <span class="text-[10px] text-gray-400 transition-transform"
+                          [class.rotate-90]="marcaActiva()?.nombre === marca.nombre">→</span>
+                  </button>
+
+                  @if (marcaActiva()?.nombre === marca.nombre) {
+                    <div class="flex flex-col py-1 pl-20 pr-4 bg-gray-50/50">
+
+                      @for (modelo of marca.modelos; track modelo.idmodelo) {
+                        <a 
+                          [routerLink]="'/' + modelo.url_app"
+                          (click)="isMenuOpen.set(false); isCatalogOpen.set(false)"
+                          [title]="modelo.seo_note"
+                          class="text-[11px] py-2.5 text-gray-500 hover:text-orange-600 border-b border-gray-100 last:border-0 transition-colors">
+                          <span class="font-medium">{{ modelo.modeldescrip }}</span>
+                        </a>
+
+                      }
+
+                    </div>
+                  }
+                }
+              </div>
+            }
+          }
+        </div>
+
+        <!-- FIN MENU CATALOGO -->
+        <div class="border-t border-gray-100 my-1"></div>
+
+        @if (isLogged()) {
+          <div class="px-4 py-3 bg-gray-50/80 border-b border-gray-100 mb-1">
+            <p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Sesión Activa</p>
+            <span class="text-[9px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded border border-orange-200 font-mono font-bold">
+              Nivel {{ userLevelDisplay() }}
+            </span>
+            <p class="text-sm text-gray-800 truncate font-bold">{{ state.currentUser()?.realname }}</p>
+          </div>
+
+          <a [routerLink]="['/mis-datos']" (click)="isMenuOpen.set(false)"
+             class="block px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600">Mis Datos</a>
+
+          <a [routerLink]="['/mis-pedidos']" (click)="isMenuOpen.set(false)"
+             class="block px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600">Mis Pedidos</a>
+
+          <div class="border-t border-gray-100 mt-1 pt-1">
+            <button (click)="onLogoutClick()"
+                    class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium">Cerrar Sesión</button>
+          </div>
+
+        } @else {
+
+          <a [routerLink]="['/login']" (click)="isMenuOpen.set(false)"
+             class="block px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 font-medium font-bold text-center">
+            Iniciar Sesión
+          </a>
+
+        }
+      </div>
+
+      <!-- OVERLAY -->
+      <div class="fixed inset-0 z-[105] bg-black/5" (click)="isMenuOpen.set(false)"></div>
+    }

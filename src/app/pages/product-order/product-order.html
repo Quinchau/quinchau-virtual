@@ -1,126 +1,125 @@
-<!-- product-order.html -->
-<div class="bg-white rounded-xl shadow-lg p-6 max-w-md mx-auto">
-  <h2 class="text-xl font-bold text-slate-800 mb-4">Añadir al carrito</h2>
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm p-4">
 
-  <!-- Estado de carga -->
-  @if (loadingProductCard()) {
-    <div class="flex justify-center items-center py-8">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-    </div>
-  }
-
-  <!-- Estado de error -->
-  @if (error()) {
-    <div class="bg-red-50 text-red-600 p-4 rounded-lg mb-4">
-      Error al cargar el producto. Por favor intenta de nuevo.
-    </div>
-  }
-
-  <!-- Producto cargado -->
-  @if (product(); as p) {
-    <div class="flex gap-4 mb-6">
-      <img [src]="p.cover_image_id" 
-           [alt]="p.description" 
-           class="w-24 h-24 object-contain rounded-lg border border-slate-200">
-      
-      <div class="flex-1">
-        <p class="font-medium text-slate-800 line-clamp-2">{{ p.description }}</p>
-        <p class="text-sm text-slate-500 mt-1">{{ p.units }}</p>
-        <p class="text-lg font-black text-orange-600 mt-2">
-          ${{ p.price_with_tax.toFixed(2) }}
-        </p>
+  <div class="bg-white rounded-xl shadow-lg p-6 max-w-md w-full overflow-y-auto max-h-[90vh]">
+    
+    @if (loadingProductCard()) {
+      <div class="flex justify-center items-center py-8">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
       </div>
-    </div>
+    }
 
-    <!-- Modelos asociados -->
-    @if (p.modelos && p.modelos.length > 0) {
-      <div class="mb-4">
-        <p class="text-sm font-medium text-slate-600 mb-2">Modelos compatibles:</p>
-        <div class="flex flex-wrap gap-2">
-          @for (modelo of p.modelos; track $index) {
-            <span class="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-full">
-              {{ modelo }}
-            </span>
-          }
+    @if (error()) {
+      <div class="bg-red-50 text-red-600 p-4 rounded-lg mb-4">
+        Error al cargar el producto. Por favor intenta de nuevo.
+      </div>
+    }
+
+    @if (product(); as p) {
+      <div class="mb-0">
+  <img [src]="p.cover_image_id" 
+       [alt]="p.description" 
+       class="w-full h-64 object-contain rounded-t-lg border-b border-slate-100 mb-4">
+  
+  <div class="space-y-2">
+    <h2 class="text-xl font-bold text-slate-800 leading-tight">
+      {{ p.description }}
+    </h2>
+    
+    <div class="flex justify-between items-end">
+      <div>
+        <p class="text-sm text-slate-500">{{ p.units }}</p>
+       
+      </div>
+      <p class="text-2xl font-black text-orange-600">
+        ${{ p.price_with_tax.toFixed(2) }}
+      </p>
+    </div>
+  </div>
+</div>
+
+      @if (p.modelos && p.modelos.length > 0) {
+        <div class="mb-4">
+          
+          <div class="flex flex-wrap gap-2">
+            @for (modelo of p.modelos; track $index) {
+              <span class="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-full">
+                {{ modelo }}
+              </span>
+            }
+          </div>
+        </div>
+      }
+
+      @if (p.qty_in_order > 1) {
+        <div class="mb-4 p-3 bg-blue-50 text-blue-700 text-sm rounded-lg flex items-center gap-2">
+          <span class="text-xl">🛒</span>
+          <span>Ya tenías <strong>{{ p.qty_in_order }}</strong> unidades en tu carrito pendiente</span>
+        </div>
+      }
+
+      @if (p.tags) {
+        <div class="mb-4 text-xs text-slate-500">
+          <span class="font-medium">Tags:</span> {{ p.tags }}
+        </div>
+      }
+
+      <div class="flex items-center justify-between mb-6">
+        <span class="text-sm font-medium text-slate-600">Cantidad:</span>
+        <div class="flex items-center gap-2">
+          <button (click)="decrement()" 
+                  [disabled]="quantity <= 1"
+                  class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed">
+            −
+          </button>
+          
+          <input type="number" 
+                  [ngModel]="quantity" 
+                  (ngModelChange)="quantity = $event"
+                  min="1" 
+                  [max]="p.total_quantity"
+                  [disabled]="p.total_quantity === 0"
+                  class="w-20 text-center border border-slate-300 rounded-lg py-1 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-slate-100 disabled:cursor-not-allowed">
+          
+          <button (click)="increment()"
+                  [disabled]="quantity >= p.total_quantity"
+                  class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed">
+            +
+          </button>
         </div>
       </div>
-    }
 
-    <!-- Mensaje de carrito pendiente -->
-    @if (p.qty_in_order > 1) {
-      <div class="mb-4 p-3 bg-blue-50 text-blue-700 text-sm rounded-lg flex items-center gap-2">
-        <span class="text-xl">🛒</span>
-        <span>Ya tenías <strong>{{ p.qty_in_order }}</strong> unidades en tu carrito pendiente</span>
-      </div>
-    }
-
-    <!-- Tags -->
-    @if (p.tags) {
-      <div class="mb-4 text-xs text-slate-500">
-        <span class="font-medium">Tags:</span> {{ p.tags }}
-      </div>
-    }
-
-    <!-- Control de cantidad -->
-    <div class="flex items-center justify-between mb-6">
-      <span class="text-sm font-medium text-slate-600">Cantidad:</span>
-      <div class="flex items-center gap-2">
-        <button (click)="decrement()" 
-                [disabled]="quantity <= 1"
-                class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed">
-          −
-        </button>
+      <div class="flex justify-between items-center mb-2">
+        <p class="text-xs" [class.text-green-600]="p.total_quantity > 0" [class.text-red-600]="p.total_quantity === 0">
+          {{ p.total_quantity > 0 ? p.total_quantity + ' unidades disponibles' : 'Sin stock disponible' }}
+        </p>
         
-        <input type="number" 
-               [ngModel]="quantity" 
-               (ngModelChange)="quantity = $event"
-               min="1" 
-               [max]="p.total_quantity"
-               [disabled]="p.total_quantity === 0"
-               class="w-20 text-center border border-slate-300 rounded-lg py-1 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-slate-100 disabled:cursor-not-allowed">
-        
-        <button (click)="increment()"
-                [disabled]="quantity >= p.total_quantity"
-                class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed">
-          +
-        </button>
+        @if (p.total_quantity > 0 && p.total_quantity < 5) {
+          <span class="text-xs text-orange-600 font-medium">
+            ⚡ ¡Últimas unidades!
+          </span>
+        }
       </div>
-    </div>
 
-    <!-- Stock disponible -->
-    <div class="flex justify-between items-center mb-2">
-      <p class="text-xs" [class.text-green-600]="p.total_quantity > 0" [class.text-red-600]="p.total_quantity === 0">
-        {{ p.total_quantity > 0 ? p.total_quantity + ' unidades disponibles' : 'Sin stock disponible' }}
-      </p>
-      
-      @if (p.total_quantity > 0 && p.total_quantity < 5) {
-        <span class="text-xs text-orange-600 font-medium">
-          ⚡ ¡Últimas unidades!
+      <div class="flex justify-between text-lg font-bold mb-6">
+        <span>Total:</span>
+        <span class="text-orange-600">
+          ${{ (p.price_with_tax * quantity).toFixed(2) }}
         </span>
-      }
-    </div>
+      </div>
 
-    <!-- Total calculado -->
-    <div class="flex justify-between text-lg font-bold mb-6">
-      <span>Total:</span>
-      <span class="text-orange-600">
-        ${{ (p.price_with_tax * quantity).toFixed(2) }}
-      </span>
-    </div>
-
-    <!-- Botones de acción -->
-    <div class="flex gap-3">
-      <button (click)="cancel()"
-              class="flex-1 py-3 rounded-lg bg-slate-200 text-slate-700 font-medium hover:bg-slate-300 transition-colors">
-        Cancelar
-      </button>
-      <button (click)="confirm()"
-              [disabled]="p.total_quantity === 0"
-              class="flex-1 py-3 rounded-lg bg-orange-500 text-white font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-        Añadir al carrito
-      </button>
-    </div>
-  }
+      <div class="flex gap-3">
+        <button (click)="cancel()"
+                class="flex-1 py-3 rounded-lg bg-slate-200 text-slate-700 font-medium hover:bg-slate-300 transition-colors">
+          Volver
+        </button>
+        <button (click)="confirm()"
+                [disabled]="p.total_quantity === 0"
+                class="flex-1 py-3 rounded-lg bg-orange-500 text-white font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+          Añadir al carrito
+        </button>
+      </div>
+    }
+  </div>
 </div>
 
 <div 
@@ -132,4 +131,3 @@
     (registroCompleto)="onRegistroCompleto($event)"
   />
 </div>
-

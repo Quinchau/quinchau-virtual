@@ -12,42 +12,85 @@ import { ProductOrder } from './pages/product-order/product-order';
 import { CartComponent } from './pages/checkout/checkout';
 
 export const routes: Routes = [
-{ path: 'producto/:slugId', component: ProductOrder },
-{ path: 'login', component: LoginComponent },
-{ path: 'home', component: Home },
-{ path: 'category', 
-    loadComponent: () => import('./pages/category/category').then(m => m.Category) 
-  },
-{ path: 'checkout', component: CartComponent },
-{
-  path: 'success/:id',
-  loadComponent: () =>
-    import('./components/success-order/success-order').then(m => m.SuccessOrder)
-},
 
-{ path: 'dashboard',
-  component: Dashboard,canActivate: [adminGuard] },
-{ path: 'new-transfer', component: NewTransferComponent, canActivate: [authGuard],
-  children: [
+  // 🔐 Autenticación
+  { path: 'login', component: LoginComponent },
+  { 
+    path: 'register', 
+    loadComponent: () => import('./pages/register/register').then(m => m.Register) 
+  },
+
+  // 🏠 Home (landing)
+  { path: 'home', component: Home },
+
+  // 🛒 Checkout
+  { path: 'checkout', component: CartComponent },
+
+  // 🎉 Orden exitosa
+  {
+    path: 'success/:id',
+    loadComponent: () =>
+      import('./components/success-order/success-order').then(m => m.SuccessOrder)
+  },
+
+  // 📦 Dashboard (admin)
+  {
+    path: 'dashboard',
+    component: Dashboard,
+    canActivate: [adminGuard]
+  },
+
+  // 🔄 Transferencias
+  {
+    path: 'new-transfer',
+    component: NewTransferComponent,
+    canActivate: [authGuard],
+    children: [
       {
         path: 'product/:id',
-        component: ProductDetail, canActivate: [authGuard]
+        component: ProductDetail,
+        canActivate: [authGuard]
       }
-  
     ]
- },
-{
+  },
+
+  {
     path: 'transfers',
     component: Transfers,
     canActivate: [authGuard],
     children: [
       {
         path: 'detail/:id',
-        component: TransferDetailComponent, canActivate: [authGuard]
+        component: TransferDetailComponent,
+        canActivate: [authGuard]
       }
-  
     ]
   },
-  { path: '', redirectTo: '/home', pathMatch: 'full'},
+{
+  path: 'category',
+  children: [
+    {
+      path: '',
+      loadComponent: () =>
+        import('./pages/category/category').then(m => m.Category)
+    },
+    {
+      path: ':categoria',
+      loadComponent: () =>
+        import('./pages/category/category').then(m => m.Category)
+    },
+    {
+      path: ':categoria/:marca',
+      loadComponent: () =>
+        import('./pages/category/category').then(m => m.Category)
+    }
+  ]
+},
+{ path: ':categoria', component: Home },
+{ path: ':categoria/:marca', component: Home },
+{ path: ':categoria/:marca/:modelo', component: Home },
 
+
+  // 🔄 Redirección por defecto
+  { path: '', redirectTo: '/home', pathMatch: 'full' }
 ];
