@@ -125,10 +125,6 @@ public getCompanyConfig(coycode: number): Observable<CompanyConfig | null> {
   );
 }
 
-/**
-   * Envía los datos de registro al nuevo backend en Node.js
-   * @param userData { phone, password, realname, email }
-   */
   public registerUser(userData: any): Observable<any> {
     return this.http.post(`${this.nodeBaseUrl}/register`, userData);
   }

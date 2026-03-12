@@ -1,47 +1,57 @@
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './login.html',
-  })
+})
 export class LoginComponent implements OnInit {
-
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
-  private cdr = inject(ChangeDetectorRef);
-  private router = inject(Router); 
-  public loginForm!: FormGroup;
+  private router = inject(Router);
+
+  isLoading = signal(false);
+  errorMessage = signal<string | null>(null);
+  
+  // Misma lista de prefijos que en registro
+  phoneAreas = ['412', '422', '424', '414', '416', '426'];
+
+  loginForm = this.fb.group({
+    area: ['412', [Validators.required]],
+    phoneNum: ['', [Validators.required, Validators.pattern(/^[0-9]{7}$/)]], // Exactamente 7 dígitos
+    password: ['', [Validators.required, Validators.minLength(6)]]
+  });
 
   ngOnInit(): void {
-    this.loginForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', Validators.required],
-    });
-
-    this.loginForm.valueChanges.subscribe(() => {
-      this.cdr.markForCheck();
-    });
+    // Podrías precargar algo si es necesario
   }
 
   onSubmit(): void {
-  if (this.loginForm.invalid) return;
+    if (this.loginForm.invalid) return;
 
-  const credentials = this.loginForm.value;
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
 
-  this.authService.login(credentials).subscribe({
-    next: () => {
-      this.router.navigate(['/home']); // o la ruta que prefieras
-    },
-    error: (err) => {
-      console.error('Error al iniciar sesión:', err);
-      // podrías mostrar un mensaje al usuario aquí
-    }
-  });
-}
+    const raw = this.loginForm.value;
+    
+    // Construimos el teléfono igual que en registro
+    const credentials = {
+      phone: `${raw.area}${raw.phoneNum}`, // Concatenamos prefijo + número
+      password: raw.password!
+    };
 
+    this.authService.login(credentials).subscribe({
+      next: () => {
+        this.router.navigate(['/home']);
+      },
+      error: (err) => {
+        this.errorMessage.set(err.error?.message || 'Error al iniciar sesión. Verifica tus datos.');
+        this.isLoading.set(false);
+      }
+    });
+  }
 }

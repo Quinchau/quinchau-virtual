@@ -1,31 +1,75 @@
-<div class="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-  <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
-    <h2 class="text-3xl font-bold text-center text-gray-800">Iniciar Sesión</h2>
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-4">
+<div class="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-8">
+  <div class="max-w-lg w-full space-y-6 bg-white p-8 rounded-3xl shadow-2xl border border-gray-100">
+    
+    <div class="text-center">
+      <h2 class="text-2xl font-bold text-gray-900 tracking-tight">Bienvenido a Quinchau</h2>
+      <p class="mt-2 text-sm text-gray-500">Inicia sesión para gestionar tus pedidos y envíos</p>
+    </div>
+
+    <form class="space-y-4" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      
+      <!-- Campo de teléfono (igual que en registro) -->
       <div>
-        <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-        <input type="email" id="email" formControlName="email"
-          class="block w-full px-4 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-        @if (loginForm.get('email')?.invalid && loginForm.get('email')?.touched) {
-          <div class="mt-1 text-sm text-red-600">
-            El email es requerido y debe ser válido.
-          </div>
+        <label class="block text-xs font-semibold text-gray-400 uppercase mb-1 ml-1">Teléfono Móvil</label>
+        <div class="flex gap-2">
+          <select formControlName="area" 
+            class="w-1/3 bg-gray-50 border border-gray-200 rounded-xl px-3 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-gray-700">
+            @for (area of phoneAreas; track area) {
+              <option [value]="area">{{ area }}</option>
+            }
+          </select>
+          <input formControlName="phoneNum" type="text" maxlength="7"
+            class="w-2/3 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none text-gray-700 placeholder:text-gray-300"
+            placeholder="1234567">
+        </div>
+        @if (loginForm.get('phoneNum')?.touched && loginForm.get('phoneNum')?.invalid) {
+          <p class="text-[10px] text-red-500 mt-1 ml-1 italic">El número debe tener exactamente 7 dígitos</p>
         }
       </div>
+
+      <!-- Campo contraseña -->
       <div>
-        <label for="password" class="block text-sm font-medium text-gray-700">Contraseña</label>
-        <input type="password" id="password" formControlName="password"
-          class="block w-full px-4 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-        @if (loginForm.get('password')?.invalid && loginForm.get('password')?.touched) {
-          <div class="mt-1 text-sm text-red-600">
-            La contraseña es requerida.
-          </div>
+        <label class="block text-xs font-semibold text-gray-400 uppercase mb-1 ml-1">Contraseña</label>
+        <input formControlName="password" type="password" 
+          class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none text-gray-700 placeholder:text-gray-300" 
+          placeholder="Mín. 6 caracteres">
+        @if (loginForm.get('password')?.touched && loginForm.get('password')?.invalid) {
+          <p class="text-[10px] text-red-500 mt-1 ml-1 italic">La contraseña debe tener al menos 6 caracteres</p>
         }
       </div>
-      <button type="submit" [disabled]="!loginForm.valid"
-        class="w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-300 disabled:cursor-not-allowed">
-        Entrar
+
+      <!-- Mensaje de error (si hay) -->
+      @if (errorMessage()) {
+        <div class="p-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm text-center">
+          {{ errorMessage() }}
+        </div>
+      }
+
+      <!-- Botón de submit con estado de carga -->
+      <button type="submit" 
+        [disabled]="loginForm.invalid || isLoading()"
+        class="w-full py-4 mt-2 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center">
+        @if (isLoading()) {
+          <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        } @else {
+          Iniciar Sesión
+        }
       </button>
+
+      <!-- Enlace a registro (opcional) -->
+      <div class="text-center mt-4">
+        <p class="text-xs text-gray-500">
+          ¿No tienes cuenta? 
+          <a routerLink="/register" class="text-blue-600 font-semibold hover:underline">Regístrate aquí</a>
+        </p>
+      </div>
     </form>
+    
+    <p class="text-[10px] text-center text-gray-400">
+      Al iniciar sesión, aceptas nuestros términos de servicio.
+    </p>
   </div>
 </div>
