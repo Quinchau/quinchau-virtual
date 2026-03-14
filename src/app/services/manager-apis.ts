@@ -2,15 +2,13 @@ import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { catchError, map, Observable, of } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { isPlatformServer } from '@angular/common';
 import { 
   NewTransfer, Product, TransferenciaDetalle, 
-  ProductDetailData, DashboardResponse, Banner, 
-  HomeData,
+  ProductDetailData, DashboardResponse, HomeData,
   ProductListResponse
 } from '../models/transfer.model';
-import { isPlatformServer } from '@angular/common';
-import { CompanyConfig, ConfigResponse } from '../models/company_config.model';
-
+import { CompanyConfig } from '../models/company_config.model';
 
 @Injectable({
   providedIn: 'root',
@@ -18,115 +16,118 @@ import { CompanyConfig, ConfigResponse } from '../models/company_config.model';
 export class ManagerApis {
   private http = inject(HttpClient);
   private platformId = inject(PLATFORM_ID);
-  private get baseUrl() { return isPlatformServer(this.platformId) ? environment.apiUrlServer : environment.apiUrlBrowser; }
-  private get nodeBaseUrl() { return isPlatformServer(this.platformId) ? environment.nodeApiUrlServer : environment.nodeApiUrlBrowser; }
+
+  // Centralizamos todo en nodeBaseUrl para la nueva API
+  private get nodeBaseUrl() { 
+    return isPlatformServer(this.platformId) 
+      ? environment.nodeApiUrlServer 
+      : environment.nodeApiUrlBrowser; 
+  }
+
+  // --- MÉTODOS DE TRANSFERENCIAS (MIGRADO A NODE) ---
 
   public getTransfers(): Observable<DashboardResponse> {
-    return this.http.get<DashboardResponse>(`${this.baseUrl}/transfers.php`, {
+    return this.http.get<DashboardResponse>(`${this.nodeBaseUrl}/transfers`, {
       withCredentials: true
     });
   }
 
   public getTransferenciaDetalle(id: string): Observable<TransferenciaDetalle> {
-    return this.http.get<TransferenciaDetalle>(`${this.baseUrl}/transfer-detail.php`, {
+    return this.http.get<TransferenciaDetalle>(`${this.nodeBaseUrl}/transfers/detail`, {
       params: new HttpParams().set('id', id)
     });
   }
 
   public updateTransferStatus(idtransfer: string, newStatus: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/transfer-status.php`, { idtransfer, newStatus });
+    return this.http.patch(`${this.nodeBaseUrl}/transfers/status`, { idtransfer, newStatus });
   }
 
   public deleteTransfer(idtransfer: string): Observable<any> {
-    return this.http.delete(`${this.baseUrl}/transfer-status.php`, {
-      params: new HttpParams().set('idtransfer', idtransfer)
-    });
+    // REST standard: el ID viaja en la URL
+    return this.http.delete(`${this.nodeBaseUrl}/transfers/${idtransfer}`);
   }
 
   public executeTransfer(idtransfer: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/transfer-exec.php`, { idtransfer });
+    return this.http.post(`${this.nodeBaseUrl}/transfers/execute`, { idtransfer });
   }
 
   public createTransfer(transferData: NewTransfer): Observable<any> {
-    return this.http.post(`${this.baseUrl}/create-transfer.php`, transferData);
+    return this.http.post(`${this.nodeBaseUrl}/transfers`, transferData);
   }
 
   // --- MÉTODOS DE PRODUCTOS ---
 
-public getProducts(
-  searchTerm: string = '', 
-  includeStock: boolean = false, 
-  idmodelo: string = ''
-): Observable<{productos: Product[], identidad?: any}> {  // ← Tipo modificado
-  let params = new HttpParams();
+  public getProducts(
+    searchTerm: string = '', 
+    includeStock: boolean = false, 
+    idmodelo: string = ''
+  ): Observable<{productos: Product[], identidad?: any}> {
+    let params = new HttpParams();
+    if (searchTerm) params = params.set('search', searchTerm);
+    if (includeStock) params = params.set('stock', '1');
+    if (idmodelo) params = params.set('idmodelo', idmodelo);
 
-  if (searchTerm) params = params.set('search', searchTerm);
-  if (includeStock) params = params.set('stock', '1');
-  if (idmodelo) params = params.set('idmodelo', idmodelo);
-
-  return this.http.get<ProductListResponse>(`${this.baseUrl}/get-products.php`, { params }).pipe(
-    map(res => ({
-      productos: res?.productos ?? [],
-      identidad: res?.identidad
-    })),
-    catchError(error => {
-      console.error('Error recuperando productos:', error);
-      return of({ productos: [], identidad: null });
-    })
-  );
-}
+    return this.http.get<ProductListResponse>(`${this.nodeBaseUrl}/products`, { params }).pipe(
+      map(res => ({
+        productos: res?.productos ?? [],
+        identidad: res?.identidad
+      })),
+      catchError(error => {
+        console.error('Error recuperando productos:', error);
+        return of({ productos: [], identidad: null });
+      })
+    );
+  }
 
   public getProductDetail(stockid: string): Observable<ProductDetailData> {
-    return this.http.get<ProductDetailData>(`${this.baseUrl}/product-detail.php`, {
+    return this.http.get<ProductDetailData>(`${this.nodeBaseUrl}/products/detail`, {
       params: new HttpParams().set('stockid', stockid)
     });
   }
 
-  public getHomeData(): Observable<HomeData> {
-  return this.http.get<HomeData>(`${this.baseUrl}/get_home_data.php`);
-
-}
-
-
-getProductBySlug(slug: string): Observable<Product> {
-  return this.http.get<Product>(`${this.baseUrl}/get-products.php?slug=${slug}`);
-}
-
-public addToCart(orderData: { productos: any[], typeabbrev: string }): Observable<any> {
-  return this.http.post(`${this.baseUrl}/create_order.php`, orderData, {
-    withCredentials: true // Importante si usas cookies de sesión
-  });
-}
-
-getCart(): Observable<any> {
-  return this.http.get(`${this.baseUrl}/checkout.php`, {
-    withCredentials: true
-  });
-}
-
-//---CHECKOUT---//
-
-public executeCheckout(cotizacion_id: number): Observable<any> {
-  return this.http.post(`${this.baseUrl}/exe-checkout.php`, { cotizacion_id }, {
-    withCredentials: true
-  });
-}
-
-//---COMPANY_CONFIG---//
-
-public getCompanyConfig(coycode: number): Observable<CompanyConfig | null> {
-  const params = new HttpParams().set('coycode', coycode.toString());
-
-  return this.http.get<CompanyConfig>(`${this.baseUrl}/get_config.php`, { params }).pipe(
-    catchError(error => {
-      console.error('❌ Error en getCompanyConfig:', error);
-      return of(null);
-    })
-  );
-}
-
-  public registerUser(userData: any): Observable<any> {
-    return this.http.post(`${this.nodeBaseUrl}/register`, userData);
+  public getProductBySlug(slug: string): Observable<Product> {
+    return this.http.get<Product>(`${this.nodeBaseUrl}/products`, {
+      params: new HttpParams().set('slug', slug)
+    });
   }
 
+  // --- MÉTODOS DE CARRITO Y CHECKOUT ---
+
+  public getHomeData(): Observable<HomeData> {
+    return this.http.get<HomeData>(`${this.nodeBaseUrl}/home/data`);
+  }
+
+  public addToCart(orderData: { productos: any[], typeabbrev: string }): Observable<any> {
+    return this.http.post(`${this.nodeBaseUrl}/orders`, orderData, {
+      withCredentials: true
+    });
+  }
+
+  public getCart(): Observable<any> {
+    return this.http.get(`${this.nodeBaseUrl}/checkout`, {
+      withCredentials: true
+    });
+  }
+
+  public executeCheckout(cotizacion_id: number): Observable<any> {
+    return this.http.post(`${this.nodeBaseUrl}/checkout/execute`, { cotizacion_id }, {
+      withCredentials: true
+    });
+  }
+
+  // --- CONFIGURACIÓN Y USUARIOS ---
+
+  public getCompanyConfig(coycode: number): Observable<CompanyConfig | null> {
+    const params = new HttpParams().set('coycode', coycode.toString());
+    return this.http.get<CompanyConfig>(`${this.nodeBaseUrl}/config`, { params }).pipe(
+      catchError(error => {
+        console.error('❌ Error en getCompanyConfig:', error);
+        return of(null);
+      })
+    );
+  }
+
+  public registerUser(userData: any): Observable<any> {
+    return this.http.post(`${this.nodeBaseUrl}/auth/register`, userData);
+  }
 }

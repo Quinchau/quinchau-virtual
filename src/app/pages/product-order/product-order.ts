@@ -1,6 +1,7 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, input, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ManagerState } from '../../services/manager-state';
 import { ExeOrderComponent } from '../exe-order/exe-order';
 import { LayerHistoryService } from '../../services/LayerHistoryService';
@@ -13,15 +14,22 @@ import { LayerHistoryService } from '../../services/LayerHistoryService';
 })
 export class ProductOrder {
   private state = inject(ManagerState);
-  public nav = inject(LayerHistoryService);
+  private router = inject(Router);
+  public nav = inject(LayerHistoryService); // Lo mantenemos para que el HTML no falle
+
+  // 🟢 SOLUCIÓN AL ERROR NG8002: Declaramos el input
+  public productId = input.required<string>();
 
   public product = this.state.currentProductCard;
   public loadingProductCard = this.state.loadingProductCard;
   public error = this.state.productCardError;
   public addStatus = this.state.addStatus;
 
-  // --- Cantidad ---
-  get quantity(): number { return this.product()?.qty_in_order || 1; }
+  // 🟢 SOLUCIÓN A LOS ERRORES DE 'quantity':
+  // Creamos un getter/setter para que el (ngModel) del HTML funcione
+  get quantity(): number { 
+    return this.product()?.qty_in_order || 1; 
+  }
 
   set quantity(value: number) {
     const p = this.product();
@@ -33,51 +41,40 @@ export class ProductOrder {
   increment() { this.quantity = this.quantity + 1; }
   decrement() { this.quantity = this.quantity - 1; }
 
-  // --- Add to cart normal ---
   confirm() {
     if (!this.product() || this.quantity < 1) return;
-
     this.state.addCurrentProductToCart().subscribe({
-      next: (res) => {
-        console.log('🟢 Añadido al carrito:', res);
-      },
+      next: (res) => console.log('🟢 Añadido:', res),
       error: (err) => {
-        if (err?.requiere_registro) {
-          this.abrirModalRegistro();
-        } else {
-          console.error('❌ Error:', err);
-        }
+        if (err?.requiere_registro) this.abrirModalRegistro();
       }
     });
   }
 
-  // --- Add to cart con datos del modal ---
-confirmConRegistro(datos: any) {
-this.state.addCurrentProductToCart(datos).subscribe({
-  next: (res) => {
-    console.log('🟢 Añadido al carrito con registro:', res);
-    this.nav.back(); // ← Cierra producto y volvemos a home
-  },
-error: (err) => { 
-  console.error('❌ Error tras registro:', err);
-  // Nos quedamos en producto, correcto
-}
-  });
-}
+  // 🟢 SOLUCIÓN A 'onRegistroCompleto':
+  confirmConRegistro(datos: any) {
+    this.state.addCurrentProductToCart(datos).subscribe({
+      next: (res) => {
+        this.cancel(); // Cierra el producto usando la URL
+      },
+      error: (err) => console.error('❌ Error:', err)
+    });
+  }
 
-
-  // --- Capas ---
   abrirModalRegistro() {
     this.nav.push('checkout', window.location.pathname + '?registro=true');
   }
 
   onRegistroCompleto(datos: any) {
-    this.nav.back();            // cierra la capa
-    this.confirmConRegistro(datos); // reintenta add-to-cart
+    this.nav.back(); // Cierra el mini-modal de registro
+    this.confirmConRegistro(datos);
   }
 
   cancel() {
-    this.state.closeProductDetail();
-    this.nav.back();
+    // Cerramos el producto quitando 'p' de la URL
+    this.router.navigate([], {
+      queryParams: { p: null },
+      queryParamsHandling: 'merge'
+    });
   }
 }

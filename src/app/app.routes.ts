@@ -92,5 +92,9 @@ export const routes: Routes = [
 
 
   // 🔄 Redirección por defecto
-  { path: '', redirectTo: '/home', pathMatch: 'full' }
+  { path: '', redirectTo: '/home', pathMatch: 'full' },
+  { 
+  path: '**', 
+  loadComponent: () => import('./components/not-found/not-found').then(m => m.NotFound) 
+}
 ];
