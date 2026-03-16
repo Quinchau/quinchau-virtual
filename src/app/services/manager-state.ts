@@ -47,11 +47,6 @@ public readonly productsResource = rxResource({
     }
 
     return this.managerApis.getProducts(params.query, params.stock, params.idmodelo).pipe(
-      tap((response: {productos: Product[], identidad?: any}) => {
-        if (response?.identidad?.cantidad_referencias !== undefined) {
-          this.cartCount.set(response.identidad.cantidad_referencias);
-        }
-      }),
       map(response => response.productos),
       catchError(err => {
         console.error('Error en el recurso:', err);
@@ -116,25 +111,6 @@ public readonly companyName = computed(() => this.company()?.coyname ?? 'Cargand
 
 public readonly homeResource = rxResource<HomeData, unknown>({
   stream: () => this.managerApis.getHomeData().pipe(
-    tap((response: any) => {
-      this.cartCount.set(response.identidad?.cantidad_referencias ?? 0);
-      
-      if (!isPlatformBrowser(this.platformId)) return;
-      
-      if (response.identidad?.token) {
-    this.actualizarIdentidad(response.identidad.token, response.identidad);
-  }
-       else if (response.identidad?.tipo === 'visitante') {
-        console.log('👋 Visitante EXISTENTE - ID:', response.identidad.id);
-      }
-      else if (response.identidad?.tipo === 'usuario') {
-        console.log('👑 Usuario autenticado - ID:', response.identidad.id);
-      }
-      else {
-        console.log('⚠️ NO SE ENCONTRÓ TOKEN en la respuesta');
-        
-      }
-    }),
     map((response: any): HomeData => {
       const homeData: HomeData = {
         banners: response.banners || [],
@@ -381,10 +357,6 @@ private actualizarIdentidad(token: string, identidad?: any) {
     if (!isPlatformBrowser(this.platformId)) return;
     const thirtyDays = 30 * 24 * 60 * 60;
     document.cookie = `auth_token=${token}; Path=/; Max-Age=${thirtyDays}; SameSite=Lax; Secure`;
-    
-    if (identidad?.cantidad_referencias !== undefined) {
-      this.cartCount.set(identidad.cantidad_referencias);
-    }
 }
 
 updateProductQuantity(newQuantity: number) {
