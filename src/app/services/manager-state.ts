@@ -584,4 +584,11 @@ public executeRegister(requestData: RegisterRequest): Observable<RegisterRespons
     })
   );
 }
+updateCartCount(count: number): void {
+    // Solo actualizamos si el valor es distinto para evitar ciclos de renderizado
+    if (this.cartCount() !== count) {
+      this.cartCount.set(count);
+    }
+  }
+
 }

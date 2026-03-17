@@ -5,7 +5,7 @@ import { REQUEST } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError, tap } from 'rxjs';
 import { ManagerState } from './manager-state';
-import { AuthService } from '../services/auth'; // Asegura la ruta correcta
+import { AuthService } from '../services/auth';
 
 interface ServerRequest {
   headers: { get: (name: string) => string | null };
@@ -15,7 +15,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const platformId = inject(PLATFORM_ID);
   const router = inject(Router);
   const state = inject(ManagerState);
-  const authService = inject(AuthService); // Inyectamos para poder reportar la identidad encontrada
+  const authService = inject(AuthService);
   
   const isServer = isPlatformServer(platformId);
   const tag = isServer ? '[Server]' : '[Browser]';
@@ -44,13 +44,21 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(cloned).pipe(
     tap(event => {
-      if (event instanceof HttpResponse && !isServer) {
-        const body = event.body as any;
-        if (body && body.identidad && body.identidad.token) {
-          authService.handleIdentityResponse(body);
-        }
+  if (event instanceof HttpResponse) {
+    const body = event.body as any;
+    if (body && typeof body.cartCount === 'number') {
+      state.updateCartCount(body.cartCount);
+    } else {
+      const headerCount = event.headers.get('X-Cart-Count');
+      if (headerCount !== null) {
+        state.updateCartCount(Number(headerCount));
       }
-    }),
+    }
+    if (!isServer && body?.identidad?.token) {
+      authService.handleIdentityResponse(body);
+    }
+  }
+}),
     catchError((error) => {
       if (!isServer && error.status === 401) {
         const currentUrl = router.url;
