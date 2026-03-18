@@ -13,6 +13,7 @@ export interface CompanyConfig {
   fax: string;
   email: string;
   currencydefault: string;
+  taxrate: number;
 }
 
 export interface ConfigResponse {

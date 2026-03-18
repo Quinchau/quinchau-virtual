@@ -106,6 +106,7 @@ public readonly configResource = rxResource({
 public readonly company = computed(() => this.configResource.value() ?? null);
 public readonly whatsappNumber = computed(() => this.company()?.telephone ?? '');
 public readonly companyName = computed(() => this.company()?.coyname ?? 'Cargando...');
+public readonly globalTaxRate = computed(() => this.company()?.taxrate ?? 0);
 
   // --- HOME STATE ----
 
@@ -226,18 +227,20 @@ public addStatus = linkedSignal<string | undefined, ActionStatus>({
 
 public addCurrentProductToCart(registro?: any): Observable<any> {
   const p = this.currentProductCard();
-  
+  const currentTax = this.globalTaxRate(); // <--- Usamos el valor dinámico
+
   if (!p || p.qty_in_order < 1) {
     return throwError(() => new Error('No product or invalid quantity'));
   }
-  
+
   this.addStatus.set('loading');
-    const payload: any = {
+  
+  const payload: any = {
     productos: [{
       stockid: p.stockid,
       cantidad: p.qty_in_order,
       precio: p.price_with_tax,
-      taxrate: 0.16
+      taxrate: currentTax
     }],
     typeabbrev: "01"
   };
