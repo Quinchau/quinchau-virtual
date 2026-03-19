@@ -20,8 +20,8 @@ export class ManagerApis {
   // Centralizamos todo en nodeBaseUrl para la nueva API
   private get nodeBaseUrl() { 
     return isPlatformServer(this.platformId) 
-      ? environment.nodeApiUrlServer 
-      : environment.nodeApiUrlBrowser; 
+      ? environment.apiUrlServer 
+      : environment.apiUrlBrowser; 
   }
 
   // --- MÉTODOS DE TRANSFERENCIAS (MIGRADO A NODE) ---

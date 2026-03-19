@@ -12,7 +12,7 @@ import { environment } from '../../environments/environment';
 })
 export class AuthService {
   private http = inject(HttpClient);
-  private apiUrl = `${environment.nodeApiUrlBrowser}/auth/login`;
+  private apiUrl = `${environment.apiUrlBrowser}/auth/login`;
   private platformId = inject(PLATFORM_ID);
   private document = inject(DOCUMENT);
   private managerState = inject(ManagerState);
