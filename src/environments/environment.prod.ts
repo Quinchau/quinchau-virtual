@@ -1,10 +1,10 @@
 export const environment = {
   production: true,
 
-  apiUrlBrowser: 'https://quinchau.com/webmaster2/api-quinchau-virtual',
 
-  apiUrlServer: 'https://quinchau.com/webmaster2/api-quinchau-virtual',
-
+  apiUrlBrowser: 'https://quinchau.com/api',
+  apiUrlServer: 'https://quinchau.com/api',
+  websocketUrl: 'wss://ws.quinchau.com',
   imgBannersUrl: 'https://quinchau.com/weberp/img/b',
   imgProductsUrl: 'https://quinchau.com/weberp/img/p'
 };

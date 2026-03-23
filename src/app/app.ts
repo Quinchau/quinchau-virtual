@@ -1,7 +1,8 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { Header } from './components/header/header';
 import { WhatsappButton } from './components/whatsapp-button/whatsapp-button';
+import { SocketIoService } from './services/socket-io.service';
 
 @Component({
   selector: 'app-root',
@@ -11,4 +12,5 @@ import { WhatsappButton } from './components/whatsapp-button/whatsapp-button';
 })
 export class App {
   protected readonly title = signal('quinchau-virtual');
+  private readonly socket = inject(SocketIoService);
 }

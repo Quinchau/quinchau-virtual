@@ -18,17 +18,12 @@ export class AuthService {
   private managerState = inject(ManagerState);
   private router = inject(Router);
 
-  /**
-   * Procesa la identidad del backend. Actualiza cookies, contador y datos de usuario.
-   * La lógica garantiza que el contador se actualice siempre, haya token o no.
-   */
   handleIdentityResponse(response: any): void {
     console.log('[Auth] Procesando identidad...');
     if (!isPlatformBrowser(this.platformId) || !response?.identidad) return;
 
     const { token, tipo, nombre, cantidad_referencias, payload } = response.identidad;
 
-    // 1. Gestión de Cookie: Solo si recibimos un token nuevo
     if (token) {
       const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
       this.document.cookie = `auth_token=${token}; Path=/; Max-Age=${thirtyDaysInSeconds}; SameSite=Lax`;
