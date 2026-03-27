@@ -15,7 +15,7 @@ export class SocketIoService {
 
   constructor() {
   if (!isPlatformBrowser(this.platformId)) {
-    console.log('[WS] ❌ No se inicia SocketIoService (SSR detectado)');
+    //console.log('[WS] ❌ No se inicia SocketIoService (SSR detectado)');
     return;
   }
 
@@ -24,21 +24,21 @@ export class SocketIoService {
   effect(() => {
     const user = this.managerState.currentUser();
 
-    console.log('[WS] 🔄 Effect disparado. currentUser =', user);
+    //console.log('[WS] 🔄 Effect disparado. currentUser =', user);
 
     if (user) {
       const token = this.getTokenFromCookie();
-      console.log('[WS] 👤 Usuario detectado. Token encontrado:', !!token);
+      //console.log('[WS] 👤 Usuario detectado. Token encontrado:', !!token);
 
       if (token) {
-        console.log('[WS] 🚀 Intentando conectar WebSocket con token...');
+        //console.log('[WS] 🚀 Intentando conectar WebSocket con token...');
         this.connect(token);
       } else {
-        console.warn('[WS] ⚠️ Usuario presente pero NO hay token en cookie');
+        //console.warn('[WS] ⚠️ Usuario presente pero NO hay token en cookie');
       }
 
     } else {
-      console.log('[WS] 👋 No hay usuario. Desconectando WebSocket...');
+      //console.log('[WS] 👋 No hay usuario. Desconectando WebSocket...');
       this.disconnect();
     }
   });

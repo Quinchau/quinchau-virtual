@@ -1,3 +1,47 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ==================== ANIMACIONES DEL BADGE DEL CARRITO ==================== */
+
+@keyframes cart-bounce {
+  0% {
+    transform: scale(0.6) translateY(0);
+  }
+  40% {
+    transform: scale(1.35) translateY(-6px);
+  }
+  70% {
+    transform: scale(0.95) translateY(2px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes cart-shake {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+  20% {
+    transform: rotate(-12deg) scale(2);
+  }
+  40% {
+    transform: rotate(8deg) scale(1);
+  }
+  60% {
+    transform: rotate(-6deg) scale(2);
+  }
+  80% {
+    transform: rotate(5deg) scale(1);
+  }
+}
+
+/* Clases que usamos en el componente */
+.animate-cart-bounce {
+  animation: cart-bounce 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-cart-shake {
+  animation: cart-shake 0.6s ease-in-out forwards;
+}

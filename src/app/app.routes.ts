@@ -10,37 +10,32 @@ import { Transfers } from './pages/transfers/transfers';
 import { adminGuard } from './guards/admin.guard';
 import { ProductOrder } from './pages/product-order/product-order';
 import { CartComponent } from './pages/checkout/checkout';
+import { ProductCartEditComponent } from './pages/product-cart-edit/product-cart-edit';
 
 export const routes: Routes = [
 
-  // 🔐 Autenticación
   { path: 'login', component: LoginComponent },
   { 
     path: 'register', 
     loadComponent: () => import('./pages/register/register').then(m => m.Register) 
   },
 
-  // 🏠 Home (landing)
   { path: 'home', component: Home },
 
-  // 🛒 Checkout
   { path: 'checkout', component: CartComponent },
 
-  // 🎉 Orden exitosa
   {
     path: 'success/:id',
     loadComponent: () =>
       import('./components/success-order/success-order').then(m => m.SuccessOrder)
   },
 
-  // 📦 Dashboard (admin)
   {
     path: 'dashboard',
     component: Dashboard,
     canActivate: [adminGuard]
   },
 
-  // 🔄 Transferencias
   {
     path: 'new-transfer',
     component: NewTransferComponent,
@@ -91,7 +86,6 @@ export const routes: Routes = [
 { path: ':categoria/:marca/:modelo', component: Home },
 
 
-  // 🔄 Redirección por defecto
   { path: '', redirectTo: '/home', pathMatch: 'full' },
 
 ];

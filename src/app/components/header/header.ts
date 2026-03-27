@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, linkedSignal, signal } from '@angular/core';
+import { afterNextRender, Component, computed, effect, ElementRef, inject, linkedSignal, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth';
@@ -48,6 +48,51 @@ export class Header {
     return marcaPrev ?? null;
   }
 });
+
+  pulso = signal(0);
+
+  private cartBadge = viewChild<ElementRef<HTMLSpanElement>>('cartBadge');
+
+  private intervalId: any = null;
+
+
+  constructor() {
+    afterNextRender(() => {
+      console.log('🚀 Header animación del carrito iniciada');
+
+      this.iniciarAnimacionPeriodica();
+    });
+  }
+
+  ngOnDestroy() {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+    }
+  }
+
+  private iniciarAnimacionPeriodica() {
+    // Limpiamos cualquier intervalo anterior
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+    }
+
+    this.intervalId = setInterval(() => {
+      const count = this.state.cartCount();
+
+      if (count > 0) {
+        // Incrementamos el pulso → alterna entre bounce y shake
+        this.pulso.update(v => v + 1);
+
+        // Forzamos reinicio de la animación CSS
+        const badgeEl = this.cartBadge()?.nativeElement;
+        if (badgeEl) {
+          badgeEl.style.animation = 'none';
+          void badgeEl.offsetWidth;        // ← clave para reiniciar
+          badgeEl.style.animation = '';
+        }
+      }
+    }, 5000); // cada 5 segundos
+  }
 
   // Modelo activo depende de la marca
   public modeloActivo = linkedSignal<MarcaConModelos | null, Modelo | null>({

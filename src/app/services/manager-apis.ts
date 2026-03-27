@@ -130,4 +130,18 @@ export class ManagerApis {
   public registerUser(userData: any): Observable<any> {
     return this.http.post(`${this.nodeBaseUrl}/auth/register`, userData);
   }
+
+  public updateCartItem(payload: { item_id: number, cotizacion_id: number, quantity: number }): Observable<any> {
+    return this.http.put(`${this.nodeBaseUrl}/checkout`, payload, {
+      withCredentials: true
+    });
+  }
+
+  public deleteCartItem(payload: { item_id: number, cotizacion_id: number }): Observable<any> {
+    // Nota profesional: En Angular, para enviar un body en un DELETE se usa la propiedad 'body' en las opciones
+    return this.http.delete(`${this.nodeBaseUrl}/checkout`, {
+      body: payload,
+      withCredentials: true
+    });
+  }
 }

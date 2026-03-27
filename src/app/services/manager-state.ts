@@ -176,10 +176,11 @@ public guestId = rxResource<string | null, void>({
 
   public guestIdSignal = this.guestId.value;
 
-  // -- CARD PRODUCT --
+  // -- CART PRODUCT --
 
 private manualSlugToLoad = signal<string>('');
-
+private readonly _currentCartProduct = signal<any | null>(null);
+public readonly currentCartProduct = this._currentCartProduct.asReadonly();
 public loadProductRemotely(slug: string): void {
   this.manualSlugToLoad.set(slug);
 }
@@ -218,7 +219,22 @@ public currentProductCard = signal<Product | null>(null);
 public readonly loadingProductCard = this.productCardResource.isLoading;
 public readonly productCardError = this.productCardResource.error;
 
-  // -- ADD TO CARD --
+// -- CART EDIT --
+
+public setEditingProduct(product: any): void {
+  this._currentCartProduct.set(product);
+}
+
+public clearCartSelection(): void {
+  this._currentCartProduct.set(null);
+}
+
+public reloadCart(): void {
+  // Esto dispara el rxResource del carrito automáticamente
+  this.refreshCartTrigger.update(n => n + 1);
+}
+
+// -- ADD TO CART --
 
 public addStatus = linkedSignal<string | undefined, ActionStatus>({
   source: () => this.currentProductCard()?.stockid,
