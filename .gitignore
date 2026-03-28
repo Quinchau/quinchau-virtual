@@ -38,6 +38,7 @@ testem.log
 /typings
 datos.md
 endpoints.md
+export.md
 
 # Deploy files
 deploy*

@@ -3,7 +3,7 @@ import { Injectable, inject, signal, computed, PLATFORM_ID, linkedSignal } from 
 import { ManagerApis } from './manager-apis';
 import { Transfer, TransferenciaDetalle, User, NewTransfer, ProductDetailData, DashboardResponse, HomeData, Visitante, Product } from '../models/transfer.model';
 import { TransferButtonInfo, getTransferButtonInfo } from '../data/transfer-actions';
-import { tap, catchError, of, throwError, finalize, map, fromEvent, merge, startWith, filter, Observable, switchMap } from 'rxjs';
+import { tap, catchError, of, throwError, finalize, map, fromEvent, merge, startWith, filter, Observable, switchMap, distinctUntilChanged } from 'rxjs';
 import { isPlatformBrowser, Location } from '@angular/common';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
@@ -86,7 +86,9 @@ public readonly productsResource = rxResource({
   public readonly newTransferType = signal<'ship' | 'rec' | null>(null);
   public readonly identidad = signal<Visitante | null>(null);
   public readonly cartCount = signal(0);
-  public readonly cartData = computed(() => this.cartResource.value());
+  public readonly cartData = computed(() => 
+  this.cartResource.value() ?? this.defaultCartResponse
+);
 
   // --- COMPANY CONFIG --- //
 
@@ -294,8 +296,14 @@ public addCurrentProductToCart(registro?: any): Observable<any> {
 
 private readonly isCheckoutPath = toSignal(
   this.router.events.pipe(
-    filter(event => event instanceof NavigationEnd),
-    map((event: NavigationEnd) => event.urlAfterRedirects.includes('/checkout'))
+    filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+    map((event: NavigationEnd) => {
+      // Usamos el parseador oficial de Angular para limpiar la URL
+      const urlTree = this.router.parseUrl(event.urlAfterRedirects);
+      return urlTree.root.children['primary']?.segments[0]?.path === 'checkout';
+    }),
+    // distinctUntilChanged evita que la señal emita si el resultado sigue siendo 'true'
+    distinctUntilChanged() 
   ),
   { initialValue: false }
 );
@@ -314,8 +322,11 @@ public readonly cartResource = rxResource({
       return of(this.defaultCartResponse);
     }
 
-    console.log('🛒 Disparando petición de carrito por navegación o refresco');
     return this.managerApis.getCart().pipe(
+      tap(response => {
+        // Actualizamos el buffer solo cuando llega la respuesta real
+        this._cartItems.set(response?.items ?? []);
+      }),
       catchError(err => {
         console.error('Error recuperando carrito:', err);
         return of(this.defaultCartResponse);
@@ -323,6 +334,7 @@ public readonly cartResource = rxResource({
     );
   }
 });
+
 private readonly defaultCartResponse: CartResponse = {
     exito: false,
     cotizacion_id: 0,
@@ -332,7 +344,8 @@ private readonly defaultCartResponse: CartResponse = {
     identidad: null
   };
 
-public readonly cartItems = computed(() => this.cartData()?.items ?? []);
+private _cartItems = signal<any[]>([]);
+public readonly cartItems = this._cartItems.asReadonly();
 public readonly cartTotal = computed(() => this.cartData()?.total ?? 0);
 public readonly cartIsEmpty = computed(() => 
   !this.cartResource.isLoading() && this.cartItems().length === 0
