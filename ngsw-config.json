@@ -1,6 +1,6 @@
 {
-  "$schema": "./node_modules/@angular/service-worker/config/schema.json",
-  "index": "/index.html",
+  "index": "/index.csr.html",
+  "navigationRequestStrategy": "freshness",
   "assetGroups": [
     {
       "name": "app",
@@ -8,11 +8,12 @@
       "resources": {
         "files": [
           "/favicon.ico",
-          "/index.csr.html",
-          "/index.html",
           "/manifest.webmanifest",
           "/*.css",
-          "/*.js"
+          "/*.js",
+          "/chunk-*.js",
+          "/**/*.js",
+          "/**/*.css"
         ]
       }
     },
@@ -22,8 +23,23 @@
       "updateMode": "prefetch",
       "resources": {
         "files": [
+          "/icons/**",
           "/**/*.(svg|cur|jpg|jpeg|png|apng|webp|avif|gif|otf|ttf|woff|woff2)"
         ]
+      }
+    }
+  ],
+  "dataGroups": [
+    {
+      "name": "product-images",
+      "urls": [
+        "/weberp/img/**"
+      ],
+      "cacheConfig": {
+        "strategy": "performance",
+        "maxSize": 100,
+        "maxAge": "1d",
+        "timeout": "5s"
       }
     }
   ]

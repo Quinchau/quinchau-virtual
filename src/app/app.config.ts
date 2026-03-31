@@ -2,7 +2,8 @@ import {
   ApplicationConfig, 
   provideBrowserGlobalErrorListeners, 
   provideZonelessChangeDetection, 
-  importProvidersFrom 
+  importProvidersFrom, 
+  isDevMode
 } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
@@ -15,6 +16,7 @@ import {
 
 import { routes } from './app.routes';
 import { authInterceptor } from './services/auth.interceptor';
+import { provideServiceWorker } from '@angular/service-worker';
 
 
 export const appConfig: ApplicationConfig = {
@@ -41,6 +43,11 @@ export const appConfig: ApplicationConfig = {
       withComponentInputBinding()
     ),
 
-    importProvidersFrom(ReactiveFormsModule)
+    importProvidersFrom(ReactiveFormsModule),
+
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: !isDevMode(),
+      registrationStrategy: 'registerWhenStable:30000',
+    }),
   ]
 };
