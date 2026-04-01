@@ -129,6 +129,7 @@ export interface HomeData {
 }
 
 export interface CategoriaNavegacion {
+  idcategoria: string;
   nombre: string;
   slug: string;
   url: string;

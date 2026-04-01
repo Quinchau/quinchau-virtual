@@ -1,0 +1,54 @@
+<section class="mb-12">
+  <div class="relative overflow-hidden rounded-xl bg-surface-container-low p-8 md:p-12">
+    <div class="relative z-10 max-w-2xl">
+      <span class="inline-block px-3 py-1 rounded-full bg-primary-container/20 text-primary font-bold text-xs uppercase tracking-widest mb-4">
+        Inventory & Parts
+      </span>
+      <h2 class="text-4xl md:text-5xl font-headline font-extrabold tracking-tight text-on-surface mb-6 leading-tight">
+        Digital Catalog <br />
+        <span class="text-primary italic">Precision Index.</span>
+      </h2>
+      <p class="text-on-surface-variant text-lg mb-8 max-w-md">
+        Access our high-performance technical specifications in structured Excel format.
+      </p>
+    </div>
+    <div class="absolute right-0 top-0 h-full w-1/3 hidden lg:block opacity-20 pointer-events-none">
+      <img class="h-full w-full object-cover grayscale" src="assets/images/engine-parts-hero.jpg" alt="Technical machinery" />
+    </div>
+  </div>
+</section>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
+  
+  @for (item of catalogos(); track item.id) {
+    <div class="group bg-surface-container-lowest rounded-xl p-6 transition-all hover:shadow-[0_20px_50px_rgba(148,74,0,0.08)]">
+      <div class="flex justify-between items-start mb-4">
+        <div class="p-3 bg-primary-container/10 rounded-lg text-primary">
+          <span class="material-symbols-outlined text-3xl">{{ item.icon }}</span>
+        </div>
+        <span class="px-2 py-1 bg-surface-container-highest text-on-surface-variant text-[10px] font-bold rounded uppercase">
+          {{ item.version }}
+        </span>
+      </div>
+      
+      <h3 class="text-xl font-headline font-bold text-on-surface mb-2">{{ item.nombre }}</h3>
+      <p class="text-sm text-on-surface-variant mb-6">{{ item.descripcion }}</p>
+      
+      <button (click)="ejecutarDescarga(item.id, item.nombre)"
+              class="w-full bg-gradient-to-r from-primary to-primary-container text-on-primary font-bold py-3 px-4 rounded-md text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-md cursor-pointer">
+        <span class="material-symbols-outlined text-lg">download</span>
+        Descargar Excel ({{ item.formato }})
+      </button>
+    </div>
+  }
+
+  <div class="group bg-surface-container rounded-xl p-6 border-2 border-dashed border-outline-variant/30 flex flex-col items-center justify-center text-center">
+    <span class="material-symbols-outlined text-4xl text-outline mb-4">help_outline</span>
+    <h3 class="text-lg font-headline font-bold text-on-surface mb-1">Missing a Part?</h3>
+    <p class="text-xs text-on-surface-variant mb-4 px-4">Contact our technical team for custom inventory extracts.</p>
+    <button class="text-primary font-bold text-sm uppercase tracking-wider hover:underline transition-colors hover:text-primary-container">
+      Request Data
+    </button>
+  </div>
+
+</div>

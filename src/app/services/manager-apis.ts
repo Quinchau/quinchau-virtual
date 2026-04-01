@@ -144,4 +144,17 @@ export class ManagerApis {
       withCredentials: true
     });
   }
+
+  downloadCategoryExcel(idCategoria: string): Observable<Blob> {
+  const params = new HttpParams()
+    .set('idcategoria', idCategoria)
+    .set('format', 'xlsx')
+    .set('stock', '1');
+
+  return this.http.get(`${this.nodeBaseUrl}/products`, {
+    params,
+    responseType: 'blob'
+  });
+}
+
 }

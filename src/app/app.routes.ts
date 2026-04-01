@@ -8,9 +8,8 @@ import { NewTransferComponent } from './pages/newtransfer/newtransfer';
 import { ProductDetail } from './pages/product-detail/product-detail';
 import { Transfers } from './pages/transfers/transfers';
 import { adminGuard } from './guards/admin.guard';
-import { ProductOrder } from './pages/product-order/product-order';
 import { CartComponent } from './pages/checkout/checkout';
-import { ProductCartEditComponent } from './pages/product-cart-edit/product-cart-edit';
+import { Downloaders } from './pages/downloaders/downloaders';
 
 export const routes: Routes = [
 
@@ -28,6 +27,11 @@ export const routes: Routes = [
     path: 'success/:id',
     loadComponent: () =>
       import('./components/success-order/success-order').then(m => m.SuccessOrder)
+  },
+
+  {
+    path: 'downloader',
+    component: Downloaders,
   },
 
   {
