@@ -1,90 +1,96 @@
-<main class="container mx-auto p-4 md:p-6 flex flex-col gap-6 min-h-screen">
-
-  <app-search-box />
+<main class="container mx-auto px-4 pt-4 pb-12 md:px-6 md:pt-6 flex flex-col gap-8 min-h-screen">
 
   @if (managerState.productSearchTerm() || managerState.productModelFilter()) {
-    
-    <div class="flex flex-col gap-6 animate-in fade-in duration-500">
-      
+
+    <!-- ========================================================= -->
+    <!-- MODO B: RESULTADOS DE BÚSQUEDA                            -->
+    <!-- ========================================================= -->
+
+    <div class="flex flex-col gap-6 animate-in fade-in duration-700">
+
       @if (managerState.currentModel(); as modelo) {
-        <header class="flex items-center justify-between bg-white p-4 rounded-xl shadow-md border border-black/5 slide-in-from-top-2 duration-300">
-          <div class="flex items-center gap-4">
+        <header class="flex items-center justify-between bg-white rounded-[2.5rem] p-5 shadow-[0_10px_40px_rgba(0,0,0,0.03)] border-none animate-in slide-in-from-top-4 duration-500">
+          <div class="flex items-center gap-5">
             <div class="relative">
               <img [src]="modelo.img_url"
-                   [alt]="'Repuestos para ' + modelo.modeldescrip"
-                   fetchpriority="high"
-                   class="w-16 h-16 md:w-20 md:h-20 object-cover rounded-full border-2 border-orange-100 shadow-sm">
-
-              <div class="absolute -bottom-1 -right-1 bg-orange-500 w-6 h-6 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+                   [alt]="modelo.modeldescrip"
+                   class="w-20 h-20 md:w-24 md:h-24 object-cover rounded-[2rem] shadow-sm">
+              <div class="absolute -bottom-1 -right-1 bg-orange-500 w-8 h-8 rounded-full flex items-center justify-center border-[3px] border-white shadow-md">
+                <span class="material-symbols-outlined text-white text-[16px] font-bold">settings_motorcycle</span>
               </div>
             </div>
-
             <div>
-              <span class="text-[9px] font-black text-orange-500 uppercase tracking-[0.2em]">Categoría Seleccionada</span>
-              <h1 class="text-xl md:text-2xl font-black text-slate-800 leading-none">{{ modelo.modeldescrip }}</h1>
-              <p class="text-xs text-slate-500 mt-1 font-medium">Explora nuestro stock de repuestos especializados.</p>
+              <span class="font-inter text-[10px] font-black text-orange-500 uppercase tracking-[0.25em]">Modelo Seleccionado</span>
+              <h1 class="font-plus-jakarta text-2xl md:text-3xl font-extrabold text-zinc-950 leading-tight">{{ modelo.modeldescrip }}</h1>
+              <p class="font-inter text-xs text-zinc-400 mt-1 font-medium italic">Partes y repuestos certificados</p>
             </div>
           </div>
 
           <button (click)="copiarUrl()"
-                  class="p-3 rounded-lg shadow-sm transition active:scale-95 bg-gray-100 hover:bg-gray-200 text-gray-700"
-                  [class.bg-green-500]="mostrarCopiado()"
-                  [class.text-white]="mostrarCopiado()"
-                  title="Copiar enlace">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-7 h-7">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8 16.5h8m-8-4h8m-8-4h8M5 19.5h14a2 2 0 002-2V6.5a2 2 0 00-2-2H5a2 2 0 00-2 2v11a2 2 0 002 2z" />
-            </svg>
+                  class="p-4 rounded-2xl transition-all active:scale-90 bg-zinc-50 hover:bg-zinc-100 text-zinc-400 group"
+                  [class.!bg-orange-500]="mostrarCopiado()"
+                  [class.!text-white]="mostrarCopiado()">
+            <span class="material-symbols-outlined transition-transform group-hover:rotate-12">
+              {{ mostrarCopiado() ? 'check' : 'ios_share' }}
+            </span>
           </button>
         </header>
       }
 
-      <div class="flex items-center justify-end mb-2">
+      <div class="flex items-center justify-between px-2">
+        <a routerLink="/home"
+           class="font-inter text-[11px] font-bold uppercase tracking-widest text-zinc-400 hover:text-orange-600 transition-all flex items-center gap-2 group">
+          <span class="material-symbols-outlined text-lg transition-transform group-hover:-translate-x-1">west</span>
+          Inicio
+        </a>
+
         <button (click)="toggleOnlyStock()"
-                class="px-3 py-1.5 rounded-lg text-xs font-black uppercase transition border border-slate-200 shadow-sm active:scale-95 hover:bg-orange-500 hover:text-white"
-                [class.bg-orange-500]="onlyStock()"
-                [class.text-white]="onlyStock()">
-          Mostrar solo disponibles
+                class="px-6 py-2.5 rounded-full font-inter text-[11px] font-extrabold uppercase tracking-widest transition-all shadow-sm border-none active:scale-95"
+                [class]="onlyStock() ? 'bg-orange-500 text-white shadow-orange-200' : 'bg-white text-zinc-500 hover:bg-zinc-50'">
+          {{ onlyStock() ? 'Viendo Disponibles' : 'Todos los productos' }}
         </button>
       </div>
 
-      <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+      <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         @for (product of filteredProducts(); track product.stockid) {
-          <a [routerLink]="[]"
-             [queryParams]="{ p: product.stockid }"
-             queryParamsHandling="merge"
-             (click)="handleProductSelection(product)"
-             class="group block w-full text-left bg-white rounded-lg shadow-md overflow-hidden border border-black/5 p-4 flex flex-col justify-between h-full hover:shadow-lg transition-all duration-300 active:scale-[0.98] cursor-pointer">
-            
+          <article (click)="handleProductSelection(product)"
+                   class="group bg-white rounded-[2rem] p-3 flex flex-col justify-between h-full transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,0,0,0.04)] cursor-pointer">
             <div>
-              <div class="w-full h-32 bg-white mb-2 flex items-center justify-center rounded-md relative overflow-hidden">
-                <img [src]="product.cover_image_id" 
-                     class="object-contain h-full p-2 transition-transform duration-500 group-hover:scale-110" 
-                     loading="lazy"
+              <div class="w-full aspect-square bg-[#f8f8f8] mb-4 flex items-center justify-center rounded-[1.5rem] overflow-hidden">
+                <img [src]="product.cover_image_id"
+                     class="object-contain w-3/4 h-3/4 transition-transform duration-700 group-hover:scale-110"
                      [alt]="product.description">
               </div>
-              <p class="text-xs font-bold line-clamp-2 text-slate-700 leading-tight mb-2 group-hover:text-orange-600 transition-colors">
+              <h3 class="font-inter text-[13px] font-semibold leading-tight text-zinc-800 line-clamp-2 px-1">
                 {{ product.description }}
-              </p>
+              </h3>
             </div>
 
-            <div class="flex items-center justify-between pt-2 border-t border-slate-50">
-              <p class="text-orange-600 font-black text-sm">${{ product.price_with_tax }}</p>
-              <span [ngClass]="product.total_quantity > 0 ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-600'"
-                    class="px-2 py-0.5 rounded text-[8px] font-black uppercase">
-                {{ product.total_quantity > 0 ? 'Disponible' : 'Sin Stock' }}
+            <div class="flex items-center justify-between pt-4 px-1 pb-1">
+              <p class="font-plus-jakarta text-[16px] font-extrabold text-zinc-950 tracking-tighter">
+                ${{ product.price_with_tax }}
+              </p>
+              <span [class]="product.total_quantity > 0 ? 'bg-orange-50 text-orange-600' : 'bg-zinc-100 text-zinc-400'"
+                    class="px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider">
+                {{ product.total_quantity > 0 ? 'En Stock' : 'Agotado' }}
               </span>
             </div>
-          </a>
+          </article>
         } @empty {
-          <div class="col-span-full py-20 text-center">
+          <div class="col-span-full py-24 text-center">
             @if (managerState.productsResource.isLoading()) {
-              <p class="text-slate-400 font-bold uppercase tracking-widest text-xs animate-pulse">Buscando productos...</p>
+              <div class="flex flex-col items-center gap-4">
+                <div class="w-10 h-10 border-[3px] border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                <p class="font-inter text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400">
+                  Sincronizando Stock...
+                </p>
+              </div>
             } @else {
-              <div class="bg-white p-10 rounded-xl border border-dashed border-slate-200">
-                <p class="text-slate-400 font-bold">No se encontraron productos para esta selección.</p>
+              <div class="bg-white/50 rounded-[3rem] p-12 border-2 border-dashed border-zinc-100 max-w-md mx-auto">
+                <span class="material-symbols-outlined text-5xl text-zinc-200 mb-4 font-light">inventory_2</span>
+                <p class="font-inter text-zinc-400 font-medium">
+                  No encontramos coincidencias para tu búsqueda.
+                </p>
               </div>
             }
           </div>
@@ -93,22 +99,34 @@
     </div>
 
   } @else {
-    
-    <div class="flex flex-col gap-6 animate-in fade-in duration-500">
-      <section class="bg-white rounded-xl shadow-md border border-black/5 min-h-[160px] overflow-hidden">
+
+    <!-- ========================================================= -->
+    <!-- MODO A: HOME NORMAL + NUEVAS SECCIONES STITCH             -->
+    <!-- ========================================================= -->
+
+    <div class="flex flex-col gap-12 animate-in fade-in duration-700">
+
+      <!-- 1) HERO / BANNERS -->
+      <section class="rounded-[3rem] overflow-hidden shadow-2xl shadow-zinc-200 bg-zinc-100 aspect-[16/8] md:aspect-[21/7] relative">
         @if (managerState.homeResource.isLoading()) {
-          <div class="w-full h-48 animate-pulse bg-slate-200 flex items-center justify-center">
-            <span class="text-slate-400 text-xs font-bold uppercase tracking-widest">Cargando Banners...</span>
+          <div class="w-full h-full flex items-center justify-center animate-pulse bg-zinc-200">
+            <span class="font-inter text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400">
+              Cargando Experiencia...
+            </span>
           </div>
         } @else {
           <div class="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide h-full">
             @for (banner of managerState.homeBanners(); track banner.idbanner) {
-              <div class="snap-center shrink-0 w-full relative group cursor-pointer">
-                <img [src]="banner.img_url" [alt]="banner.titulo" 
-                     class="w-full h-full object-cover aspect-video md:aspect-auto max-h-[400px]">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-6">
-                   <span class="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-1">{{ banner.titulo }}</span>
-                   <p class="text-white text-sm font-medium line-clamp-2 opacity-90 max-w-xl">{{ banner.descripcion }}</p>
+              <div class="snap-center shrink-0 w-full relative group">
+                <img [src]="banner.img_url"
+                     class="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-105">
+                <div class="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent flex flex-col justify-end p-8 md:p-14">
+                  <span class="font-inter text-[11px] font-black text-orange-400 uppercase tracking-[0.4em] mb-2">
+                    {{ banner.titulo }}
+                  </span>
+                  <p class="font-plus-jakarta text-white text-xl md:text-3xl font-extrabold max-w-2xl leading-tight">
+                    {{ banner.descripcion }}
+                  </p>
                 </div>
               </div>
             }
@@ -116,70 +134,234 @@
         }
       </section>
 
-      <section class="bg-white rounded-xl shadow-md border border-black/5 p-4 flex flex-col gap-4">
-        <header class="flex justify-between items-center border-b border-slate-50 pb-2">
-          <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Explorar Modelos</span>
-        </header>
-        
-        <div class="flex items-center gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2">
-          @for (modelo of managerState.modelosDestacados(); track modelo.idmodelo) {
-            <div class="snap-center shrink-0 flex flex-col items-center gap-2 w-20">
-              <a [routerLink]="[
-                    '/' + getCategoriaDeModelo(modelo)?.slug,
-                    getMarcaDeModelo(modelo)?.slug,
-                    slugify(modelo.modeldescrip + '-' + modelo.idmodelo)
-                 ]"
-                 class="w-16 h-16 rounded-full bg-slate-50 border-2 border-slate-100 flex items-center justify-center overflow-hidden hover:border-orange-400 hover:shadow-md transition-all active:scale-90">
-                @if (modelo.img_url) {
-                  <img [src]="modelo.img_url" [alt]="modelo.alt_text" class="w-full h-full object-cover">
-                } @else {
-                  <span class="text-xs text-slate-400 font-black uppercase">{{ modelo.modeldescrip.substring(0,2) }}</span>
-                }
-              </a>
-              <span class="text-[10px] font-bold text-slate-600 truncate w-full text-center">{{ modelo.modeldescrip }}</span>
-            </div>
+      <!-- 2) QUICK SELECT (Versión Stitch, limpia y moderna) -->
+<section class="bg-white rounded-[3rem] p-4 shadow-[0_10px_50px_rgba(0,0,0,0.03)] flex flex-col gap-4">
+
+  <!-- Header -->
+  <header class="flex justify-between items-center px-2">
+    <div>
+      <h2 class="text-xl font-extrabold tracking-tight text-on-surface">EXPLORAR MODELOS</h2>
+    </div>
+
+    <a routerLink="/category"
+       class="text-xs font-bold text-zinc-400 tracking-widest hover:text-orange-600 transition">
+      VER TODO →
+    </a>
+  </header>
+
+  <!-- Lista de modelos -->
+  <div class="flex gap-6 overflow-x-auto scrollbar-hide pb-2">
+
+    @for (modelo of managerState.modelosDestacados(); track modelo.idmodelo) {
+
+      <div class="flex flex-col items-center gap-3 min-w-[80px]">
+
+        <!-- Card circular -->
+        <a [routerLink]="[
+              '/' + getCategoriaDeModelo(modelo)?.slug,
+              getMarcaDeModelo(modelo)?.slug,
+              slugify(modelo.modeldescrip + '-' + modelo.idmodelo)
+            ]"
+           class="w-20 h-20 rounded-full bg-zinc-50 flex items-center justify-center
+                  shadow-sm hover:shadow-md transition-shadow cursor-pointer p-2">
+
+          @if (modelo.img_url) {
+            <img [src]="modelo.img_url"
+                 class="w-full h-full object-contain rounded-full">
+          } @else {
+            <span class="text-lg font-black text-zinc-300">
+              {{ modelo.modeldescrip.substring(0,1) }}
+            </span>
           }
 
-          <div class="snap-center shrink-0 flex flex-col items-center gap-2 w-20">
-            <a routerLink="/categorias" 
-               class="w-16 h-16 rounded-full bg-orange-500 flex items-center justify-center text-white shadow-lg shadow-orange-200 hover:bg-orange-600 transition-all active:scale-95">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" />
-              </svg>
-            </a>
-            <span class="text-[10px] font-bold text-orange-600 uppercase text-center">Todos</span>
+        </a>
+
+        <!-- Nombre -->
+        <span class="text-xs font-bold text-zinc-600 text-center leading-tight">
+          {{ modelo.modeldescrip }}
+        </span>
+
+      </div>
+    }
+
+    <!-- Botón Catálogo -->
+    <div class="flex flex-col items-center gap-3 min-w-[80px]">
+      <a routerLink="/category"
+         class="w-20 h-20 rounded-full bg-orange-500 flex items-center justify-center
+                text-white shadow-md hover:bg-orange-600 transition cursor-pointer">
+        <span class="material-symbols-outlined text-3xl font-light">add</span>
+      </a>
+      <span class="text-xs font-bold text-orange-600 text-center leading-tight">
+        Catálogo
+      </span>
+    </div>
+
+  </div>
+</section>
+
+
+      <!-- 3) SECCIÓN B2B (BENTO) -->
+      <section class="mb-12">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+
+          <!-- Bloque principal -->
+          <div class="md:col-span-8 bg-zinc-900 rounded-[2rem] p-8 relative overflow-hidden flex flex-col justify-between min-h-[300px]">
+            <div class="z-10">
+              <div class="flex items-center gap-3 mb-4">
+                <span class="material-symbols-outlined text-orange-500 bg-orange-500/10 p-2 rounded-lg">
+                  business_center
+                </span>
+                <span class="text-white font-bold tracking-widest text-xs uppercase">
+                  Enterprise Solutions
+                </span>
+              </div>
+              <h2 class="text-white text-3xl font-extrabold mb-4 leading-tight">
+                Ventas al Mayor &amp; B2B
+              </h2>
+              <p class="text-zinc-400 max-w-md mb-8">
+                Access wholesale pricing, bulk ordering tools, and dedicated account management for retailers.
+              </p>
+            </div>
+
+            <div class="flex flex-wrap gap-4 z-10">
+              <button class="flex items-center gap-2 bg-white text-zinc-900 px-6 py-3 rounded-xl font-bold hover:bg-orange-50 transition-colors">
+                <span class="material-symbols-outlined">download</span>
+                Catalog Download
+              </button>
+
+              <button class="flex items-center gap-2 bg-orange-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-orange-500 transition-colors shadow-lg shadow-orange-900/40">
+                Bulk Order Form
+              </button>
+            </div>
+
+            <div class="absolute -right-20 -bottom-20 opacity-20 transform -rotate-12 pointer-events-none">
+              <span class="material-symbols-outlined text-[300px] text-orange-500">factory</span>
+            </div>
           </div>
+
+          <!-- Bloque secundario -->
+          <div class="md:col-span-4 bg-orange-500 rounded-[2rem] p-4 flex flex-col justify-between text-white">
+            <div>
+              <span class="text-white/80 font-bold text-xs uppercase tracking-widest mb-2 block">
+                Global Logistics
+              </span>
+              <h3 class="text-2xl font-black italic tracking-tighter">
+                ENGINEERED FOR SPEED.
+              </h3>
+            </div>
+
+            <div class="space-y-4">
+              <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined">local_shipping</span>
+                <span class="text-sm font-bold">Priority Shipping</span>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined">verified</span>
+                <span class="text-sm font-bold">Certified Parts</span>
+              </div>
+
+              <div class="pt-4">
+                <a class="text-white underline font-bold text-sm" href="#">
+                  Become a Partner
+                </a>
+              </div>
+            </div>
+          </div>
+
         </div>
       </section>
+
+      <!-- 4) FEATURED PRODUCTS (TOP PERFORMANCE PARTS) -->
+      <section class="mb-20">
+        <h2 class="text-xl font-extrabold tracking-tight text-on-surface mb-3">
+          TOP PERFORMANCE PARTS
+        </h2>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+          <!-- Card 1 -->
+          <div class="group bg-white rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300">
+            <div class="aspect-square rounded-xl bg-zinc-50 overflow-hidden mb-4 relative">
+              <img
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-rK338fG-8gFIfMbng4qdb_XCm7kdox_xP8aSlDN0UB7OMmIfocBAhcq5jJ4hrFgzt3Eh-5ZML8BSFlWDRXWWcmt4_bH79Y7ViRqmNSzp79UlAjd7-ZL8pGMpB9YKhMLegt7jGLSRvwTg5n3cIuh7Fd928mJpkiVBgp8o22sHTCUm6oFTd2W1pwrIMzVDK_Rehf0rfuPTkKqapk5b5mo--dQpubYnzvU7LrSQ9Jl6W3AmCo_QXHMR36_kQmRhQh5Id8yOqSyf4AcC"
+                class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+              <span class="absolute top-2 right-2 bg-orange-100 text-orange-600 text-[10px] font-black px-2 py-1 rounded-md">
+                NEW
+              </span>
+            </div>
+            <p class="text-xs text-zinc-500 mb-1">Cylinder Components</p>
+            <h3 class="font-bold text-sm mb-2 text-zinc-800">
+              Racing Piston Set NK250
+            </h3>
+            <p class="text-orange-600 font-black">$124.99</p>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="group bg-white rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300">
+            <div class="aspect-square rounded-xl bg-zinc-50 overflow-hidden mb-4 relative">
+              <img
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXY6c_Vf82Cym-TpUH4JkzNKoJGJ_X-KLfxK0S5Y905R2SjtmEe2YzGKXc-1bg__7YwP6iTzo2EppORSrltI-1l2Nh4ydTQm2ytBw72ovgXTKB0CbC99kjbGUQTaGDHEKY1vVS5SWN3TgfVOdpN1OeEpdMPMxIu4ncye8C0IACS1MvHKdCLlO6bm1NAcwPrpfY_M7eUllPpjP9s4LlYTk8AxCinme8LjGjurOJqCJspD5DwI3rmrCbjVhY9vbI7PzEtPWAZc8Wfs6c"
+                class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+            </div>
+            <p class="text-xs text-zinc-500 mb-1">Braking Systems</p>
+            <h3 class="font-bold text-sm mb-2 text-zinc-800">
+              Ventilated Disc GN125
+            </h3>
+            <p class="text-orange-600 font-black">$45.50</p>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="group bg-white rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300">
+            <div class="aspect-square rounded-xl bg-zinc-50 overflow-hidden mb-4 relative">
+              <img
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYsUzt8r2Z6QIuO5in4ubSt0Kf2IVLrcEgjKm3bWfWlOJvZl8HmVhaWTeUzKtlmXuenL_l01llUR7nd4_g9AzCGfoN6TZOPVJLuw51NzntmSD04tia4t7fBC3-mMUsJeKT5CW5qy_x_HaB0yh7wXrhn_tyF5x9loXDmnKODXvdDLuBcKMjUO0fA0KGj8zJu5c67HmtqVS0Eq5Ejy4Cx0-PNHQow1RtH_ORF9os34raNz1nJ40YDb8c9Kxa-cNLq0tGN_m8MFvxTgmj"
+                class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+            </div>
+            <p class="text-xs text-zinc-500 mb-1">Electrical</p>
+            <h3 class="font-bold text-sm mb-2 text-zinc-800">
+              Full LED Assembly HJ110
+            </h3>
+            <p class="text-orange-600 font-black">$89.00</p>
+          </div>
+
+          <!-- Card 4 -->
+          <div class="group bg-white rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300">
+            <div class="aspect-square rounded-xl bg-zinc-50 overflow-hidden mb-4 relative">
+              <img
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSY7ZI-YwgmgEY_xvUq79X1tSsLxcbwCt8y9T-rKc0k0DzNOGdJ_QfomL4kY-i6OTT2nVtrfgAi4YlqCPa3GeIId2cylXOBn4tj1ht2PXllF447DeVtL_5-sq_Cl-M67iAIjq67P6ECL75Z2RgsS2qNrMPkW2U4JvoEPllFKSJu7baledRZ7-vNucECRuZ5VIUCDjis81ggO-EwLBbWIjZk1cS0Aajn5nid37xX_l3hLfc99yP2YpBRIImNoTKGUEqrTHGJYL8WsIj"
+                class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+            </div>
+            <p class="text-xs text-zinc-500 mb-1">Transmission</p>
+            <h3 class="font-bold text-sm mb-2 text-zinc-800">
+              Gold O-Ring Chain
+            </h3>
+            <p class="text-orange-600 font-black">$62.20</p>
+          </div>
+
+        </div>
+      </section>
+
     </div>
-  } 
-
-  <section aria-hidden="true" class="sr-only">
-    @for (modelo of managerState.homeModelos(); track modelo.idmodelo) {
-      <a [href]="'/home?idmodelo=' + modelo.idmodelo">{{ modelo.modeldescrip }}</a>
-    }
-  </section>
-
+  }
 </main>
 
 @if (selectedProductId(); as id) {
-  <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-    
-    <div class="relative w-full max-w-2xl">
-      
-      <button (click)="closeProduct()" 
-              class="absolute -top-12 right-0 text-white flex items-center gap-2 font-bold uppercase text-xs hover:text-orange-400 transition-colors">
-        Cerrar 
-        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-        </svg>
+  <div class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-zinc-950/40 backdrop-blur-md p-0 sm:p-6 animate-in fade-in duration-500"
+       (click)="closeProduct()">
+
+    <div class="relative w-full max-w-3xl animate-in slide-in-from-bottom-20 duration-700 ease-out"
+         (click)="$event.stopPropagation()">
+
+      <button (click)="closeProduct()"
+              class="absolute -top-16 right-6 sm:-right-4 sm:-top-12 text-white flex items-center gap-2 font-inter font-black uppercase text-[11px] tracking-[0.3em] hover:text-orange-400 transition-colors">
+        ESC
+        <span class="material-symbols-outlined text-2xl font-light">close</span>
       </button>
 
-      <app-product-order 
-        [productId]="id"
-        class="block w-full bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 duration-500" 
-      />
-      
+      <div class="bg-white rounded-t-[3.5rem] sm:rounded-[3.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.2)] overflow-hidden">
+        <app-product-order [productId]="id" />
+      </div>
     </div>
   </div>
 }

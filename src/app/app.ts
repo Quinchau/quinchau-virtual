@@ -1,13 +1,13 @@
 import { Component, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { Header } from './components/header/header';
-import { WhatsappButton } from './components/whatsapp-button/whatsapp-button';
+import { BottomNav } from './components/bottom-nav/bottom-nav';
 import { SocketIoService } from './services/socket-io.service';
 import { SwUpdateService } from './services/sw-update.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, Header, WhatsappButton],
+  imports: [RouterOutlet, Header, BottomNav],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })

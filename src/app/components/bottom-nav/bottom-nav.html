@@ -1,0 +1,54 @@
+<!-- src/app/components/bottom-nav/bottom-nav.html -->
+
+<nav class="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white border-t border-zinc-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] rounded-t-3xl py-2">
+  <div class="flex items-center justify-around max-w-md mx-auto px-4">
+
+    <!-- HOME -->
+    <a [routerLink]="['/home']"
+       routerLinkActive="bg-orange-500 text-white rounded-2xl"
+       class="flex flex-col items-center py-2 px-5 transition-all active:scale-95">
+      <span class="material-symbols-outlined text-3xl">home</span>
+      <span class="text-[10px] font-semibold tracking-widest mt-1">HOME</span>
+    </a>
+
+    <!-- CATEGORÍAS -->
+    <a [routerLink]="['/category']"
+       routerLinkActive="bg-orange-500 text-white rounded-2xl"
+       class="flex flex-col items-center py-2 px-5 transition-all active:scale-95">
+      <span class="material-symbols-outlined text-3xl">grid_view</span>
+      <span class="text-[10px] font-semibold tracking-widest mt-1">CATEGORIES</span>
+    </a>
+
+    <!-- CARRITO -->
+    <a [routerLink]="['/checkout']"
+       routerLinkActive="bg-orange-500 text-white rounded-2xl"
+       class="flex flex-col items-center py-2 px-5 relative transition-all active:scale-95">
+      <div class="relative">
+        <span class="material-symbols-outlined text-3xl">shopping_cart</span>
+        
+        @if (cartCount() > 0) {
+          <span 
+            #cartBadge
+            [class.animate-cart-bounce]="pulso() % 2 === 0"
+            [class.animate-cart-shake]="pulso() % 2 === 1"
+            class="absolute -top-1 -right-1 flex h-5 min-w-[20px] items-center justify-center 
+                   rounded-full bg-red-600 text-white text-[10px] font-black shadow">
+            {{ cartCount() }}
+          </span>
+        }
+      </div>
+      <span class="text-[10px] font-semibold tracking-widest mt-1">CART</span>
+    </a>
+
+    <!-- WHATSAPP -->
+    <a href="https://wa.me/56912345678" 
+       target="_blank"
+       class="flex flex-col items-center py-2 px-5 transition-all active:scale-95">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/1200px-WhatsApp.svg.png" 
+           alt="WhatsApp" 
+           class="w-8 h-8">
+      <span class="text-[10px] font-semibold tracking-widest mt-1 text-[#25D366]">WHATSAPP</span>
+    </a>
+
+  </div>
+</nav>
