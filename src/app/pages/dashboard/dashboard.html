@@ -1,79 +1,112 @@
-<!-- src/app/pages/dashboard/dashboard.html -->
-<div class="container mx-auto px-4 py-8">
-  <!-- Header del Dashboard -->
-  <div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-800">Dashboard</h1>
-    <p class="text-gray-600 mt-2">
-      Bienvenido, <span class="font-semibold">{{ dashboardStats().usuario }}</span> • 
-      Ubicación: <span class="font-semibold">{{ dashboardStats().ubicacion }}</span>
-    </p>
-  </div>
+<div class="pt-6 px-4 pb-6 max-w-7xl mx-auto">
 
-  <!-- Tarjetas de Resumen -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-    <!-- Tarjeta: Por Enviar -->
-    <div 
-      class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500 cursor-pointer hover:shadow-lg transition-shadow"
+  <div class="grid grid-cols-2 gap-3 md:gap-5 mb-6 md:grid-cols-4">
+
+    <div
       (click)="navigateToEnviar()"
+      class="bg-slate-50 p-5 rounded-xl border-l-4 border-orange-500 cursor-pointer shadow-xl shadow-slate-900/10 hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-300"
     >
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-semibold text-gray-800">📦 Por Enviar</h2>
-        <span class="text-2xl font-bold text-blue-600">{{ dashboardStats().porEnviar.count }}</span>
+      <div class="flex items-center justify-between mb-2">
+        <span class="material-symbols-outlined text-orange-500" style="font-variation-settings:'FILL' 1">local_shipping</span>
+        <span class="text-[10px] font-bold text-orange-700 bg-orange-100 px-2 py-1 rounded">TRANSFERIR</span>
       </div>
-      
-      <div class="space-y-2">
-        <div class="flex justify-between text-sm">
-          <span class="text-gray-600">Pendientes:</span>
-          <span class="font-medium text-orange-600">{{ dashboardStats().porEnviar.pendientes }}</span>
-        </div>
-        <div class="flex justify-between text-sm">
-          <span class="text-gray-600">Recogidos:</span>
-          <span class="font-medium text-blue-600">{{ dashboardStats().porEnviar.recogidos }}</span>
-        </div>
-        <div class="flex justify-between text-sm">
-          <span class="text-gray-600">Entregados:</span>
-          <span class="font-medium text-green-600">{{ dashboardStats().porEnviar.entregados }}</span>
-        </div>
-      </div>
-      
-      <div class="mt-4 pt-4 border-t border-gray-200">
-        <button class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
-          Gestionar Envíos
-        </button>
-      </div>
+      <p class="text-3xl font-black text-on-surface">{{ dashboardStats().porEnviar.pendientes }}</p>
+      <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Por Enviar</p>
     </div>
 
-    <!-- Tarjeta: Por Recibir -->
-    <div 
-      class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500 cursor-pointer hover:shadow-lg transition-shadow"
+    <div
       (click)="navigateToRecibir()"
+      class="bg-slate-50 p-5 rounded-xl border-l-4 border-slate-400 cursor-pointer shadow-xl shadow-slate-900/10 hover:shadow-2xl hover:shadow-slate-400/20 transition-all duration-300"
     >
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-semibold text-gray-800">📥 Por Recibir</h2>
-        <span class="text-2xl font-bold text-green-600">{{ dashboardStats().porRecibir.count }}</span>
+      <div class="flex items-center justify-between mb-2">
+        <span class="material-symbols-outlined text-slate-400">package_2</span>
+        <span class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">TRANSFERIR</span>
       </div>
-      
-      <div class="space-y-2">
-        <div class="flex justify-between text-sm">
-          <span class="text-gray-600">Pendientes:</span>
-          <span class="font-medium text-orange-600">{{ dashboardStats().porRecibir.pendientes }}</span>
-        </div>
-        <div class="flex justify-between text-sm">
-          <span class="text-gray-600">Recogidos:</span>
-          <span class="font-medium text-blue-600">{{ dashboardStats().porRecibir.recogidos }}</span>
-        </div>
-        <div class="flex justify-between text-sm">
-          <span class="text-gray-600">Entregados:</span>
-          <span class="font-medium text-green-600">{{ dashboardStats().porRecibir.entregados }}</span>
-        </div>
+      <p class="text-3xl font-black text-on-surface">{{ dashboardStats().porRecibir.recogidos }}</p>
+      <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Por Recibir</p>
+    </div>
+
+    <div class="bg-slate-50 p-5 rounded-xl shadow-xl shadow-slate-900/10 border-l-4 border-orange-100">
+      <div class="flex items-center justify-between mb-2">
+        <span class="material-symbols-outlined text-[#FB923C]" style="font-variation-settings:'FILL' 1">shopping_cart</span>
+        <span class="text-[10px] font-bold text-orange-700 bg-orange-100 px-2 py-1 rounded">HOY</span>
       </div>
-      
-      <div class="mt-4 pt-4 border-t border-gray-200">
-        <button class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">
-          Gestionar Recepciones
-        </button>
+      <p class="text-3xl font-black text-on-surface">{{ dashboardStats().pedidosHoy }}</p>
+      <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Nuevos Pedidos</p>
+    </div>
+
+    <div class="bg-slate-50 p-5 rounded-xl shadow-xl shadow-slate-900/10 border-l-4 border-orange-100">
+      <div class="flex items-center justify-between mb-2">
+        <span class="material-symbols-outlined text-slate-400">group</span>
+        <span class="text-[10px] font-bold text-orange-700 bg-orange-100 px-2 py-1 rounded">HOY</span>
       </div>
+      <p class="text-3xl font-black text-on-surface">{{ dashboardStats().visitantes }}</p>
+      <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Visitantes</p>
+    </div>
+
+    <div class="bg-slate-50 p-5 rounded-xl border-l-4 border-green-100 shadow-xl shadow-slate-900/10 transition-all duration-300">
+      <div class="flex items-center justify-between mb-2">
+        <span class="material-symbols-outlined text-green-500">chat</span>
+        <span class="text-[10px] font-bold text-green-700 bg-green-100 px-2 py-1 rounded">PENDIENTE</span>
+      </div>
+      <p class="text-3xl font-black text-on-surface">{{ dashboardStats().whatsappPendientes }}</p>
+      <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">WhatsApp</p>
+    </div>
+
+    <div class="bg-slate-50 p-5 rounded-xl border-l-4 border-red-100 shadow-xl shadow-slate-900/10 transition-all duration-300">
+      <div class="flex items-center justify-between mb-2">
+        <span class="material-symbols-outlined text-slate-400">remove_shopping_cart</span>
+        <span class="text-[10px] font-bold text-red-700 bg-red-100 px-2 py-1 rounded">HOY</span>
+      </div>
+      <p class="text-3xl font-black text-on-surface">{{ dashboardStats().carritosAbandonados }}</p>
+      <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Carritos Abandonados</p>
+    </div>
+
+    <div class="bg-slate-50 p-5 rounded-xl border-l-4 border-orange-100 shadow-xl shadow-slate-900/10 transition-all duration-300">
+      <div class="flex items-center justify-between mb-2">
+        <span class="material-symbols-outlined text-slate-400">contact_support</span>
+        <span class="text-[10px] font-bold text-orange-700 bg-orange-100 px-2 py-1 rounded">HOY</span>
+      </div>
+      <p class="text-3xl font-black text-on-surface">{{ dashboardStats().peticionesProductos }}</p>
+      <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Peticiones Productos</p>
+    </div>
+
+  </div>
+
+  <div class="bg-slate-50 p-6 rounded-2xl shadow-xl shadow-slate-900/10 border border-slate-200">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-xl font-black tracking-tight font-headline text-on-surface">Actividad de Inventario</h3>
+      <button class="text-orange-600 font-bold text-sm hover:underline">Ver Historial</button>
+    </div>
+
+    <div class="space-y-6">
+      @for (item of dashboardStats().actividadReciente; track item.sku) {
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-xl overflow-hidden bg-white border border-slate-100 flex-shrink-0">
+            <img class="w-full h-full object-cover" [src]="item.imagen" [alt]="item.nombre">
+          </div>
+          <div class="flex-1 min-w-0">
+            <h4 class="font-bold text-on-surface truncate">{{ item.nombre }}</h4>
+            <p class="text-xs text-slate-500 font-medium">SKU: {{ item.sku }} | Vendedor: {{ item.vendedor }}</p>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <p class="font-black text-on-surface">{{ item.precio | number:'1.2-2' }} €</p>
+            <span
+              class="text-[10px] font-bold px-2 py-0.5 rounded"
+              [ngClass]="{
+                'text-orange-600 bg-orange-100': item.estado === 'POR ENVIAR',
+                'text-green-600 bg-green-100': item.estado === 'ENTREGADO',
+                'text-slate-500 bg-slate-100': item.estado === 'TRÁNSITO'
+              }"
+            >{{ item.estado }}</span>
+          </div>
+        </div>
+      } @empty {
+        <div class="py-8 text-center">
+          <p class="text-slate-400 text-sm font-medium">Sin actividad reciente</p>
+        </div>
+      }
     </div>
   </div>
 
- </div>
+</div>

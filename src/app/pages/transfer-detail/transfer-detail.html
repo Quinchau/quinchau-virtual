@@ -1,70 +1,87 @@
 <div class="fixed inset-0 bg-gray-900 bg-opacity-75 z-40 overflow-y-auto">
-  <div class="flex items-center justify-center min-h-screen">
-    <div class="relative bg-gray-100 rounded-lg shadow-xl p-6 md:p-8 m-4 w-full max-w-2xl text-gray-800">
-      <button
-        (click)="goBack()"
-        class="absolute top-4 right-4 text-gray-600 hover:text-gray-900 transition-colors focus:outline-none"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
+  <div class="flex items-center justify-center min-h-screen p-3">
+    <div class="relative bg-white rounded-xl shadow-xl w-full max-w-sm text-gray-800 overflow-hidden">
 
       @if (transferenciaDetalle$(); as t) {
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="md:col-span-1">
-            <div class="bg-white rounded-lg shadow-inner overflow-hidden">
-              <img [src]="t.imagenes[0]" alt="Imagen del producto" class="w-full h-auto object-cover rounded-lg">
+
+        <!-- Imagen -->
+        <div class="relative h-40 bg-gray-50">
+          <img [src]="t.imagenes[0]" alt="Imagen del producto" class="w-full h-full object-contain" />
+          <button
+            (click)="goBack()"
+            class="absolute top-2 right-2 bg-white rounded-full p-1.5 shadow text-gray-400 hover:text-gray-700 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Contenido -->
+        <div class="p-4 space-y-3">
+
+          <!-- ID + Puesto + Stock + Estado -->
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <h2 class="text-xl font-bold text-gray-900 leading-none">{{ t.stockid }}</h2>
+              <div class="flex items-center gap-2 mt-0.5">
+                <span class="text-xs text-gray-500">{{ t.tipo === 'ship' ? t.shiplocation : t.reclocation }}</span>
+                <span class="text-xs text-gray-500">Stock: <span class="font-semibold text-gray-700">{{ t.tipo === 'ship' ? t.shiploc_qty : t.recloc_qty ?? 'N/A' }}</span></span>
+              </div>
+            </div>
+            <span class="text-[10px] font-bold rounded-full border px-2 py-0.5 flex-none whitespace-nowrap mt-0.5"
+              [ngClass]="{
+                'bg-gray-100 text-gray-600 border-gray-300':    t.status === 'Pendiente',
+                'bg-green-100 text-green-700 border-green-300': t.status === 'Recogido',
+                'bg-green-600 text-white border-green-700':     t.status === 'Entregado',
+                'bg-red-100 text-red-700 border-red-300':       t.status === 'Devuelto'
+              }">
+              {{ t.status }}
+            </span>
+          </div>
+
+          <!-- Descripción -->
+          <p class="text-xs text-gray-500 leading-snug line-clamp-2">{{ t.longdescription }}</p>
+
+          <!-- Info grid -->
+          <div class="grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <p class="text-[10px] text-gray-400 uppercase font-medium">{{ t.tipo === 'ship' ? 'Enviar a' : 'Viene de' }}</p>
+              <p class="font-bold text-gray-900 truncate">{{ t.tipo === 'ship' ? t.recloc_name : t.shiploc_name }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-gray-400 uppercase font-medium">Cantidad</p>
+              <p class="font-bold text-gray-900">{{ t.shipqty }}</p>
             </div>
           </div>
 
-          <div class="md:col-span-1">
-            @if (t.tipo === 'ship') {
-              <h2 class="text-2xl font-bold mb-2">{{ t.stockid }} ({{ t.shiplocation }})</h2>
-              <p><span class="font-semibold text-gray-600">Producto:</span> {{ t.longdescription }}</p>
-              <h2 class="text-2xl font-bold mb-2">Disponible: {{ t.shiploc_qty }} ({{ t.units }})</h2>
-              <p><span class="font-semibold text-gray-600">Enviar A:</span> {{ t.recloc_name }}</p>
-            } @else {
-              <h2 class="text-2xl font-bold mb-2">{{ t.stockid }} ({{ t.reclocation }}) {{ t.units }}</h2>
-              <p><span class="font-semibold text-gray-600">Producto:</span> {{ t.longdescription }}</p>
-              <div class="grid grid-cols-2 gap-4">
-                <p><span class="font-semibold text-gray-600">Existencias Origen:</span> {{ t.recloc_qty ?? 'N/A' }}</p>
-                <p><span class="font-semibold text-gray-600">Viene De:</span> {{ t.shiploc_name }}</p>
-              </div>
-            }
+          <!-- Botón acción -->
+          <button
+            [disabled]="managerState.transferButtonInfo$().disabled"
+            (click)="onActionClick(managerState.transferButtonInfo$().action, managerState.transferButtonInfo$().nextStatus)"
+            [class.opacity-50]="managerState.transferButtonInfo$().disabled"
+            [class.cursor-not-allowed]="managerState.transferButtonInfo$().disabled"
+            class="w-full py-2.5 px-4 rounded-lg text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition-colors"
+          >
+            {{ managerState.transferButtonInfo$().label }}
+          </button>
 
-            <p class="mt-4"><span class="font-semibold text-gray-600">Cantidad:</span> {{ t.shipqty }}</p>
-            <p>
-              <span class="font-semibold text-gray-600">Estado:</span>
-              <span [ngClass]="{
-                'bg-gray-100 text-gray-800': t.status === 'Pendiente',
-                'bg-orange-100 text-orange-800': t.status === 'Recogido',
-                'bg-green-100 text-green-800': t.status === 'Entregado',
-                'bg-gray-100 text-gray-600': t.status === 'Devuelto',
-              }" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
-                {{ t.status }}
-              </span>
-            </p>
-            <p><span class="font-semibold text-gray-600">Creado por:</span> {{ t.user_name }}</p>
-            <p><span class="font-semibold text-gray-600">Fecha de Envío:</span> {{ t.shipdate }}</p>
-            <p><span class="font-semibold text-gray-600">Fecha de Recepción:</span> {{ t.recdate }}</p>
-            
-            <button
-              [disabled]="managerState.transferButtonInfo$().disabled"
-              (click)="onActionClick(managerState.transferButtonInfo$().action, managerState.transferButtonInfo$().nextStatus)"
-              [class.opacity-50]="managerState.transferButtonInfo$().disabled"
-              [class.cursor-not-allowed]="managerState.transferButtonInfo$().disabled"
-              class="mt-6 w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
-            >
-              {{ managerState.transferButtonInfo$().label }}
-            </button>
-          </div>
         </div>
+
       } @else {
+        <button
+          (click)="goBack()"
+          class="absolute top-2 right-2 bg-white rounded-full p-1.5 shadow text-gray-400 hover:text-gray-700 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
         <div class="text-center p-12 text-gray-500">
-          <p class="font-medium text-lg">No se encontraron datos para esta transferencia.</p>
+          <p class="font-medium">No se encontraron datos para esta transferencia.</p>
         </div>
       }
+
     </div>
   </div>
 </div>

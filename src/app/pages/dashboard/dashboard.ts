@@ -1,39 +1,62 @@
-// src/app/pages/dashboard/dashboard.ts
-import { Component, inject, signal, computed } from '@angular/core';
-
+import { Component, inject, computed, signal } from '@angular/core';
+import { DecimalPipe, NgClass } from '@angular/common';
 import { Router } from '@angular/router';
 import { ManagerState } from '../../services/manager-state';
+
+export interface ActividadItem {
+  nombre: string;
+  sku: string;
+  vendedor: string;
+  precio: number;
+  imagen: string;
+  estado: 'POR ENVIAR' | 'ENTREGADO' | 'TRÁNSITO';
+}
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [],
+  imports: [DecimalPipe, NgClass],
   templateUrl: './dashboard.html',
 })
 export class Dashboard {
   private managerState = inject(ManagerState);
   private router = inject(Router);
 
-  // === ESTADO DERIVADO PARA EL DASHBOARD ===
+  // === MÉTRICAS LOCALES ===
+  private readonly _pedidosHoy           = signal<number>(0);
+  private readonly _visitantesHoy        = signal<number>(0);
+  private readonly _whatsappPendientes   = signal<number>(0);
+  private readonly _carritosAbandonados  = signal<number>(0);
+  private readonly _peticionesProductos  = signal<number>(0);
+  private readonly _actividadReciente    = signal<ActividadItem[]>([]);
+
+  // === ESTADO DERIVADO (Procesamiento de Lógica) ===
   public readonly dashboardStats = computed(() => {
-    const envios = this.managerState.envios();
+    const envios      = this.managerState.envios();
     const recepciones = this.managerState.recepciones();
-    
+    const user        = this.managerState.currentUser();
+
     return {
       porEnviar: {
-        count: envios.length,
+        count:      envios.length,
         pendientes: envios.filter(t => t.status === 'Pendiente').length,
-        recogidos: envios.filter(t => t.status === 'Recogido').length,
-        entregados: envios.filter(t => t.status === 'Entregado').length
+        recogidos:  envios.filter(t => t.status === 'Recogido').length,
+        entregados: envios.filter(t => t.status === 'Entregado').length,
       },
       porRecibir: {
-        count: recepciones.length,
+        count:      recepciones.length,
         pendientes: recepciones.filter(t => t.status === 'Pendiente').length,
-        recogidos: recepciones.filter(t => t.status === 'Recogido').length,
-        entregados: recepciones.filter(t => t.status === 'Entregado').length
+        recogidos:  recepciones.filter(t => t.status === 'Recogido').length,
+        entregados: recepciones.filter(t => t.status === 'Entregado').length,
       },
-      usuario: this.managerState.currentUser()?.realname || 'Usuario',
-      ubicacion: this.managerState.currentUser()?.defaultlocation || 'No definida'
+      pedidosHoy:          this._pedidosHoy(),
+      visitantes:          this._visitantesHoy(),
+      whatsappPendientes:  this._whatsappPendientes(),
+      carritosAbandonados: this._carritosAbandonados(),
+      peticionesProductos: this._peticionesProductos(),
+      actividadReciente:   this._actividadReciente(),
+      usuario:             user?.realname ?? 'Usuario',
+      ubicacion:           user?.defaultlocation ?? 'No definida',
     };
   });
 
@@ -41,7 +64,7 @@ export class Dashboard {
     this.managerState.loadTransfers();
   }
 
-  // === MÉTODOS DE NAVEGACIÓN ===
+  // === NAVEGACIÓN ===
   public navigateToEnviar(): void {
     this.managerState.setNewTransferType('ship');
     this.router.navigate(['/transfers']);
@@ -51,5 +74,4 @@ export class Dashboard {
     this.managerState.setNewTransferType('rec');
     this.router.navigate(['/transfers']);
   }
-
-  }
+}

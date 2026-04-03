@@ -7,6 +7,8 @@ export interface Transfer {
   status: string;
   tipo: 'ship' | 'rec';
   location_name: string;
+  loccode: string; 
+  cover_image_url: string | null;
 }
 
 export interface TransferenciaDetalle {
