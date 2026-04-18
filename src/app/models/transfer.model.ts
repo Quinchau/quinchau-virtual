@@ -45,6 +45,7 @@ export interface User {
   realname: string;
   defaultlocation: string;
   fullaccess: number;
+  waitlist?: string[];
 }
 
 export interface NewTransfer {
@@ -118,6 +119,7 @@ export interface Visitante {
   nuevo?: boolean | number;
   payload?: any;
   session_key?: string;
+  waitlist?: string[];
 }
 
 export interface HomeData {
@@ -127,6 +129,8 @@ export interface HomeData {
   identidad?: Visitante;
   categorias?: CategoriaNavegacion[];
   marcas?: MarcaConModelos[];
+  pendingWhatsappCount?: number;
+  sentTodayCount?: number;
   _debug?: any;
 }
 
@@ -179,4 +183,25 @@ export interface CategoriaBackend {
   slug: string;
   url: string;
   marcas: MarcaBackend[];
+}
+
+export interface OutgoingMessage {
+  id: number;
+  chat_id: string;
+  phone_number: string;
+  message_text: string;
+  queued_at: string;
+  priority: 'high' | 'low';
+  campaign_id: number | null;
+  status: 'pending' | 'wait' | 'sent' | 'failed';
+  image: string | null;
+  locked_by: string | null;
+  locked_at: string | null;
+  whatsapp_link: string;
+}
+
+export interface SentStats {
+  today:     number;
+  yesterday: number;
+  week:      number;
 }

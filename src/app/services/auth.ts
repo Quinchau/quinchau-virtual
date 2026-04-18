@@ -19,28 +19,31 @@ export class AuthService {
   private router = inject(Router);
 
   handleIdentityResponse(response: any): void {
-    console.log('[Auth] Procesando identidad...');
-    if (!isPlatformBrowser(this.platformId) || !response?.identidad) return;
+  console.log('[Auth] Procesando identidad...');
+  if (!isPlatformBrowser(this.platformId) || !response?.identidad) return;
 
-    const { token, tipo, nombre, cantidad_referencias, payload } = response.identidad;
+  const { token, tipo, nombre, waitlist } = response.identidad;
 
-    if (token) {
-      const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
-      this.document.cookie = `auth_token=${token}; Path=/; Max-Age=${thirtyDaysInSeconds}; SameSite=Lax`;
-    }
-
- 
-    if (tipo === 'usuario' && response.datos_usuario) {
-      const userData: User = {
-        realname: response.datos_usuario.username || nombre,
-        defaultlocation: response.datos_usuario.defaultlocation,
-        fullaccess: Number(response.datos_usuario.fullaccess || 0)
-      };
-      this.managerState.setUserData(userData);
-    } else if (tipo === 'visitante' || tipo === 'visitante_nuevo') {
-      this.managerState.setUserData(null);
-    }
+  if (token) {
+    const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
+    this.document.cookie = `auth_token=${token}; Path=/; Max-Age=${thirtyDaysInSeconds}; SameSite=Lax`;
   }
+
+  if (Array.isArray(waitlist)) {
+    this.managerState.setWaitlist(waitlist);
+  }
+
+  if (tipo === 'usuario' && response.datos_usuario) {
+    const userData: User = {
+      realname: response.datos_usuario.username || nombre,
+      defaultlocation: response.datos_usuario.defaultlocation,
+      fullaccess: Number(response.datos_usuario.fullaccess || 0)
+    };
+    this.managerState.setUserData(userData);
+  } else if (tipo === 'visitante' || tipo === 'visitante_nuevo') {
+    this.managerState.setUserData(null);
+  }
+}
 
   login(credentials: any): Observable<any> {
     return this.http.post<any>(this.apiUrl, credentials).pipe(

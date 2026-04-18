@@ -1,0 +1,177 @@
+<div class="pt-4 px-4 pb-32 max-w-3xl mx-auto">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-5">
+    <div>
+      <h1 class="text-xl font-black tracking-tight text-on-surface">WhatsApp Manual</h1>
+      <p class="text-sm text-slate-500 font-medium mt-0.5">
+        <span class="text-red-500 font-bold">{{ highCount() }}</span> urgentes ·
+        <span class="text-slate-400">{{ lowCount() }}</span> normales
+      </p>
+    </div>
+    <button
+      (click)="reload()"
+      class="flex items-center gap-1.5 text-sm font-semibold text-orange-600 hover:text-orange-700 transition-colors"
+    >
+      <span class="material-symbols-outlined text-base">refresh</span>
+      Actualizar
+    </button>
+  </div>
+
+  <!-- Contadores enviados -->
+<div class="grid grid-cols-3 gap-2 mb-5">
+  <div class="bg-green-50 rounded-xl p-3 text-center">
+    <p class="text-2xl font-black text-green-600">{{ sentStats().today }}</p>
+    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Hoy</p>
+  </div>
+  <div class="bg-slate-50 rounded-xl p-3 text-center">
+    <p class="text-2xl font-black text-slate-600">{{ sentStats().yesterday }}</p>
+    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ayer</p>
+  </div>
+  <div class="bg-slate-50 rounded-xl p-3 text-center">
+    <p class="text-2xl font-black text-slate-600">{{ sentStats().week }}</p>
+    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">7 días</p>
+  </div>
+</div>
+
+  <!-- Loading skeletons -->
+  @if (isLoading()) {
+    <div class="space-y-3">
+      @for (i of [1,2,3,4,5]; track i) {
+        <div class="h-20 bg-slate-100 rounded-xl animate-pulse"></div>
+      }
+    </div>
+  }
+
+  <!-- Lista -->
+  @if (!isLoading()) {
+
+    @if (messages().length === 0) {
+      <div class="text-center py-24">
+        <span class="material-symbols-outlined text-6xl text-slate-200">mark_chat_read</span>
+        <p class="text-slate-400 font-semibold mt-3">No hay mensajes pendientes</p>
+      </div>
+    }
+
+    <div class="space-y-2">
+      @for (msg of messages(); track msg.id) {
+        <div
+          (click)="selectMessage(msg)"
+          class="bg-white rounded-xl p-4 border cursor-pointer transition-all duration-200 active:scale-[0.98]"
+          [ngClass]="{
+            'border-orange-400 bg-orange-50/30':         msg.status === 'wait',
+            'border-slate-200':                          msg.status === 'pending' && msg.priority === 'low',
+            'border-l-4 border-l-red-400 border-slate-200': msg.priority === 'high' && msg.status === 'pending'
+          }"
+        >
+          <div class="flex items-start justify-between gap-3">
+
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-1.5 mb-1 flex-wrap">
+                <span class="font-bold text-sm text-on-surface">{{ msg.phone_number }}</span>
+                @if (msg.priority === 'high') {
+                  <span class="text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full">URGENTE</span>
+                }
+                @if (msg.status === 'wait') {
+                  <span class="text-[10px] font-bold text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded-full">RESERVADO</span>
+                }
+              </div>
+              <p class="text-sm text-slate-500 truncate leading-snug">{{ msg.message_text }}</p>
+              <p class="text-xs text-slate-400 mt-1.5">{{ msg.queued_at | date:'dd/MM/yy HH:mm' }}</p>
+            </div>
+
+            @if (msg.image) {
+              <img [src]="msg.image" class="w-14 h-14 rounded-lg object-cover flex-shrink-0 border border-slate-100" alt="">
+            } @else {
+              <span class="material-symbols-outlined text-slate-200 flex-shrink-0 mt-0.5">chat</span>
+            }
+
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+</div>
+
+<!-- Overlay -->
+@if (activeMessage()) {
+  <div
+    class="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
+    (click)="dismissActive()"
+  ></div>
+
+  <!-- Bottom sheet -->
+  <div class="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl max-w-3xl mx-auto"
+       style="padding-bottom: env(safe-area-inset-bottom)">
+
+    <!-- Handle -->
+    <div class="flex justify-center pt-3 pb-1">
+      <div class="w-10 h-1 bg-slate-200 rounded-full"></div>
+    </div>
+
+    <div class="px-5 pt-2 pb-24">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="text-lg font-black text-on-surface">Enviar mensaje</h2>
+        <button
+          (click)="dismissActive()"
+          class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500"
+        >
+          <span class="material-symbols-outlined text-base">close</span>
+        </button>
+      </div>
+
+      <!-- Destinatario -->
+      <div class="bg-slate-50 rounded-2xl px-4 py-3 mb-3">
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Destinatario</p>
+        <p class="font-bold text-on-surface">{{ activeMessage()!.phone_number }}</p>
+      </div>
+
+      <!-- Mensaje -->
+      <div class="bg-slate-50 rounded-2xl px-4 py-3 mb-4 max-h-32 overflow-y-auto">
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Mensaje</p>
+        <p class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{{ activeMessage()!.message_text }}</p>
+      </div>
+
+      <!-- Imagen -->
+      @if (activeMessage()!.image) {
+        <img
+          [src]="activeMessage()!.image"
+          class="w-full rounded-2xl object-cover mb-4 max-h-36 border border-slate-100"
+          alt="imagen adjunta"
+        >
+      }
+
+      <!-- Botones -->
+      <div class="flex gap-3">
+        <button
+          (click)="openWhatsApp()"
+          class="flex-1 flex items-center justify-center gap-2 bg-green-500 active:bg-green-600 text-white font-bold py-4 rounded-2xl transition-colors text-sm"
+        >
+          <span class="material-symbols-outlined text-lg" style="font-variation-settings:'FILL' 1">chat</span>
+          Abrir WhatsApp
+        </button>
+
+        <button
+          (click)="confirmSent()"
+          [disabled]="actionStatus() === 'loading'"
+          class="flex-1 flex items-center justify-center gap-2 bg-slate-800 active:bg-slate-900 text-white font-bold py-4 rounded-2xl transition-colors text-sm disabled:opacity-50"
+        >
+          @if (actionStatus() === 'loading') {
+            <span class="material-symbols-outlined animate-spin text-lg">progress_activity</span>
+          } @else {
+            <span class="material-symbols-outlined text-lg">check_circle</span>
+          }
+          Marcar enviado
+        </button>
+      </div>
+
+      <p class="text-center text-xs text-slate-400 mt-3 leading-relaxed">
+        Primero abre WhatsApp y envía,<br>luego marca como enviado
+      </p>
+
+    </div>
+  </div>
+}

@@ -15,18 +15,14 @@ import { LayerHistoryService } from '../../services/LayerHistoryService';
 export class ProductOrder {
   private state = inject(ManagerState);
   private router = inject(Router);
-  public nav = inject(LayerHistoryService); // Lo mantenemos para que el HTML no falle
-
-  // 🟢 SOLUCIÓN AL ERROR NG8002: Declaramos el input
+  public nav = inject(LayerHistoryService);
   public productId = input.required<string>();
-
   public product = this.state.currentProductCard;
   public loadingProductCard = this.state.loadingProductCard;
   public error = this.state.productCardError;
   public addStatus = this.state.addStatus;
+  protected readonly inWaitlist = this.state.currentProductInWaitlist;
 
-  // 🟢 SOLUCIÓN A LOS ERRORES DE 'quantity':
-  // Creamos un getter/setter para que el (ngModel) del HTML funcione
   get quantity(): number { 
     return this.product()?.qty_in_order || 1; 
   }
@@ -51,7 +47,6 @@ export class ProductOrder {
     });
   }
 
-  // 🟢 SOLUCIÓN A 'onRegistroCompleto':
   confirmConRegistro(datos: any) {
     this.state.addCurrentProductToCart(datos).subscribe({
       next: (res) => {
@@ -66,12 +61,20 @@ export class ProductOrder {
   }
 
   onRegistroCompleto(datos: any) {
-    this.nav.back(); // Cierra el mini-modal de registro
+    this.nav.back();
     this.confirmConRegistro(datos);
   }
 
+  notifyMe(): void {
+  const stockid = this.productId(); // Obtenemos el ID del input.required
+  
+  this.state.subscribeToWaitlist(stockid).subscribe({
+    next: () => console.log('✅ Suscrito con éxito'),
+    error: (err) => console.error('❌ Error al suscribir:', err)
+  });
+  }
+
   cancel() {
-    // Cerramos el producto quitando 'p' de la URL
     this.router.navigate([], {
       queryParams: { p: null },
       queryParamsHandling: 'merge'

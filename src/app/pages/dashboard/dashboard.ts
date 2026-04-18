@@ -25,12 +25,11 @@ export class Dashboard {
   // === MÉTRICAS LOCALES ===
   private readonly _pedidosHoy           = signal<number>(0);
   private readonly _visitantesHoy        = signal<number>(0);
-  private readonly _whatsappPendientes   = signal<number>(0);
   private readonly _carritosAbandonados  = signal<number>(0);
   private readonly _peticionesProductos  = signal<number>(0);
   private readonly _actividadReciente    = signal<ActividadItem[]>([]);
 
-  // === ESTADO DERIVADO (Procesamiento de Lógica) ===
+  // === ESTADO DERIVADO ===
   public readonly dashboardStats = computed(() => {
     const envios      = this.managerState.envios();
     const recepciones = this.managerState.recepciones();
@@ -49,14 +48,15 @@ export class Dashboard {
         recogidos:  recepciones.filter(t => t.status === 'Recogido').length,
         entregados: recepciones.filter(t => t.status === 'Entregado').length,
       },
-      pedidosHoy:          this._pedidosHoy(),
-      visitantes:          this._visitantesHoy(),
-      whatsappPendientes:  this._whatsappPendientes(),
-      carritosAbandonados: this._carritosAbandonados(),
-      peticionesProductos: this._peticionesProductos(),
-      actividadReciente:   this._actividadReciente(),
-      usuario:             user?.realname ?? 'Usuario',
-      ubicacion:           user?.defaultlocation ?? 'No definida',
+      pedidosHoy:           this._pedidosHoy(),
+      visitantes:           this._visitantesHoy(),
+      whatsappPendientes:   this.managerState.pendingWhatsappCount(),
+      whatsappEnviadosHoy:  this.managerState.sentTodayCount(),       // 👈 nuevo
+      carritosAbandonados:  this._carritosAbandonados(),
+      peticionesProductos:  this._peticionesProductos(),
+      actividadReciente:    this._actividadReciente(),
+      usuario:              user?.realname ?? 'Usuario',
+      ubicacion:            user?.defaultlocation ?? 'No definida',
     };
   });
 
@@ -73,5 +73,9 @@ export class Dashboard {
   public navigateToRecibir(): void {
     this.managerState.setNewTransferType('rec');
     this.router.navigate(['/transfers']);
+  }
+
+  public navigateToWhatsapp(): void {
+    this.router.navigate(['/whatsapp-manual']);
   }
 }

@@ -10,6 +10,7 @@ import { Transfers } from './pages/transfers/transfers';
 import { adminGuard } from './guards/admin.guard';
 import { CartComponent } from './pages/checkout/checkout';
 import { Downloaders } from './pages/downloaders/downloaders';
+import { ManualWhatsapp } from './pages/manual-whatsapp/manual-whatsapp';
 
 export const routes: Routes = [
 
@@ -39,6 +40,12 @@ export const routes: Routes = [
     component: Dashboard,
     canActivate: [adminGuard]
   },
+
+  {
+  path: 'whatsapp-manual',
+  component: ManualWhatsapp,
+  canActivate: [adminGuard]
+},
 
   {
     path: 'new-transfer',

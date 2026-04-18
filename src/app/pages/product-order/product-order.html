@@ -108,16 +108,28 @@
       </div>
 
       <div class="flex gap-3">
-        <button (click)="cancel()"
-                class="flex-1 py-3 rounded-lg bg-slate-200 text-slate-700 font-medium hover:bg-slate-300 transition-colors">
-          Volver
-        </button>
-        <button (click)="confirm()"
-                [disabled]="p.total_quantity === 0"
-                class="flex-1 py-3 rounded-lg bg-orange-500 text-white font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-          Añadir al carrito
-        </button>
-      </div>
+    <button (click)="cancel()"
+            class="flex-1 py-3 rounded-lg bg-slate-200 text-slate-700 font-medium hover:bg-slate-300 transition-colors">
+      Volver
+    </button>
+
+    @if (p.total_quantity > 0) {
+      <button (click)="confirm()"
+              class="flex-1 py-3 rounded-lg bg-orange-500 text-white font-medium hover:bg-orange-600 transition-colors">
+        Añadir al carrito
+      </button>
+    } @else if (inWaitlist()) {
+      <button disabled
+              class="flex-1 py-3 rounded-lg bg-slate-100 text-slate-400 font-medium cursor-not-allowed">
+        ✓ En lista de espera
+      </button>
+    } @else {
+      <button (click)="notifyMe()"
+              class="flex-1 py-3 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600 transition-colors">
+        🔔 Notificarme al llegar
+      </button>
+    }
+  </div>
     }
   </div>
 </div>

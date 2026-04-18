@@ -1,7 +1,7 @@
 // src/app/services/manager-state.ts
 import { Injectable, inject, signal, computed, PLATFORM_ID, linkedSignal } from '@angular/core';
 import { ManagerApis } from './manager-apis';
-import { Transfer, TransferenciaDetalle, User, NewTransfer, ProductDetailData, DashboardResponse, HomeData, Visitante, Product } from '../models/transfer.model';
+import { Transfer, TransferenciaDetalle, User, NewTransfer, ProductDetailData, DashboardResponse, HomeData, Visitante, Product, OutgoingMessage, SentStats } from '../models/transfer.model';
 import { TransferButtonInfo, getTransferButtonInfo } from '../data/transfer-actions';
 import { tap, catchError, of, throwError, finalize, map, fromEvent, merge, startWith, filter, Observable, switchMap, distinctUntilChanged } from 'rxjs';
 import { isPlatformBrowser, Location } from '@angular/common';
@@ -86,6 +86,7 @@ public readonly productsResource = rxResource({
   public readonly newTransferType = signal<'ship' | 'rec' | null>(null);
   public readonly identidad = signal<Visitante | null>(null);
   public readonly cartCount = signal(0);
+  public readonly waitlist = signal<string[]>([]);
   public readonly cartData = computed(() => 
   this.cartResource.value() ?? this.defaultCartResponse
 );
@@ -115,16 +116,20 @@ public readonly globalTaxRate = computed(() => this.company()?.taxrate ?? 0);
 public readonly homeResource = rxResource<HomeData, unknown>({
   stream: () => this.managerApis.getHomeData().pipe(
     map((response: any): HomeData => {
-      const homeData: HomeData = {
-        banners: response.banners || [],
-        modelos: response.modelos || [],
-        categorias: response.categorias || [], 
-        marcas: response.marcas || [],
-        identidad: response.identidad
-      };
-      
-      return homeData;
-    }),
+  const homeData: HomeData = {
+    banners:    response.banners    || [],
+    modelos:    response.modelos    || [],
+    categorias: response.categorias || [],
+    marcas:     response.marcas     || [],
+    identidad:  response.identidad
+  };
+
+  if (typeof response.pendingWhatsappCount === 'number') {
+    this.pendingWhatsappCount.set(response.pendingWhatsappCount);
+  }
+
+  return homeData;
+}),
     catchError(err => {
       console.error('❌ Error cargando HomeData:', err);
       return of({ banners: [], modelos: [] } as HomeData);
@@ -391,6 +396,27 @@ private actualizarIdentidad(token: string, identidad?: any) {
     document.cookie = `auth_token=${token}; Path=/; Max-Age=${thirtyDays}; SameSite=Lax; Secure`;
 }
 
+public readonly currentProductInWaitlist = computed(() => {
+  const stockid = this.currentProductCard()?.stockid;
+  if (!stockid) return false;
+  return this.waitlist().includes(stockid);
+});
+
+public setWaitlist(waitlist: string[]): void {
+  console.group('🔍 [ManagerState] Actualizando Waitlist');
+  console.log('Contenido recibido:', waitlist);
+  console.log('Tipo de dato:', typeof waitlist);
+  
+  if (Array.isArray(waitlist)) {
+    console.log('¿Está el producto 911-722?:', waitlist.includes('911-722'));
+  } else {
+    console.error('⚠️ La waitlist no es un array:', waitlist);
+  }
+  
+  this.waitlist.set(waitlist);
+  console.groupEnd();
+}
+
 updateProductQuantity(newQuantity: number) {
   const currentProduct = this.currentProductCard();
   if (currentProduct) {
@@ -622,5 +648,83 @@ updateCartCount(count: number): void {
       this.cartCount.set(count);
     }
   }
+
+  public subscribeToWaitlist(stockid: string): Observable<any> {
+  return this.managerApis.subscribeToProduct(stockid).pipe(
+    tap(res => {
+      if (res.exito && res.identidad?.waitlist) {
+        this.setWaitlist(res.identidad.waitlist);
+      }
+    })
+  );
+}
+
+// --- WHATSAPP MANUAL ---
+
+public readonly pendingWhatsappCount = signal<number>(0);
+public readonly sentStats = signal<SentStats>({ today: 0, yesterday: 0, week: 0 });
+public readonly sentTodayCount = computed(() => this.sentStats().today);
+
+private readonly _refreshWhatsapp = signal(0);
+
+public readonly whatsappResource = rxResource<OutgoingMessage[], { refresh: number; hasAccess: boolean }>({
+  params: () => ({ 
+    refresh: this._refreshWhatsapp(),
+    hasAccess: this.currentUser()?.fullaccess === 8
+  }),
+  stream: ({ params }) => {
+    if (!params.hasAccess) return of([]);
+    
+    return this.managerApis.getPendingMessages().pipe(
+      tap(res => {
+        this.pendingWhatsappCount.set(res.total);
+        this.sentStats.set(res.stats ?? { today: 0, yesterday: 0, week: 0 });
+      }),
+      map(res => res.messages),
+      catchError(err => {
+        console.error('❌ Error cargando mensajes WhatsApp:', err);
+        return of([]);
+      })
+    );
+  },
+  defaultValue: []
+});
+
+public readonly pendingMessages   = computed(() => this.whatsappResource.value() ?? []);
+public readonly whatsappIsLoading = this.whatsappResource.isLoading;
+
+public lockMessage(id: number): Observable<any> {
+  return this.managerApis.lockMessage(id).pipe(
+    tap(() => {
+      this.whatsappResource.update(messages =>
+        messages.map(m => m.id === id ? { ...m, status: 'wait' as const } : m)
+      );
+    }),
+    catchError(err => {
+      console.error('❌ Error al reservar mensaje:', err);
+      return throwError(() => err);
+    })
+  );
+}
+
+public markMessageSent(id: number): Observable<any> {
+  return this.managerApis.markMessageSent(id).pipe(
+    tap(() => {
+      this.whatsappResource.update(messages =>
+        messages.filter(m => m.id !== id)
+      );
+      this.pendingWhatsappCount.update(n => Math.max(0, n - 1));
+      this.sentStats.update(s => ({ ...s, today: s.today + 1 }));  // 👈 nuevo
+    }),
+    catchError(err => {
+      console.error('❌ Error al marcar mensaje como enviado:', err);
+      return throwError(() => err);
+    })
+  );
+}
+
+public reloadWhatsapp(): void {
+  this._refreshWhatsapp.update(n => n + 1);
+}
 
 }

@@ -6,7 +6,9 @@ import { isPlatformServer } from '@angular/common';
 import { 
   NewTransfer, Product, TransferenciaDetalle, 
   ProductDetailData, DashboardResponse, HomeData,
-  ProductListResponse
+  ProductListResponse,
+  OutgoingMessage,
+  SentStats
 } from '../models/transfer.model';
 import { CompanyConfig } from '../models/company_config.model';
 
@@ -155,6 +157,23 @@ export class ManagerApis {
     params,
     responseType: 'blob'
   });
+}
+
+public getPendingMessages(): Observable<{ exito: boolean; total: number; messages: OutgoingMessage[]; stats: SentStats }> {
+  return this.http.get<any>(`${this.nodeBaseUrl}/outgoing-messages/pending`);
+}
+
+public lockMessage(id: number): Observable<{ exito: boolean; message: string }> {
+  return this.http.patch<any>(`${this.nodeBaseUrl}/outgoing-messages/${id}/lock`, {});
+}
+
+public markMessageSent(id: number): Observable<{ exito: boolean; message: string }> {
+  return this.http.patch<any>(`${this.nodeBaseUrl}/outgoing-messages/${id}/sent`, {});
+}
+
+public subscribeToProduct(stockid: string): Observable<any> {
+  // Ajustamos a la ruta real del dominio de demanda
+  return this.http.post(`${this.nodeBaseUrl}/on-demand/subscribe`, { stockid });
 }
 
 }

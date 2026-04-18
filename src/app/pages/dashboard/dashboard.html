@@ -44,14 +44,19 @@
       <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Visitantes</p>
     </div>
 
-    <div class="bg-slate-50 p-5 rounded-xl border-l-4 border-green-100 shadow-xl shadow-slate-900/10 transition-all duration-300">
-      <div class="flex items-center justify-between mb-2">
-        <span class="material-symbols-outlined text-green-500">chat</span>
-        <span class="text-[10px] font-bold text-green-700 bg-green-100 px-2 py-1 rounded">PENDIENTE</span>
-      </div>
-      <p class="text-3xl font-black text-on-surface">{{ dashboardStats().whatsappPendientes }}</p>
-      <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">WhatsApp</p>
-    </div>
+  <div
+  (click)="navigateToWhatsapp()"
+  class="bg-slate-50 p-5 rounded-xl border-l-4 border-green-100 shadow-xl shadow-slate-900/10 transition-all duration-300 cursor-pointer hover:shadow-2xl hover:shadow-green-500/10"
+>
+  <div class="flex items-center justify-between mb-2">
+    <span class="material-symbols-outlined text-green-500">chat</span>
+    <span class="text-[10px] font-bold text-green-700 bg-green-100 px-2 py-1 rounded"> WHATSAPPS</span>
+  </div>
+  <p class="text-3xl font-black text-on-surface">{{ dashboardStats().whatsappPendientes }}</p>
+  <p class="text-xs font-semibold text-slate-500 tracking-wider">
+    PENDIENTES <span class="text-green-600 font-bold">Envios Hoy: {{ dashboardStats().whatsappEnviadosHoy }}</span>
+  </p>
+</div>
 
     <div class="bg-slate-50 p-5 rounded-xl border-l-4 border-red-100 shadow-xl shadow-slate-900/10 transition-all duration-300">
       <div class="flex items-center justify-between mb-2">
