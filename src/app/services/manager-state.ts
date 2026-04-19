@@ -86,7 +86,7 @@ public readonly productsResource = rxResource({
   public readonly newTransferType = signal<'ship' | 'rec' | null>(null);
   public readonly identidad = signal<Visitante | null>(null);
   public readonly cartCount = signal(0);
-  public readonly waitlist = signal<string[]>([]);
+  public waitlist = signal<string[]>([]);
   public readonly cartData = computed(() => 
   this.cartResource.value() ?? this.defaultCartResponse
 );

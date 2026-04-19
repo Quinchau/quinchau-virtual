@@ -16,30 +16,28 @@
 
     @if (product(); as p) {
       <div class="mb-0">
-  <img [src]="p.cover_image_id" 
-       [alt]="p.description" 
-       class="w-full h-64 object-contain rounded-t-lg border-b border-slate-100 mb-4">
-  
-  <div class="space-y-2">
-    <h2 class="text-xl font-bold text-slate-800 leading-tight">
-      {{ p.description }}
-    </h2>
-    
-    <div class="flex justify-between items-end">
-      <div>
-        <p class="text-sm text-slate-500">{{ p.units }}</p>
-       
+        <img [src]="p.cover_image_id" 
+             [alt]="p.description" 
+             class="w-full h-64 object-contain rounded-t-lg border-b border-slate-100 mb-4">
+        
+        <div class="space-y-2">
+          <h2 class="text-xl font-bold text-slate-800 leading-tight">
+            {{ p.description }}
+          </h2>
+          
+          <div class="flex justify-between items-end">
+            <div>
+              <p class="text-sm text-slate-500">{{ p.units }}</p>
+            </div>
+            <p class="text-2xl font-black text-orange-600">
+              ${{ p.price_with_tax.toFixed(2) }}
+            </p>
+          </div>
+        </div>
       </div>
-      <p class="text-2xl font-black text-orange-600">
-        ${{ p.price_with_tax.toFixed(2) }}
-      </p>
-    </div>
-  </div>
-</div>
 
       @if (p.modelos && p.modelos.length > 0) {
         <div class="mb-4">
-          
           <div class="flex flex-wrap gap-2">
             @for (modelo of p.modelos; track $index) {
               <span class="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-full">
@@ -108,31 +106,45 @@
       </div>
 
       <div class="flex gap-3">
-    <button (click)="cancel()"
-            class="flex-1 py-3 rounded-lg bg-slate-200 text-slate-700 font-medium hover:bg-slate-300 transition-colors">
-      Volver
-    </button>
+        <button (click)="cancel()"
+                class="flex-1 py-3 rounded-lg bg-slate-200 text-slate-700 font-medium hover:bg-slate-300 transition-colors">
+          Volver
+        </button>
 
-    @if (p.total_quantity > 0) {
-      <button (click)="confirm()"
-              class="flex-1 py-3 rounded-lg bg-orange-500 text-white font-medium hover:bg-orange-600 transition-colors">
-        Añadir al carrito
-      </button>
-    } @else if (inWaitlist()) {
-      <button disabled
-              class="flex-1 py-3 rounded-lg bg-slate-100 text-slate-400 font-medium cursor-not-allowed">
-        ✓ En lista de espera
-      </button>
-    } @else {
-      <button (click)="notifyMe()"
-              class="flex-1 py-3 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600 transition-colors">
-        🔔 Notificarme al llegar
-      </button>
-    }
-  </div>
+        @if (p.total_quantity > 0) {
+          <button (click)="confirm()"
+                  class="flex-1 py-3 rounded-lg bg-orange-500 text-white font-medium hover:bg-orange-600 transition-colors">
+            Añadir al carrito
+          </button>
+        } @else if (inWaitlist()) {
+          <button disabled
+                  class="flex-1 py-3 rounded-lg bg-slate-100 text-slate-400 font-medium cursor-not-allowed">
+            ✓ Lo estas esperando
+          </button>
+        } @else {
+          <button (click)="notifyMe()"
+                  class="flex-1 py-3 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600 transition-colors">
+            🔔 Notificarme al llegar
+          </button>
+        }
+      </div>
     }
   </div>
 </div>
+
+@if (notifySuccess()) {
+  <div class="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-xl shadow-lg p-8 max-w-sm w-full text-center space-y-4">
+      <div class="text-5xl">🔔</div>
+      <h3 class="text-lg font-bold text-slate-800">¡Listo!</h3>
+      <p class="text-slate-600">Te avisaremos cuando el producto llegue.</p>
+      <button (click)="notifySuccess.set(false)"
+              class="w-full py-3 rounded-lg bg-orange-500 text-white font-medium hover:bg-orange-600 transition-colors">
+        Entendido
+      </button>
+    </div>
+  </div>
+}
 
 <div 
   [class.hidden]="!nav.isLayerPresent('checkout')"

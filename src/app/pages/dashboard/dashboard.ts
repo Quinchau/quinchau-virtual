@@ -1,80 +1,63 @@
-import { Component, inject, computed, signal } from '@angular/core';
-import { DecimalPipe, NgClass } from '@angular/common';
+import { Component, inject, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { ManagerState } from '../../services/manager-state';
-
-export interface ActividadItem {
-  nombre: string;
-  sku: string;
-  vendedor: string;
-  precio: number;
-  imagen: string;
-  estado: 'POR ENVIAR' | 'ENTREGADO' | 'TRÁNSITO';
-}
-
+import { ManagerApis } from '../../services/manager-apis';
+import { DashboardMetrics } from '../../models/transfer.model';
+ 
+const EMPTY_METRICS: DashboardMetrics = {
+  transferencias: {
+    porEnviar:  { pendientes: 0, recogidos: 0, entregados: 0 },
+    porRecibir: { pendientes: 0, recogidos: 0, entregados: 0 },
+  },
+  pedidosHoy:          0,
+  visitantesHoy:       0,
+  carritosAbandonados: 0,
+  peticionesProductos: { hoy: 0, ayer: 0, semana: 0, todas: 0 },
+  whatsapp: { pendientes: 0, enviadosHoy: 0 },
+};
+ 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [DecimalPipe, NgClass],
+  imports: [],
   templateUrl: './dashboard.html',
 })
 export class Dashboard {
   private managerState = inject(ManagerState);
-  private router = inject(Router);
-
-  // === MÉTRICAS LOCALES ===
-  private readonly _pedidosHoy           = signal<number>(0);
-  private readonly _visitantesHoy        = signal<number>(0);
-  private readonly _carritosAbandonados  = signal<number>(0);
-  private readonly _peticionesProductos  = signal<number>(0);
-  private readonly _actividadReciente    = signal<ActividadItem[]>([]);
-
-  // === ESTADO DERIVADO ===
-  public readonly dashboardStats = computed(() => {
-    const envios      = this.managerState.envios();
-    const recepciones = this.managerState.recepciones();
-    const user        = this.managerState.currentUser();
-
-    return {
-      porEnviar: {
-        count:      envios.length,
-        pendientes: envios.filter(t => t.status === 'Pendiente').length,
-        recogidos:  envios.filter(t => t.status === 'Recogido').length,
-        entregados: envios.filter(t => t.status === 'Entregado').length,
-      },
-      porRecibir: {
-        count:      recepciones.length,
-        pendientes: recepciones.filter(t => t.status === 'Pendiente').length,
-        recogidos:  recepciones.filter(t => t.status === 'Recogido').length,
-        entregados: recepciones.filter(t => t.status === 'Entregado').length,
-      },
-      pedidosHoy:           this._pedidosHoy(),
-      visitantes:           this._visitantesHoy(),
-      whatsappPendientes:   this.managerState.pendingWhatsappCount(),
-      whatsappEnviadosHoy:  this.managerState.sentTodayCount(),       // 👈 nuevo
-      carritosAbandonados:  this._carritosAbandonados(),
-      peticionesProductos:  this._peticionesProductos(),
-      actividadReciente:    this._actividadReciente(),
-      usuario:              user?.realname ?? 'Usuario',
-      ubicacion:            user?.defaultlocation ?? 'No definida',
-    };
-  });
-
+  private managerApis  = inject(ManagerApis);
+  private router       = inject(Router);
+ 
+  private readonly _metrics = signal<DashboardMetrics>(EMPTY_METRICS);
+  public readonly isLoading = signal<boolean>(true);
+  public readonly hasError  = signal<boolean>(false);
+ 
+  // Getter seguro: el template nunca ve null ni undefined
+  public readonly m = computed(() => this._metrics());
+ 
   constructor() {
-    this.managerState.loadTransfers();
+    this.managerApis.getDashboardMetrics().subscribe({
+      next: (data) => {
+        this._metrics.set(data);
+        this.isLoading.set(false);
+      },
+      error: (err) => {
+        console.error('❌ Error cargando métricas del dashboard:', err);
+        this.hasError.set(true);
+        this.isLoading.set(false);
+      }
+    });
   }
-
-  // === NAVEGACIÓN ===
+ 
   public navigateToEnviar(): void {
     this.managerState.setNewTransferType('ship');
     this.router.navigate(['/transfers']);
   }
-
+ 
   public navigateToRecibir(): void {
     this.managerState.setNewTransferType('rec');
     this.router.navigate(['/transfers']);
   }
-
+ 
   public navigateToWhatsapp(): void {
     this.router.navigate(['/whatsapp-manual']);
   }

@@ -1,4 +1,4 @@
-import { Component, inject, input, computed } from '@angular/core';
+import { Component, inject, input, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -13,7 +13,7 @@ import { LayerHistoryService } from '../../services/LayerHistoryService';
   templateUrl: './product-order.html',
 })
 export class ProductOrder {
-  private state = inject(ManagerState);
+  protected readonly state = inject(ManagerState);
   private router = inject(Router);
   public nav = inject(LayerHistoryService);
   public productId = input.required<string>();
@@ -22,6 +22,7 @@ export class ProductOrder {
   public error = this.state.productCardError;
   public addStatus = this.state.addStatus;
   protected readonly inWaitlist = this.state.currentProductInWaitlist;
+  protected readonly notifySuccess = signal(false);
 
   get quantity(): number { 
     return this.product()?.qty_in_order || 1; 
@@ -66,13 +67,19 @@ export class ProductOrder {
   }
 
   notifyMe(): void {
-  const stockid = this.productId(); // Obtenemos el ID del input.required
-  
+  const stockid = this.productId();
+
+  this.state.waitlist.update(current => [...current, stockid]);
+
   this.state.subscribeToWaitlist(stockid).subscribe({
-    next: () => console.log('✅ Suscrito con éxito'),
-    error: (err) => console.error('❌ Error al suscribir:', err)
+    next: () => {
+      this.notifySuccess.set(true);
+    },
+    error: () => {
+      this.state.waitlist.update(current => current.filter(id => id !== stockid));
+    }
   });
-  }
+}
 
   cancel() {
     this.router.navigate([], {

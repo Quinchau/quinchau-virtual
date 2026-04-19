@@ -44,21 +44,28 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(cloned).pipe(
     tap(event => {
-  if (event instanceof HttpResponse) {
-    const body = event.body as any;
-    if (body && typeof body.cartCount === 'number') {
-      state.updateCartCount(body.cartCount);
-    } else {
-      const headerCount = event.headers.get('X-Cart-Count');
-      if (headerCount !== null) {
-        state.updateCartCount(Number(headerCount));
-      }
-    }
-    if (!isServer && body?.identidad?.token) {
-      authService.handleIdentityResponse(body);
-    }
+      if (event instanceof HttpResponse) {
+        const body = event.body as any;
+
+        if (body && typeof body.cartCount === 'number') {
+          state.updateCartCount(body.cartCount);
+        } else {
+          const headerCount = event.headers.get('X-Cart-Count');
+          if (headerCount !== null) {
+            state.updateCartCount(Number(headerCount));
+          }
+        }
+
+        if (!isServer && body?.identidad) {
+  if (body.identidad.token) {
+    authService.handleIdentityResponse(body);
   }
-}),
+  if (Array.isArray(body.identidad.waitlist)) {
+    state.setWaitlist(body.identidad.waitlist);
+  }
+}
+      }
+    }),
     catchError((error) => {
       if (!isServer && error.status === 401) {
         const currentUrl = router.url;
@@ -67,7 +74,6 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         
         if (isPublicRoute) return throwError(() => error);
 
-        // Limpieza de tokens caducados
         document.cookie = 'auth_token=; Path=/; Max-Age=0;';
         document.cookie = 'auth=; Path=/; Max-Age=0;';
 

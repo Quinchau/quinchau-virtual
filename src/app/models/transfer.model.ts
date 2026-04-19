@@ -205,3 +205,27 @@ export interface SentStats {
   yesterday: number;
   week:      number;
 }
+
+export interface TransferMetrics {
+  porEnviar: { pendientes: number; recogidos: number; entregados: number };
+  porRecibir: { pendientes: number; recogidos: number; entregados: number };
+}
+ 
+export interface PeticionesProductos {
+  hoy:    number;
+  ayer:   number;
+  semana: number;
+  todas:  number;
+}
+
+export interface DashboardMetrics {
+  transferencias:      TransferMetrics;
+  pedidosHoy:          number;
+  visitantesHoy:       number;
+  carritosAbandonados: number;
+  peticionesProductos: PeticionesProductos;  // 👈 ya no es number
+  whatsapp: {
+    pendientes:  number;
+    enviadosHoy: number;
+  };
+}

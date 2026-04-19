@@ -8,7 +8,8 @@ import {
   ProductDetailData, DashboardResponse, HomeData,
   ProductListResponse,
   OutgoingMessage,
-  SentStats
+  SentStats,
+  DashboardMetrics
 } from '../models/transfer.model';
 import { CompanyConfig } from '../models/company_config.model';
 
@@ -174,6 +175,12 @@ public markMessageSent(id: number): Observable<{ exito: boolean; message: string
 public subscribeToProduct(stockid: string): Observable<any> {
   // Ajustamos a la ruta real del dominio de demanda
   return this.http.post(`${this.nodeBaseUrl}/on-demand/subscribe`, { stockid });
+}
+
+public getDashboardMetrics(): Observable<DashboardMetrics> {
+  return this.http.get<DashboardMetrics>(`${this.nodeBaseUrl}/dashboard/metrics`, {
+    withCredentials: true
+  });
 }
 
 }
