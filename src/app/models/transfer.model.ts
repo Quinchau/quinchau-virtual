@@ -122,6 +122,15 @@ export interface Visitante {
   waitlist?: string[];
 }
 
+export interface FeaturedProduct {
+  stockid:     string;
+  description: string;
+  categoryid:  string;
+  price:       number;
+  expirydate:  string;
+  cover_image: string | null;
+}
+
 export interface HomeData {
   banners: Banner[];
   modelos: Modelo[];
@@ -132,6 +141,7 @@ export interface HomeData {
   pendingWhatsappCount?: number;
   sentTodayCount?: number;
   _debug?: any;
+   featured_products?: FeaturedProduct[];
 }
 
 export interface CategoriaNavegacion {

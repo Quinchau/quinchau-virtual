@@ -22,7 +22,7 @@
         <span class="material-symbols-outlined text-slate-400">package_2</span>
         <span class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">TRANSFERIR</span>
       </div>
-      <p class="text-3xl font-black text-on-surface">{{ m().transferencias.porRecibir.recogidos }}</p>
+      <p class="text-3xl font-black text-on-surface">{{ m().transferencias.porRecibir.entregados }}</p>
       <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Por Recibir</p>
     </div>
 
@@ -70,13 +70,13 @@
     <div class="bg-slate-50 p-5 rounded-xl border-l-4 border-orange-100 shadow-xl shadow-slate-900/10 transition-all duration-300">
   <div class="flex items-center justify-between mb-2">
     <span class="material-symbols-outlined text-slate-400">contact_support</span>
-    <span class="text-[10px] font-bold text-orange-700 bg-orange-100 px-2 py-1 rounded">PETICIONES HOY</span>
+    <span class="text-[10px] font-bold text-orange-700 bg-orange-100 px-2 py-1 rounded">PETICIONES PRODUCTOS HOY</span>
   </div>
   <p class="text-3xl font-black text-on-surface">{{ m().peticionesProductos.hoy }}</p>
   <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">
    
     <span class="text-slate-400 font-normal normal-case">
-      · Ayer: {{ m().peticionesProductos.ayer }}
+      Ayer: {{ m().peticionesProductos.ayer }}
       · Semana: {{ m().peticionesProductos.semana }}
       · Total: {{ m().peticionesProductos.todas }}
     </span>

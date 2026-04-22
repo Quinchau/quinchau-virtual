@@ -1,0 +1,229 @@
+<main class="max-w-5xl mx-auto px-6 pt-8 pb-32">
+
+  <!-- Page Title Section -->
+  <div class="mb-10">
+    <h1 class="text-3xl font-extrabold tracking-tight text-on-surface mb-1">Registro de Clientes</h1>
+  </div>
+
+  <form (ngSubmit)="guardar()" class="space-y-8">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+      <!-- Identidad del Cliente -->
+      <div class="lg:col-span-12 bg-surface-container-lowest rounded-xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-l-4 border-primary">
+
+        <div class="flex items-center gap-3 mb-6">
+          <span class="material-symbols-outlined text-primary">badge</span>
+          <h2 class="text-xl font-bold tracking-tight">Identidad del Cliente</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+
+          <!-- RIF / Código (debtorno) -->
+          <div class="md:col-span-3">
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">
+              RIF / Código
+            </label>
+            <input
+              id="debtorno"
+              name="debtorno"
+              [(ngModel)]="form.debtorNo"
+              (input)="onDebtorNoInput($event)"
+              class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg py-3 px-4 text-sm font-mono focus:ring-2 focus:ring-primary transition-all"
+              placeholder="J000235309"
+              type="text"
+              maxlength="20"
+              required
+            />
+          </div>
+
+          <!-- Nombre Completo / Razón Social -->
+          <div class="md:col-span-9">
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">
+              Nombre Completo / Razón Social
+            </label>
+            <input
+              name="name"
+              [(ngModel)]="form.name"
+              class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary transition-all"
+              placeholder="Ej: Distribuidora Norte C.A."
+              type="text"
+              required
+            />
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Perfil Comercial -->
+      <div class="lg:col-span-8 bg-surface-container-lowest rounded-xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-b-4 border-primary">
+
+        <div class="flex items-center gap-3 mb-6">
+          <span class="material-symbols-outlined text-primary">account_balance_wallet</span>
+          <h2 class="text-xl font-bold tracking-tight">Perfil Comercial</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+          <!-- Moneda -->
+          <div>
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">
+              Moneda
+            </label>
+            <select
+              name="currcode"
+              [(ngModel)]="form.currcode"
+              [disabled]="loadingCatalogs()"
+              class="w-full bg-surface-container-high border-none rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary appearance-none">
+              @for (c of currencies(); track c.currabrev) {
+                <option [value]="c.currabrev">{{ c.currabrev }} — {{ c.currency }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Lista de Precios -->
+          <div>
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">
+              Lista de Precios
+            </label>
+            <select
+              name="salestype"
+              [(ngModel)]="form.salestype"
+              [disabled]="loadingCatalogs()"
+              class="w-full bg-surface-container-high border-none rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary appearance-none">
+              @for (s of salesTypes(); track s.typeabbrev) {
+                <option [value]="s.typeabbrev">{{ s.sales_type }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Tipo de Cliente -->
+          <div>
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">
+              Tipo de Cliente
+            </label>
+            <select
+              name="typeid"
+              [(ngModel)]="form.typeid"
+              [disabled]="loadingCatalogs()"
+              class="w-full bg-surface-container-high border-none rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary appearance-none">
+              @for (t of debtorTypes(); track t.typeid) {
+                <option [value]="t.typeid">{{ t.typename }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Descuento Global (%) -->
+          <div>
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">
+              Descuento Global (%)
+            </label>
+            <input
+              name="discount"
+              [(ngModel)]="form.discount"
+              class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary transition-all"
+              min="0"
+              max="100"
+              step="0.01"
+              type="number"
+            />
+          </div>
+
+          <!-- Límite de Crédito -->
+          <div>
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">
+              Límite de Crédito ($)
+            </label>
+            <input
+              name="creditlimit"
+              [(ngModel)]="form.creditlimit"
+              class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary transition-all"
+              min="0"
+              step="0.01"
+              type="number"
+            />
+          </div>
+
+          <!-- Términos de Pago -->
+          <div>
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">
+              Términos de Pago
+            </label>
+            <select
+              name="paymentterms"
+              [(ngModel)]="form.paymentterms"
+              class="w-full bg-surface-container-high border-none rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary appearance-none">
+              <option value="20">Contado</option>
+              <option value="30">30 Días</option>
+              <option value="60">60 Días</option>
+            </select>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Estado del Crédito -->
+      <div class="lg:col-span-4 bg-surface-container-lowest rounded-xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex flex-col">
+        <div class="flex items-center gap-3 mb-6">
+          <span class="material-symbols-outlined text-primary">security_update_good</span>
+          <h2 class="text-xl font-bold tracking-tight">Estado del Crédito</h2>
+        </div>
+        <div class="flex-grow flex items-center justify-center">
+          <div class="inline-flex bg-surface-container-high p-1 rounded-xl w-full">
+            <button
+              (click)="setHoldReason(0)"
+              [class.bg-secondary]="form.holdreason === 0"
+              [class.text-white]="form.holdreason === 0"
+              [class.text-zinc-500]="form.holdreason !== 0"
+              class="flex-1 py-4 px-2 rounded-lg font-bold flex flex-col items-center gap-1 transition-all"
+              type="button">
+              <span class="material-symbols-outlined"
+                [style.font-variation-settings]="form.holdreason === 0 ? '\'FILL\' 1' : 'normal'">
+                check_circle
+              </span>
+              <span class="text-xs tracking-widest">ACTIVO</span>
+            </button>
+            <button
+              (click)="setHoldReason(1)"
+              [class.bg-secondary]="form.holdreason === 1"
+              [class.text-white]="form.holdreason === 1"
+              [class.text-zinc-500]="form.holdreason !== 1"
+              class="flex-1 py-4 px-2 rounded-lg font-bold flex flex-col items-center gap-1 transition-all"
+              type="button">
+              <span class="material-symbols-outlined">block</span>
+              <span class="text-xs tracking-widest">BLOQUEADO</span>
+            </button>
+          </div>
+        </div>
+        <p class="mt-4 text-center text-[10px] text-on-surface-variant font-medium leading-relaxed italic">
+          El bloqueo impide automáticamente la emisión de nuevas facturas y guías de despacho.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- Error -->
+    @if (error()) {
+      <div class="flex items-center gap-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-xl px-6 py-4 text-sm text-red-700 dark:text-red-300">
+        <span class="material-symbols-outlined text-base">error</span>
+        {{ error() }}
+      </div>
+    }
+
+    <!-- CTA -->
+    <div class="mt-12 mb-20 flex justify-center">
+      <button
+        type="submit"
+        [disabled]="saving() || loadingCatalogs()"
+        class="group relative bg-primary-container text-on-primary-container px-12 py-5 rounded-xl font-black text-lg tracking-wider shadow-[0_20px_50px_rgba(148,74,0,0.15)] hover:shadow-[0_20px_50px_rgba(148,74,0,0.25)] transition-all active:scale-95 flex items-center gap-4 disabled:opacity-60 disabled:pointer-events-none">
+        {{ saving() ? 'GUARDANDO...' : 'FINALIZAR REGISTRO' }}
+        @if (!saving()) {
+          <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+        } @else {
+          <span class="material-symbols-outlined animate-spin">progress_activity</span>
+        }
+        <div class="absolute inset-0 rounded-xl border border-white/20 opacity-50"></div>
+      </button>
+    </div>
+
+  </form>
+</main>

@@ -87,6 +87,9 @@ public readonly productsResource = rxResource({
   public readonly identidad = signal<Visitante | null>(null);
   public readonly cartCount = signal(0);
   public waitlist = signal<string[]>([]);
+  public readonly featuredProducts = computed(() =>
+  this.homeResource.value().featured_products ?? []
+);
   public readonly cartData = computed(() => 
   this.cartResource.value() ?? this.defaultCartResponse
 );
@@ -116,26 +119,36 @@ public readonly globalTaxRate = computed(() => this.company()?.taxrate ?? 0);
 public readonly homeResource = rxResource<HomeData, unknown>({
   stream: () => this.managerApis.getHomeData().pipe(
     map((response: any): HomeData => {
-  const homeData: HomeData = {
-    banners:    response.banners    || [],
-    modelos:    response.modelos    || [],
-    categorias: response.categorias || [],
-    marcas:     response.marcas     || [],
-    identidad:  response.identidad
-  };
+      // Normalizamos los modelos para asegurar que img_url exista y sea consistente
+      const modelosNormalizados = (response.modelos || []).map((m: any) => ({
+        ...m,
+        // Priorizamos img_url, pero buscamos alternativas si el backend varía el nombre
+        img_url: m.img_url || m.image_url || m.url_img || ''
+      }));
 
-  if (typeof response.pendingWhatsappCount === 'number') {
-    this.pendingWhatsappCount.set(response.pendingWhatsappCount);
-  }
+      const homeData: HomeData = {
+        banners:           response.banners    || [],
+        modelos:           modelosNormalizados,
+        categorias:        response.categorias || [],
+        marcas:            response.marcas     || [],
+        identidad:         response.identidad,
+        featured_products: response.featured_products || []
+      };
 
-  return homeData;
-}),
+      // Efecto secundario: Actualizar contador de mensajes pendientes
+      if (typeof response.pendingWhatsappCount === 'number') {
+        this.pendingWhatsappCount.set(response.pendingWhatsappCount);
+      }
+
+      return homeData;
+    }),
     catchError(err => {
       console.error('❌ Error cargando HomeData:', err);
-      return of({ banners: [], modelos: [] } as HomeData);
+      // Retornamos un objeto válido para evitar que el resource quede en estado de error total
+      return of({ banners: [], modelos: [], categorias: [], marcas: [], featured_products: [] } as HomeData);
     })
   ),
-  defaultValue: { banners: [], modelos: [] } as HomeData
+  defaultValue: { banners: [], modelos: [], categorias: [], marcas: [], featured_products: [] } as HomeData
 });
 
 public readonly currentVisitante = computed(() => this.homeResource.value().visitante);
@@ -403,18 +416,9 @@ public readonly currentProductInWaitlist = computed(() => {
 });
 
 public setWaitlist(waitlist: string[]): void {
-  console.group('🔍 [ManagerState] Actualizando Waitlist');
-  console.log('Contenido recibido:', waitlist);
-  console.log('Tipo de dato:', typeof waitlist);
-  
-  if (Array.isArray(waitlist)) {
-    console.log('¿Está el producto 911-722?:', waitlist.includes('911-722'));
-  } else {
-    console.error('⚠️ La waitlist no es un array:', waitlist);
-  }
-  
+  if (!Array.isArray(waitlist)) return;
+
   this.waitlist.set(waitlist);
-  console.groupEnd();
 }
 
 updateProductQuantity(newQuantity: number) {
@@ -662,41 +666,37 @@ updateCartCount(count: number): void {
 // --- WHATSAPP MANUAL ---
 
 public readonly pendingWhatsappCount = signal<number>(0);
-public readonly sentStats = signal<SentStats>({ today: 0, yesterday: 0, week: 0 });
-public readonly sentTodayCount = computed(() => this.sentStats().today);
+public readonly sentStats            = signal<SentStats>({ today: 0, yesterday: 0, week: 0 });
+public readonly sentTodayCount       = computed(() => this.sentStats().today);
+public readonly pendingMessages      = signal<OutgoingMessage[]>([]);
+public readonly whatsappIsLoading    = signal<boolean>(false);
 
-private readonly _refreshWhatsapp = signal(0);
+public loadWhatsapp(): void {
+  if (this.currentUser()?.fullaccess !== 8) return;
+  this.whatsappIsLoading.set(true);
 
-public readonly whatsappResource = rxResource<OutgoingMessage[], { refresh: number; hasAccess: boolean }>({
-  params: () => ({ 
-    refresh: this._refreshWhatsapp(),
-    hasAccess: this.currentUser()?.fullaccess === 8
-  }),
-  stream: ({ params }) => {
-    if (!params.hasAccess) return of([]);
-    
-    return this.managerApis.getPendingMessages().pipe(
-      tap(res => {
-        this.pendingWhatsappCount.set(res.total);
-        this.sentStats.set(res.stats ?? { today: 0, yesterday: 0, week: 0 });
-      }),
-      map(res => res.messages),
-      catchError(err => {
-        console.error('❌ Error cargando mensajes WhatsApp:', err);
-        return of([]);
-      })
-    );
-  },
-  defaultValue: []
-});
+  this.managerApis.getPendingMessages().pipe(
+    tap(res => {
+      this.pendingWhatsappCount.set(res.total);
+      this.sentStats.set(res.stats ?? { today: 0, yesterday: 0, week: 0 });
+    }),
+    map(res => res.messages),
+    catchError(err => {
+      console.error('❌ Error cargando mensajes WhatsApp:', err);
+      return of([]);
+    }),
+    finalize(() => this.whatsappIsLoading.set(false))
+  ).subscribe(messages => this.pendingMessages.set(messages));
+}
 
-public readonly pendingMessages   = computed(() => this.whatsappResource.value() ?? []);
-public readonly whatsappIsLoading = this.whatsappResource.isLoading;
+public reloadWhatsapp(): void {
+  this.loadWhatsapp();
+}
 
 public lockMessage(id: number): Observable<any> {
   return this.managerApis.lockMessage(id).pipe(
     tap(() => {
-      this.whatsappResource.update(messages =>
+      this.pendingMessages.update(messages =>
         messages.map(m => m.id === id ? { ...m, status: 'wait' as const } : m)
       );
     }),
@@ -710,21 +710,17 @@ public lockMessage(id: number): Observable<any> {
 public markMessageSent(id: number): Observable<any> {
   return this.managerApis.markMessageSent(id).pipe(
     tap(() => {
-      this.whatsappResource.update(messages =>
+      this.pendingMessages.update(messages =>
         messages.filter(m => m.id !== id)
       );
       this.pendingWhatsappCount.update(n => Math.max(0, n - 1));
-      this.sentStats.update(s => ({ ...s, today: s.today + 1 }));  // 👈 nuevo
+      this.sentStats.update(s => ({ ...s, today: s.today + 1 }));
     }),
     catchError(err => {
       console.error('❌ Error al marcar mensaje como enviado:', err);
       return throwError(() => err);
     })
   );
-}
-
-public reloadWhatsapp(): void {
-  this._refreshWhatsapp.update(n => n + 1);
 }
 
 }

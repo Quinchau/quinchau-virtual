@@ -11,7 +11,8 @@ import {
   SentStats,
   DashboardMetrics
 } from '../models/transfer.model';
-import { CompanyConfig } from '../models/company_config.model';
+import { CatalogsResponse, CompanyConfig } from '../models/company_config.model';
+import { AddLinePayload, AddLineResponse, CreateOrderPayload, CreateOrderResponse, CustomerSearchResponse, ExecuteInvoicePayload, ExecuteInvoiceResponse, InvoicePreviewResponse, UpdateLinePayload, UpdateLineResponse, ValidateResponse } from '../models/invoice.models';
 
 @Injectable({
   providedIn: 'root',
@@ -130,6 +131,22 @@ export class ManagerApis {
     );
   }
 
+  public getCatalogs(): Observable<CatalogsResponse> {
+    return this.http.get<{ exito: boolean; data: CatalogsResponse }>(
+      `${this.nodeBaseUrl}/config/catalogs`
+    ).pipe(
+      map(res => res.data),
+      catchError(err => {
+        console.error('❌ Error en getCatalogs:', err);
+        return of({ currencies: [], salesTypes: [], debtorTypes: [] });
+      })
+    );
+  }
+
+  public createCustomer(payload: any): Observable<any> {
+    return this.http.post(`${this.nodeBaseUrl}/customers`, payload);
+  }
+
   public registerUser(userData: any): Observable<any> {
     return this.http.post(`${this.nodeBaseUrl}/auth/register`, userData);
   }
@@ -181,6 +198,63 @@ public getDashboardMetrics(): Observable<DashboardMetrics> {
   return this.http.get<DashboardMetrics>(`${this.nodeBaseUrl}/dashboard/metrics`, {
     withCredentials: true
   });
+}
+
+public searchCustomerByPhone(phone: string): Observable<CustomerSearchResponse> {
+  return this.http.get<CustomerSearchResponse>(
+    `${this.nodeBaseUrl}/customers/search/phone`,
+    { params: new HttpParams().set('q', phone) }
+  );
+}
+ 
+public createOrder(payload: CreateOrderPayload): Observable<CreateOrderResponse> {
+  return this.http.post<CreateOrderResponse>(
+    `${this.nodeBaseUrl}/orders-sales`,
+    payload
+  );
+}
+ 
+public deleteOrder(orderno: number): Observable<any> {
+  return this.http.delete(`${this.nodeBaseUrl}/orders-sales/${orderno}`);
+}
+ 
+public addOrderLine(orderno: number, payload: AddLinePayload): Observable<AddLineResponse> {
+  return this.http.post<AddLineResponse>(
+    `${this.nodeBaseUrl}/orders-sales/${orderno}/lines`,
+    payload
+  );
+}
+ 
+public updateOrderLine(orderno: number, lineno: number, payload: UpdateLinePayload): Observable<UpdateLineResponse> {
+  return this.http.put<UpdateLineResponse>(
+    `${this.nodeBaseUrl}/orders-sales/${orderno}/lines/${lineno}`,
+    payload
+  );
+}
+ 
+public deleteOrderLine(orderno: number, lineno: number): Observable<any> {
+  return this.http.delete(
+    `${this.nodeBaseUrl}/orders-sales/${orderno}/lines/${lineno}`
+  );
+}
+ 
+public getInvoicePreview(orderno: number): Observable<InvoicePreviewResponse> {
+  return this.http.get<InvoicePreviewResponse>(
+    `${this.nodeBaseUrl}/invoices/order/${orderno}/preview`
+  );
+}
+ 
+public validateInvoiceConcurrency(orderno: number): Observable<ValidateResponse> {
+  return this.http.get<ValidateResponse>(
+    `${this.nodeBaseUrl}/invoices/order/${orderno}/validate`
+  );
+}
+ 
+public executeInvoice(orderno: number, payload: ExecuteInvoicePayload): Observable<ExecuteInvoiceResponse> {
+  return this.http.post<ExecuteInvoiceResponse>(
+    `${this.nodeBaseUrl}/invoices/${orderno}/execute`,
+    payload
+  );
 }
 
 }

@@ -101,7 +101,7 @@
   } @else {
 
     <!-- ========================================================= -->
-    <!-- MODO A: HOME NORMAL + NUEVAS SECCIONES STITCH             -->
+    <!-- MODO A: HOME NORMAL                                       -->
     <!-- ========================================================= -->
 
     <div class="flex flex-col gap-12 animate-in fade-in duration-700">
@@ -134,156 +134,119 @@
         }
       </section>
 
-      <!-- 2) QUICK SELECT (Versión Stitch, limpia y moderna) -->
-<section class="bg-white rounded-[3rem] p-4 shadow-[0_10px_50px_rgba(0,0,0,0.03)] flex flex-col gap-4">
+      <!-- 2) QUICK SELECT -->
+      <section class="bg-white rounded-[3rem] p-4 shadow-[0_10px_50px_rgba(0,0,0,0.03)] flex flex-col gap-4">
 
-  <!-- Header -->
-  <header class="flex justify-between items-center px-2">
-    <div>
-      <h2 class="text-xl font-extrabold tracking-tight text-on-surface">EXPLORAR MODELOS</h2>
-    </div>
+        <header class="flex justify-between items-center px-2">
+          <h2 class="text-xl font-extrabold tracking-tight text-on-surface">EXPLORAR MODELOS</h2>
+          <a routerLink="/category"
+             class="text-xs font-bold text-zinc-400 tracking-widest hover:text-orange-600 transition">
+            VER TODO →
+          </a>
+        </header>
 
-    <a routerLink="/category"
-       class="text-xs font-bold text-zinc-400 tracking-widest hover:text-orange-600 transition">
-      VER TODO →
-    </a>
-  </header>
+        <div class="flex gap-6 overflow-x-auto scrollbar-hide pb-2">
 
-  <!-- Lista de modelos -->
-  <div class="flex gap-6 overflow-x-auto scrollbar-hide pb-2">
-
-    @for (modelo of managerState.modelosDestacados(); track modelo.idmodelo) {
-
-      <div class="flex flex-col items-center gap-3 min-w-[80px]">
-
-        <!-- Card circular -->
-        <a [routerLink]="[
-              '/' + getCategoriaDeModelo(modelo)?.slug,
-              getMarcaDeModelo(modelo)?.slug,
-              slugify(modelo.modeldescrip + '-' + modelo.idmodelo)
-            ]"
-           class="w-20 h-20 rounded-full bg-zinc-50 flex items-center justify-center
-                  shadow-sm hover:shadow-md transition-shadow cursor-pointer p-2">
-
-          @if (modelo.img_url) {
-            <img [src]="modelo.img_url"
-                 class="w-full h-full object-contain rounded-full">
-          } @else {
-            <span class="text-lg font-black text-zinc-300">
-              {{ modelo.modeldescrip.substring(0,1) }}
-            </span>
+          @for (modelo of managerState.modelosDestacados(); track modelo.idmodelo) {
+            <div class="flex flex-col items-center gap-3 min-w-[80px]">
+              <a [routerLink]="[
+                    '/' + getCategoriaDeModelo(modelo)?.slug,
+                    getMarcaDeModelo(modelo)?.slug,
+                    slugify(modelo.modeldescrip + '-' + modelo.idmodelo)
+                  ]"
+                 class="w-20 h-20 rounded-full bg-zinc-50 flex items-center justify-center
+                        shadow-sm hover:shadow-md transition-shadow cursor-pointer p-2">
+                @if (modelo.img_url) {
+                  <img [src]="modelo.img_url"
+                       class="w-full h-full object-contain rounded-full">
+                } @else {
+                  <span class="text-lg font-black text-zinc-300">
+                    {{ modelo.modeldescrip.substring(0,1) }}
+                  </span>
+                }
+              </a>
+              <span class="text-xs font-bold text-zinc-600 text-center leading-tight">
+                {{ modelo.modeldescrip }}
+              </span>
+            </div>
           }
 
-        </a>
+          <div class="flex flex-col items-center gap-3 min-w-[80px]">
+            <a routerLink="/category"
+               class="w-20 h-20 rounded-full bg-orange-500 flex items-center justify-center
+                      text-white shadow-md hover:bg-orange-600 transition cursor-pointer">
+              <span class="material-symbols-outlined text-3xl font-light">add</span>
+            </a>
+            <span class="text-xs font-bold text-orange-600 text-center leading-tight">
+              Catálogo
+            </span>
+          </div>
 
-        <!-- Nombre -->
-        <span class="text-xs font-bold text-zinc-600 text-center leading-tight">
-          {{ modelo.modeldescrip }}
-        </span>
-
-      </div>
-    }
-
-    <!-- Botón Catálogo -->
-    <div class="flex flex-col items-center gap-3 min-w-[80px]">
-      <a routerLink="/category"
-         class="w-20 h-20 rounded-full bg-orange-500 flex items-center justify-center
-                text-white shadow-md hover:bg-orange-600 transition cursor-pointer">
-        <span class="material-symbols-outlined text-3xl font-light">add</span>
-      </a>
-      <span class="text-xs font-bold text-orange-600 text-center leading-tight">
-        Catálogo
-      </span>
-    </div>
-
-  </div>
-</section>
-
+        </div>
+      </section>
 
       <!-- 3) SECCIÓN B2B (BENTO) -->
       <section class="mb-12">
         <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
 
-          <!-- Bloque principal -->
           <div class="md:col-span-8 bg-zinc-900 rounded-[2rem] p-8 relative overflow-hidden flex flex-col justify-between min-h-[400px]">
-  
-  <div class="z-10">
-    <div class="flex items-center gap-3 mb-6">
-      <span class="material-symbols-outlined text-orange-500 bg-orange-500/10 p-2 rounded-lg">
-        business_center
-      </span>
-      <span class="text-white font-bold tracking-widest text-[10px] uppercase">
-        Soluciones de negocios
-      </span>
-    </div>
+            <div class="z-10">
+              <div class="flex items-center gap-3 mb-6">
+                <span class="material-symbols-outlined text-orange-500 bg-orange-500/10 p-2 rounded-lg">
+                  business_center
+                </span>
+                <span class="text-white font-bold tracking-widest text-[10px] uppercase">
+                  Soluciones de negocios
+                </span>
+              </div>
+              <h2 class="text-white text-3xl font-extrabold mb-3 leading-tight">Ventas al Mayor</h2>
+              <div class="space-y-5">
+                <h3 class="text-4xl font-black text-white tracking-tighter">
+                  30% <span class="text-orange-500">Descuento</span>
+                </h3>
+                <div class="inline-flex items-center gap-3 px-4 py-2 rounded-xl bg-orange-600 shadow-[0_0_20px_rgba(234,88,12,0.5)] border border-orange-400/50 animate-[pulse_1s_cubic-bezier(0.4,0,0.6,1)_infinite]">
+                  <span class="relative flex h-3 w-3">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-100"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                  </span>
+                  <span class="text-white text-sm font-black uppercase tracking-[0.15em] drop-shadow-md">
+                    Monto Mínimo 300$
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="pt-4 mt-4 border-t border-zinc-800/60 flex flex-wrap gap-4 z-10">
+              <a routerLink="/downloader"
+                 class="flex items-center gap-2 bg-white text-zinc-900 px-6 py-3 rounded-xl font-bold hover:bg-orange-50 transition-all cursor-pointer active:scale-95 duration-200">
+                <span class="material-symbols-outlined">download</span>
+                Descargar Catalogo
+              </a>
+              <button class="flex items-center gap-2 bg-orange-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-orange-500 transition-all shadow-lg shadow-orange-900/40 active:scale-95 duration-200">
+                <span class="material-symbols-outlined">format_list_bulleted</span>
+                Mis Pedidos
+              </button>
+            </div>
+            <div class="absolute -right-20 -bottom-20 opacity-10 transform -rotate-12 pointer-events-none">
+              <span class="material-symbols-outlined text-[380px] text-orange-500">factory</span>
+            </div>
+          </div>
 
-    <h2 class="text-white text-3xl font-extrabold mb-3 leading-tight">
-      Ventas al Mayor
-    </h2>
-    
-    <div class="space-y-5">
-      <h3 class="text-4xl font-black text-white tracking-tighter">
-        30% <span class="text-orange-500">Descuento</span>
-      </h3>
-      
-      <div class="inline-flex items-center gap-3 px-4 py-2 rounded-xl bg-orange-600 shadow-[0_0_20px_rgba(234,88,12,0.5)] border border-orange-400/50 animate-[pulse_1s_cubic-bezier(0.4,0,0.6,1)_infinite]">
-        <span class="relative flex h-3 w-3">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-100"></span>
-          <span class="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
-        </span>
-        <span class="text-white text-sm font-black uppercase tracking-[0.15em] drop-shadow-md">
-          Monto Mínimo 300$
-        </span>
-      </div>
-    </div>
-  </div>
-
-  <div class="pt-4 mt-4 border-t border-zinc-800/60 flex flex-wrap gap-4 z-10">
-    <a routerLink="/downloader" 
-       class="flex items-center gap-2 bg-white text-zinc-900 px-6 py-3 rounded-xl font-bold hover:bg-orange-50 transition-all cursor-pointer active:scale-95 duration-200">
-      <span class="material-symbols-outlined">download</span>
-      Descargar Catalogo
-    </a>
-
-    <button class="flex items-center gap-2 bg-orange-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-orange-500 transition-all shadow-lg shadow-orange-900/40 active:scale-95 duration-200">
-      <span class="material-symbols-outlined">format_list_bulleted</span>
-      Mis Pedidos
-    </button>
-  </div>
-
-  <div class="absolute -right-20 -bottom-20 opacity-10 transform -rotate-12 pointer-events-none">
-    <span class="material-symbols-outlined text-[380px] text-orange-500">
-      factory
-    </span>
-  </div>
-</div>
-
-          <!-- Bloque secundario -->
           <div class="md:col-span-4 bg-orange-500 rounded-[2rem] p-4 flex flex-col justify-between text-white">
             <div>
-              <span class="text-white/80 font-bold text-xs uppercase tracking-widest mb-2 block">
-                Global Logistics
-              </span>
-              <h3 class="text-2xl font-black italic tracking-tighter">
-                ENGINEERED FOR SPEED.
-              </h3>
+              <span class="text-white/80 font-bold text-xs uppercase tracking-widest mb-2 block">Global Logistics</span>
+              <h3 class="text-2xl font-black italic tracking-tighter">ENGINEERED FOR SPEED.</h3>
             </div>
-
             <div class="space-y-4">
               <div class="flex items-center gap-3">
                 <span class="material-symbols-outlined">local_shipping</span>
                 <span class="text-sm font-bold">Priority Shipping</span>
               </div>
-
               <div class="flex items-center gap-3">
                 <span class="material-symbols-outlined">verified</span>
                 <span class="text-sm font-bold">Certified Parts</span>
               </div>
-
               <div class="pt-4">
-                <a class="text-white underline font-bold text-sm" href="#">
-                  Become a Partner
-                </a>
+                <a class="text-white underline font-bold text-sm" href="#">Become a Partner</a>
               </div>
             </div>
           </div>
@@ -291,75 +254,28 @@
         </div>
       </section>
 
-      <!-- 4) FEATURED PRODUCTS (TOP PERFORMANCE PARTS) -->
-      <section class="mb-20">
-        <h2 class="text-xl font-extrabold tracking-tight text-on-surface mb-3">
-          TOP PERFORMANCE PARTS
-        </h2>
-
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-
-          <!-- Card 1 -->
-          <div class="group bg-white rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300">
-            <div class="aspect-square rounded-xl bg-zinc-50 overflow-hidden mb-4 relative">
-              <img
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-rK338fG-8gFIfMbng4qdb_XCm7kdox_xP8aSlDN0UB7OMmIfocBAhcq5jJ4hrFgzt3Eh-5ZML8BSFlWDRXWWcmt4_bH79Y7ViRqmNSzp79UlAjd7-ZL8pGMpB9YKhMLegt7jGLSRvwTg5n3cIuh7Fd928mJpkiVBgp8o22sHTCUm6oFTd2W1pwrIMzVDK_Rehf0rfuPTkKqapk5b5mo--dQpubYnzvU7LrSQ9Jl6W3AmCo_QXHMR36_kQmRhQh5Id8yOqSyf4AcC"
-                class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-              <span class="absolute top-2 right-2 bg-orange-100 text-orange-600 text-[10px] font-black px-2 py-1 rounded-md">
-                NEW
-              </span>
-            </div>
-            <p class="text-xs text-zinc-500 mb-1">Cylinder Components</p>
-            <h3 class="font-bold text-sm mb-2 text-zinc-800">
-              Racing Piston Set NK250
-            </h3>
-            <p class="text-orange-600 font-black">$124.99</p>
+      <!-- 4) FEATURED PRODUCTS -->
+      @if (managerState.featuredProducts().length > 0) {
+        <section class="mb-20">
+          <h2 class="text-xl font-extrabold tracking-tight text-on-surface mb-3">
+            ARTICULOS DESTACADOS
+          </h2>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            @for (product of managerState.featuredProducts(); track product.stockid) {
+              <div class="group bg-white rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300">
+                <div class="aspect-square rounded-xl bg-zinc-50 overflow-hidden mb-4 relative">
+                  <img [src]="product.cover_image || '/assets/placeholder-part.svg'"
+                       [alt]="product.description"
+                       class="w-full h-full object-contain p-4 group-hover:scale-110 transition-transform duration-500">
+                </div>
+                <!--<p class="text-xs text-zinc-500 mb-1">{{ product.categoryid }}</p>-->
+                <h3 class="font-bold text-sm mb-2 text-zinc-800 line-clamp-2">{{ product.description }}</h3>
+                <p class="text-orange-600 font-black">${{ product.price }}</p>
+              </div>
+            }
           </div>
-
-          <!-- Card 2 -->
-          <div class="group bg-white rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300">
-            <div class="aspect-square rounded-xl bg-zinc-50 overflow-hidden mb-4 relative">
-              <img
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXY6c_Vf82Cym-TpUH4JkzNKoJGJ_X-KLfxK0S5Y905R2SjtmEe2YzGKXc-1bg__7YwP6iTzo2EppORSrltI-1l2Nh4ydTQm2ytBw72ovgXTKB0CbC99kjbGUQTaGDHEKY1vVS5SWN3TgfVOdpN1OeEpdMPMxIu4ncye8C0IACS1MvHKdCLlO6bm1NAcwPrpfY_M7eUllPpjP9s4LlYTk8AxCinme8LjGjurOJqCJspD5DwI3rmrCbjVhY9vbI7PzEtPWAZc8Wfs6c"
-                class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-            </div>
-            <p class="text-xs text-zinc-500 mb-1">Braking Systems</p>
-            <h3 class="font-bold text-sm mb-2 text-zinc-800">
-              Ventilated Disc GN125
-            </h3>
-            <p class="text-orange-600 font-black">$45.50</p>
-          </div>
-
-          <!-- Card 3 -->
-          <div class="group bg-white rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300">
-            <div class="aspect-square rounded-xl bg-zinc-50 overflow-hidden mb-4 relative">
-              <img
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYsUzt8r2Z6QIuO5in4ubSt0Kf2IVLrcEgjKm3bWfWlOJvZl8HmVhaWTeUzKtlmXuenL_l01llUR7nd4_g9AzCGfoN6TZOPVJLuw51NzntmSD04tia4t7fBC3-mMUsJeKT5CW5qy_x_HaB0yh7wXrhn_tyF5x9loXDmnKODXvdDLuBcKMjUO0fA0KGj8zJu5c67HmtqVS0Eq5Ejy4Cx0-PNHQow1RtH_ORF9os34raNz1nJ40YDb8c9Kxa-cNLq0tGN_m8MFvxTgmj"
-                class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-            </div>
-            <p class="text-xs text-zinc-500 mb-1">Electrical</p>
-            <h3 class="font-bold text-sm mb-2 text-zinc-800">
-              Full LED Assembly HJ110
-            </h3>
-            <p class="text-orange-600 font-black">$89.00</p>
-          </div>
-
-          <!-- Card 4 -->
-          <div class="group bg-white rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300">
-            <div class="aspect-square rounded-xl bg-zinc-50 overflow-hidden mb-4 relative">
-              <img
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSY7ZI-YwgmgEY_xvUq79X1tSsLxcbwCt8y9T-rKc0k0DzNOGdJ_QfomL4kY-i6OTT2nVtrfgAi4YlqCPa3GeIId2cylXOBn4tj1ht2PXllF447DeVtL_5-sq_Cl-M67iAIjq67P6ECL75Z2RgsS2qNrMPkW2U4JvoEPllFKSJu7baledRZ7-vNucECRuZ5VIUCDjis81ggO-EwLBbWIjZk1cS0Aajn5nid37xX_l3hLfc99yP2YpBRIImNoTKGUEqrTHGJYL8WsIj"
-                class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-            </div>
-            <p class="text-xs text-zinc-500 mb-1">Transmission</p>
-            <h3 class="font-bold text-sm mb-2 text-zinc-800">
-              Gold O-Ring Chain
-            </h3>
-            <p class="text-orange-600 font-black">$62.20</p>
-          </div>
-
-        </div>
-      </section>
+        </section>
+      }
 
     </div>
   }
@@ -368,16 +284,13 @@
 @if (selectedProductId(); as id) {
   <div class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-zinc-950/40 backdrop-blur-md p-0 sm:p-6 animate-in fade-in duration-500"
        (click)="closeProduct()">
-
     <div class="relative w-full max-w-3xl animate-in slide-in-from-bottom-20 duration-700 ease-out"
          (click)="$event.stopPropagation()">
-
       <button (click)="closeProduct()"
               class="absolute -top-16 right-6 sm:-right-4 sm:-top-12 text-white flex items-center gap-2 font-inter font-black uppercase text-[11px] tracking-[0.3em] hover:text-orange-400 transition-colors">
         ESC
         <span class="material-symbols-outlined text-2xl font-light">close</span>
       </button>
-
       <div class="bg-white rounded-t-[3.5rem] sm:rounded-[3.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.2)] overflow-hidden">
         <app-product-order [productId]="id" />
       </div>

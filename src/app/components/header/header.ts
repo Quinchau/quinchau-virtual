@@ -26,6 +26,18 @@ export class Header implements OnDestroy {
     return user ? [8, 10].includes(user.fullaccess ?? 0) : false;
   });
 
+  readonly canSeeCustomer = computed(() => {
+    const user = this.state.currentUser();
+    return user ? [8, 10].includes(user.fullaccess ?? 0) : false;
+  });
+
+  readonly canSeeInvoice = computed(() => {
+    const user = this.state.currentUser();
+    return user ? [8, 10].includes(user.fullaccess ?? 0) : false;
+  });
+
+  
+
   // Animación del badge del carrito
   public pulso = signal(0);
   private cartBadge = viewChild<ElementRef<HTMLSpanElement>>('cartBadge');

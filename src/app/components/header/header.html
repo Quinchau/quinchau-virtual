@@ -69,41 +69,64 @@
         <h2 class="text-orange-600 font-black italic font-headline text-lg tracking-tight">QUINCHAU MOTO</h2>
       </div>
 
-      <!-- Navegación -->
-      <nav class="flex-1 px-4 space-y-1 overflow-y-auto">
+     <!-- Navegación -->
+    <nav class="flex-1 px-4 space-y-1 overflow-y-auto">
 
-        <a [routerLink]="['/home']" (click)="toggleMenu()"
-           class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
-          <span class="material-symbols-outlined text-xl">home</span>
-          <span class="text-sm font-bold uppercase tracking-wide">Inicio</span>
+      <a [routerLink]="['/home']" (click)="toggleMenu()"
+        class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
+        <span class="material-symbols-outlined text-xl">home</span>
+        <span class="text-sm font-bold uppercase tracking-wide">Inicio</span>
+      </a>
+
+      <a [routerLink]="['/category']" (click)="toggleMenu()"
+        class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
+        <span class="material-symbols-outlined text-xl">grid_view</span>
+        <span class="text-sm font-bold uppercase tracking-wide">Categorías</span>
+      </a>
+
+      <a [routerLink]="['/checkout']" (click)="toggleMenu()"
+        class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
+        <span class="material-symbols-outlined text-xl">shopping_cart</span>
+        <span class="text-sm font-bold uppercase tracking-wide">Carrito</span>
+
+        @if (cartCount() > 0) {
+          <span class="ml-auto bg-orange-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">
+            {{ cartCount() }}
+          </span>
+        }
+      </a>
+
+      @if (canSeeDashboard()) {
+
+        <!-- DASHBOARD -->
+        <a [routerLink]="['/dashboard']" (click)="toggleMenu()"
+          class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
+          <span class="material-symbols-outlined text-xl">dashboard</span>
+          <span class="text-sm font-bold uppercase tracking-wide">Dashboard</span>
         </a>
 
-        <a [routerLink]="['/category']" (click)="toggleMenu()"
-           class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
-          <span class="material-symbols-outlined text-xl">grid_view</span>
-          <span class="text-sm font-bold uppercase tracking-wide">Categorías</span>
-        </a>
-
-        <a [routerLink]="['/checkout']" (click)="toggleMenu()"
-           class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
-          <span class="material-symbols-outlined text-xl">shopping_cart</span>
-          <span class="text-sm font-bold uppercase tracking-wide">Carrito</span>
-          @if (cartCount() > 0) {
-            <span class="ml-auto bg-orange-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">
-              {{ cartCount() }}
-            </span>
-          }
-        </a>
-
-        @if (canSeeDashboard()) {
-          <a [routerLink]="['/dashboard']" (click)="toggleMenu()"
-             class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
-            <span class="material-symbols-outlined text-xl">dashboard</span>
-            <span class="text-sm font-bold uppercase tracking-wide">Dashboard</span>
+        <!-- CUSTOMER -->
+        @if (canSeeCustomer()) {
+          <a [routerLink]="['/customer']" (click)="toggleMenu()"
+            class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
+            <span class="material-symbols-outlined text-xl">badge</span>
+            <span class="text-sm font-bold uppercase tracking-wide">Clientes</span>
           </a>
         }
 
-      </nav>
+        <!-- INVOICE -->
+        @if (canSeeInvoice()) {
+          <a [routerLink]="['/invoice']" (click)="toggleMenu()"
+            class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
+            <span class="material-symbols-outlined text-xl">badge</span>
+            <span class="text-sm font-bold uppercase tracking-wide">Facturacion</span>
+          </a>
+        }
+
+      }
+
+    </nav>
+
 
       <!-- Footer del drawer -->
       <div class="px-6 pt-6 border-t border-zinc-200 dark:border-zinc-800">

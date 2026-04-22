@@ -1,4 +1,4 @@
-import { Component, inject, computed, signal } from '@angular/core';
+import { Component, inject, computed, signal, OnInit } from '@angular/core';
 import { DatePipe, NgClass } from '@angular/common';
 import { ManagerState } from '../../services/manager-state';
 import { OutgoingMessage } from '../../models/transfer.model';
@@ -9,12 +9,12 @@ import { OutgoingMessage } from '../../models/transfer.model';
   imports: [DatePipe, NgClass],
   templateUrl: './manual-whatsapp.html',
 })
-export class ManualWhatsapp {
+export class ManualWhatsapp implements OnInit {
   private state = inject(ManagerState);
 
   public readonly messages      = this.state.pendingMessages;
   public readonly isLoading     = this.state.whatsappIsLoading;
-  public readonly sentStats     = this.state.sentStats;         // 👈 nuevo
+  public readonly sentStats     = this.state.sentStats;
   public readonly activeMessage = signal<OutgoingMessage | null>(null);
   public readonly actionStatus  = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
 
@@ -24,6 +24,10 @@ export class ManualWhatsapp {
   public readonly lowCount = computed(() =>
     this.messages().filter(m => m.priority === 'low').length
   );
+
+  ngOnInit(): void {
+    this.state.loadWhatsapp();
+  }
 
   public selectMessage(msg: OutgoingMessage): void {
     if (msg.status === 'wait') {
