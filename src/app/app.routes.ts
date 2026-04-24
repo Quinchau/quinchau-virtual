@@ -13,6 +13,7 @@ import { Downloaders } from './pages/downloaders/downloaders';
 import { ManualWhatsapp } from './pages/manual-whatsapp/manual-whatsapp';
 import { Customer } from './pages/customer/customer';
 import { Invoice } from './pages/invoice/invoice';
+import { Branch } from './pages/branch/branch';
 
 export const routes: Routes = [
   // === RUTAS PÚBLICAS ===
@@ -52,6 +53,22 @@ export const routes: Routes = [
     path: 'whatsapp-manual',
     component: ManualWhatsapp,
     canActivate: [adminGuard]
+  },
+  {
+  path: 'customers',
+  component: Customer,
+  },
+  {
+    path: 'customers/:debtorNo',
+    component: Customer,
+  },
+  {
+    path: 'customers/:debtorNo/branches/new',
+    component: Branch,
+  },
+  {
+    path: 'customers/:debtorNo/branches/:branchCode/edit',
+    component: Branch,
   },
 
   // === RUTAS PROTEGIDAS POR AUTENTICACIÓN ===

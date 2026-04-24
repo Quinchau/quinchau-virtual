@@ -1,4 +1,6 @@
-import { Component, inject, effect, PLATFORM_ID, signal, computed } from '@angular/core';
+// src/app/pages/home/home.ts
+
+import { Component, inject, effect, PLATFORM_ID, signal, computed, input, output } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ManagerState } from '../../services/manager-state';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
@@ -19,14 +21,27 @@ export class Home {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
 
+  /**
+   * Modo de operación del componente:
+   * - 'catalog' (default): comportamiento normal, navega al detalle del producto.
+   * - 'picker': al seleccionar un producto lo emite via `productSelected` sin navegar.
+   */
+  public mode = input<'catalog' | 'picker'>('catalog');
+
+  /**
+   * Emite el producto seleccionado cuando mode === 'picker'.
+   * El padre (InvoicePage) escucha este evento para recibir el stkcode.
+   */
+  public productSelected = output<any>();
+
   // --- Signals de Estado de Ruta (Fuente de Verdad) ---
-  
+
   // Convertimos los queryParams en una Signal para que todo el componente reaccione a la URL
   private queryParams = toSignal(this.route.queryParams);
-  
+
   // Determina si hay un producto seleccionado para mostrar el modal/detalle
   public selectedProductId = computed(() => this.queryParams()?.['p']);
-  
+
   // Estado del filtro de stock obtenido directamente de la URL
   public onlyStock = computed(() => this.queryParams()?.['stock'] === 'true');
 
@@ -36,7 +51,7 @@ export class Home {
   constructor() {
     /**
      * Sincronización Técnica:
-     * Si entramos por una ruta con slug (ej: /modelo/frenos-123), 
+     * Si entramos por una ruta con slug (ej: /modelo/frenos-123),
      * extraemos el ID y lo ponemos en la URL como queryParam para que el servicio cargue los datos.
      */
     effect(() => {
@@ -51,7 +66,7 @@ export class Home {
           relativeTo: this.route,
           queryParams: { idmodelo: idFromSlug },
           queryParamsHandling: 'merge',
-          replaceUrl: true 
+          replaceUrl: true
         });
       }
     });
@@ -60,12 +75,20 @@ export class Home {
   // --- Gestión de Visualización de Productos ---
 
   /**
-   * Al hacer clic en un producto, actualizamos la URL. 
-   * No necesitamos "abrir" nada manualmente, el computed 'selectedProductId' lo hará solo.
+   * Comportamiento bifurcado según el modo:
+   * - 'catalog': navega al detalle (comportamiento original intacto).
+   * - 'picker':  emite el producto al componente padre y no navega.
    */
   public handleProductSelection(producto: any): void {
     if (!producto?.stockid) return;
-    
+
+    if (this.mode() === 'picker') {
+      // Modo picker: devolver el producto seleccionado al padre
+      this.productSelected.emit(producto);
+      return;
+    }
+
+    // Modo catalog: comportamiento original
     this.managerState.currentProductCard.set(producto);
 
     this.router.navigate([], {
@@ -86,7 +109,7 @@ export class Home {
   // --- Lógica de Presentación de Filtros ---
 
   /**
-   * Filtrado reactivo: Se ejecuta solo cuando cambia la lista del servicio 
+   * Filtrado reactivo: Se ejecuta solo cuando cambia la lista del servicio
    * o el estado de 'onlyStock' en la URL.
    */
   public filteredProducts = computed(() => {

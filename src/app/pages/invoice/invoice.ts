@@ -1,8 +1,12 @@
+// src/app/pages/invoice/invoice.ts
+
 import { Component, inject, signal, computed, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { switchMap } from 'rxjs';
 import { ManagerApis } from '../../services/manager-apis';
+import { Home } from '../home/home';
+import { ProductPicker } from '../../components/product-picker/product-picker';
 import {
   CustomerResult,
   CustomerDisplay,
@@ -14,10 +18,11 @@ import {
   ExecuteInvoicePayload,
 } from '../../models/invoice.models';
 
+
 @Component({
   selector: 'app-invoice',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ProductPicker],
   templateUrl: './invoice.html',
   styles: ``,
 })
@@ -38,10 +43,17 @@ export class Invoice implements OnDestroy {
   readonly successMessage  = signal('');
   readonly sec1State = signal<'search' | 'confirm' | 'frozen'>('search');
   readonly customerResults = signal<CustomerDisplay[]>([]);
-  readonly selectedCustomer = signal<CustomerResult | null>(null);
+  readonly selectedCustomer = signal<CustomerDisplay | null>(null);
+  readonly selectedBranch = signal<CustomerResult | null>(null);
   readonly orderno = signal<number | null>(null);
   readonly lines = signal<OrderLine[]>([]);
   readonly preview = signal<InvoicePreview | null>(null);
+  readonly showErrorModal = signal(false);
+  readonly errorModalTitle = signal('');
+  readonly errorModalMessage = signal('');
+
+  /** Controla la visibilidad del overlay de búsqueda de productos */
+  readonly showProductPicker = signal(false);
 
   // ── Campos del formulario ─────────────────────────────────
   phoneInput      = '';
@@ -82,6 +94,36 @@ export class Invoice implements OnDestroy {
   );
 
   // ─────────────────────────────────────────────────────────
+  //  PRODUCT PICKER
+  // ─────────────────────────────────────────────────────────
+
+  /**
+   * Abre el overlay del buscador de productos.
+   * Solo disponible cuando hay un pedido activo (sec2Active).
+   */
+  openProductPicker(): void {
+    this.showProductPicker.set(true);
+  }
+
+  /**
+   * Cierra el overlay del buscador de productos.
+   */
+  closeProductPicker(): void {
+    this.showProductPicker.set(false);
+  }
+
+  /**
+   * Recibe el producto emitido por app-home en modo 'picker'.
+   * Puebla productCode con el stkcode y dispara addLine() automáticamente.
+   */
+  onProductPicked(product: any): void {
+    this.showProductPicker.set(false);
+    this.productCode = product.stkcode ?? product.stockid ?? '';
+    this.addLineError.set('');
+    this.addLine();
+  }
+
+  // ─────────────────────────────────────────────────────────
   //  SECCIÓN 1 — CLIENTE
   // ─────────────────────────────────────────────────────────
 
@@ -94,6 +136,7 @@ export class Invoice implements OnDestroy {
     this.loadingSearch.set(true);
     this.customerResults.set([]);
     this.selectedCustomer.set(null);
+    this.selectedBranch.set(null);
     this.sec1State.set('search');
 
     this.apis.searchCustomerByPhone(this.phoneInput.trim()).subscribe({
@@ -105,10 +148,8 @@ export class Invoice implements OnDestroy {
           return;
         }
 
-        // ── Agrupar por debtorno para mostrar clientes únicos ──────────
-        // El backend puede devolver múltiples filas por cliente (una por branch).
-        // El usuario debe ver y elegir el CLIENTE, no el branch.
         const map = new Map<string, CustomerDisplay>();
+
         for (const row of res.data) {
           if (!map.has(row.debtorno)) {
             map.set(row.debtorno, {
@@ -118,10 +159,19 @@ export class Invoice implements OnDestroy {
               area:     row.area,
               salesman: row.salesman,
               phoneno:  row.phoneno,
-              branches: [],
+              branches: [row],
             });
+          } else {
+            const existing = map.get(row.debtorno)!;
+            existing.branches.push(row);
+
+            if (row.name && row.name.length < existing.name.length) {
+              existing.name = row.name;
+            }
+            if (row.taxref && row.taxref !== existing.taxref) {
+              existing.taxref = row.taxref;
+            }
           }
-          map.get(row.debtorno)!.branches.push(row);
         }
 
         const uniqueCustomers = Array.from(map.values());
@@ -131,14 +181,8 @@ export class Invoice implements OnDestroy {
           return;
         }
 
-        if (uniqueCustomers.length === 1) {
-          // Un solo cliente: pasar directo a la validación de branch
-          this.resolveCustomerBranch(uniqueCustomers[0]);
-        } else {
-          // Múltiples clientes: mostrar lista para que el usuario elija
-          this.customerResults.set(uniqueCustomers);
-          this.sec1State.set('confirm');
-        }
+        this.customerResults.set(uniqueCustomers);
+        this.sec1State.set('confirm');
       },
       error: () => {
         this.loadingSearch.set(false);
@@ -147,80 +191,66 @@ export class Invoice implements OnDestroy {
     });
   }
 
-  /**
-   * El usuario seleccionó un cliente de la lista.
-   * Delegamos a resolveCustomerBranch para validar su branch.
-   */
   selectCustomer(customer: CustomerDisplay): void {
-    this.resolveCustomerBranch(customer);
-  }
-
-  /**
-   * Valida que el cliente seleccionado tenga un branch con defaultlocation
-   * asignado al almacén del usuario (token del backend).
-   * Si existe exactamente uno, lo usa directamente.
-   * Si no existe ninguno, muestra el mensaje de error correspondiente.
-   */
-  private resolveCustomerBranch(customer: CustomerDisplay): void {
-    const validBranch = customer.branches.find(b => b.defaultlocation);
-
-    if (!validBranch) {
-      // El cliente existe pero no tiene branch en el almacén del usuario
-      this.customerResults.set([]);
-      this.sec1State.set('search');
-      this.searchError.set(
-        `El cliente "${customer.name}" aún no ha sido asignado a su almacén. ` +
-        `Solicite al administrador que lo registre.`
-      );
-      return;
-    }
-
-    // Branch válido encontrado → cargar el CustomerResult completo
-    this.selectedCustomer.set(validBranch);
-    this.customerResults.set([]);
-    this.sec1State.set('confirm');
+    this.selectedCustomer.set(customer);
+    this.selectedBranch.set(null);
+    this.searchError.set('');
   }
 
   confirmCustomer(): void {
-    const c = this.selectedCustomer();
-    if (!c) return;
-
-    this.loadingConfirm.set(true);
-    this.searchError.set('');
-
-    const deliveryDate = new Date(Date.now() + 4 * 86_400_000)
-      .toISOString().split('T')[0];
-
-    const payload: CreateOrderPayload = {
-      debtorno:     c.debtorno,
-      branchcode:   c.branchcode,
-      ordertype:    c.salestype || '01',
-      shipvia:      1,
-      deliverydate: deliveryDate,
-      comments:     '',
-    };
-
-    this.apis.createOrder(payload).subscribe({
-      next: (res) => {
-        this.loadingConfirm.set(false);
-        if (!res.exito) {
-          this.searchError.set(res.mensaje || 'Error al crear el pedido.');
-          return;
-        }
-        this.orderno.set(res.data.orderno);
-        this.sec1State.set('frozen');
-      },
-      error: () => {
-        this.loadingConfirm.set(false);
-        this.searchError.set('Error al conectar con el servidor.');
-      }
-    });
+  const customer = this.selectedCustomer();
+  if (!customer) {
+    this.searchError.set('Por favor, seleccione un cliente de la lista.');
+    return;
   }
 
+  const validBranch = customer.branches.find(b => b.defaultlocation);
+
+  if (!validBranch) {
+    this.errorModalTitle.set('Cliente no asignado al Almacén');
+    this.errorModalMessage.set(
+      `El cliente "${customer.name}" no tiene una delegación registrada para su almacén.\n\n` +
+      `Por favor, solicite al administrador que registre la delegación antes de facturar.`
+    );
+    this.showErrorModal.set(true);
+    return;
+  }
+
+  this.loadingConfirm.set(true);
+  this.selectedBranch.set(validBranch);
+
+  const deliveryDate = new Date(Date.now() + 4 * 86_400_000)
+    .toISOString().split('T')[0];
+
+  const payload: CreateOrderPayload = {
+    debtorno:     validBranch.debtorno,
+    branchcode:   validBranch.branchcode,
+    ordertype:    validBranch.salestype || '01',
+    shipvia:      1,
+    deliverydate: deliveryDate,
+    comments:     '',
+  };
+
+  this.apis.createOrder(payload).subscribe({
+    next: (res) => {
+      this.loadingConfirm.set(false);
+      if (!res.exito) {
+        this.searchError.set(res.mensaje || 'Error al crear el pedido.');
+        return;
+      }
+      this.orderno.set(res.data.orderno);
+      this.sec1State.set('frozen');
+    },
+    error: (err) => {
+      this.loadingConfirm.set(false);
+      this.searchError.set(err?.error?.mensaje || 'Error al conectar con el servidor.');
+    }
+  });
+}
+
   changeCustomer(): void {
-    const hasLines = this.lines().length > 0;
-    const confirmed = hasLines
-      ? confirm(`El pedido #${this.orderno()} tiene ${this.lines().length} línea(s). ¿Deseas cancelarlo y cambiar de cliente?`)
+    const confirmed = this.lines().length > 0
+      ? confirm('¿Cambiar de cliente? Se perderán las líneas del pedido actual.')
       : true;
 
     if (!confirmed) return;
@@ -395,6 +425,7 @@ export class Invoice implements OnDestroy {
     this.sec1State.set('search');
     this.customerResults.set([]);
     this.selectedCustomer.set(null);
+    this.selectedBranch.set(null);
     this.orderno.set(null);
     this.lines.set([]);
     this.preview.set(null);
@@ -412,6 +443,7 @@ export class Invoice implements OnDestroy {
     this.addLineError.set('');
     this.invoiceError.set('');
     this.successMessage.set('');
+    this.showProductPicker.set(false);
   }
 
   private todayIso(): string {
@@ -420,6 +452,22 @@ export class Invoice implements OnDestroy {
 
   formatCurrency(value: number): string {
     return '$' + value.toFixed(2);
+  }
+
+  closeErrorModal(): void {
+    this.showErrorModal.set(false);
+    this.errorModalTitle.set('');
+    this.errorModalMessage.set('');
+  }
+
+  closeErrorModalAndReset(): void {
+    this.showErrorModal.set(false);
+    this.errorModalTitle.set('');
+    this.errorModalMessage.set('');
+    this.selectedCustomer.set(null);
+    this.customerResults.set([]);
+    this.sec1State.set('search');
+    this.phoneInput = '';
   }
 
   // ─────────────────────────────────────────────────────────

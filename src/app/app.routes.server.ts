@@ -14,10 +14,18 @@ export const serverRoutes: ServerRoute[] = [
   { path: ':categoria', renderMode: RenderMode.Server },
   { path: ':categoria/:marca', renderMode: RenderMode.Server },
   { path: ':categoria/:marca/:modelo', renderMode: RenderMode.Server },
-
-  // 🛒 success
   { path: 'success/:id', renderMode: RenderMode.Server },
-
-  // fallback
-  { path: '**', renderMode: RenderMode.Prerender }
+  { path: '**', renderMode: RenderMode.Prerender },
+   {
+    path: 'customers/:debtorNo/branches/new',
+    renderMode: RenderMode.Client
+  },
+  {
+    path: 'customers/:debtorNo/branches/:branchCode/edit',
+    renderMode: RenderMode.Client
+  },
+  {
+    path: 'customers/:debtorNo',
+    renderMode: RenderMode.Client
+  }
 ];

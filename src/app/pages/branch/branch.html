@@ -1,0 +1,184 @@
+<main class="max-w-3xl mx-auto px-6 pt-8 pb-32">
+
+  <!-- Encabezado -->
+  <div class="mb-10 flex items-center gap-4">
+    <button (click)="cancelar()" type="button"
+      class="p-2 rounded-lg hover:bg-surface-container-high transition-colors">
+      <span class="material-symbols-outlined text-on-surface-variant">arrow_back</span>
+    </button>
+    <div>
+      <h1 class="text-3xl font-extrabold tracking-tight text-on-surface mb-1">
+        {{ modo() === 'new' ? 'Nueva Delegación' : 'Editar Delegación' }}
+      </h1>
+      <p class="text-sm text-on-surface-variant font-mono">{{ debtorNo() }}</p>
+    </div>
+  </div>
+
+  <!-- Error -->
+  @if (error()) {
+    <div class="flex items-center gap-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-xl px-6 py-4 text-sm text-red-700 dark:text-red-300 mb-6">
+      <span class="material-symbols-outlined text-base">error</span>
+      {{ error() }}
+    </div>
+  }
+
+  <!-- Loading -->
+  @if (loadingData() || loadingCatalogs()) {
+    <div class="flex items-center justify-center py-20">
+      <span class="material-symbols-outlined animate-spin text-primary text-4xl">progress_activity</span>
+    </div>
+  }
+
+  @if (!loadingData() && !loadingCatalogs()) {
+    <form (ngSubmit)="guardar()" class="space-y-8">
+
+      <!-- Identificación -->
+      <div class="bg-surface-container-lowest rounded-xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-l-4 border-primary">
+        <div class="flex items-center gap-3 mb-6">
+          <span class="material-symbols-outlined text-primary">store</span>
+          <h2 class="text-xl font-bold tracking-tight">Identificación</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          <!-- Código de delegación -->
+          <div>
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">
+              Código de Delegación
+            </label>
+            <input
+              name="branchCode"
+              [(ngModel)]="form.branchCode"
+              [attr.readonly]="modo() === 'edit' ? true : null"
+              [class.opacity-60]="modo() === 'edit'"
+              class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg py-3 px-4 text-sm font-mono focus:ring-2 focus:ring-primary transition-all"
+              placeholder="Ej: MCYV12345678"
+              type="text"
+              maxlength="20"
+              required
+            />
+            @if (modo() === 'new') {
+              <p class="text-[10px] text-on-surface-variant mt-1">
+                Se generará automáticamente si lo dejas vacío.
+              </p>
+            }
+          </div>
+
+          <!-- Nombre de la delegación -->
+          <div>
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">
+              Nombre de la Delegación
+            </label>
+            <input
+              name="brname"
+              [(ngModel)]="form.brname"
+              class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary transition-all"
+              placeholder="Ej: Sede Principal Maracay"
+              type="text"
+            />
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Asignación comercial -->
+      <div class="bg-surface-container-lowest rounded-xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-b-4 border-primary">
+        <div class="flex items-center gap-3 mb-6">
+          <span class="material-symbols-outlined text-primary">person_pin</span>
+          <h2 class="text-xl font-bold tracking-tight">Asignación Comercial</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          <!-- Área -->
+          <div>
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">
+              Área
+            </label>
+            <select name="area" [(ngModel)]="form.area" required
+              class="w-full bg-surface-container-high border-none rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary appearance-none">
+              @for (a of areas(); track a.areacode) {
+                <option [value]="a.areacode">{{ a.areadescription }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Vendedor -->
+          <div>
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">
+              Vendedor
+            </label>
+            <select name="salesman" [(ngModel)]="form.salesman"
+              class="w-full bg-surface-container-high border-none rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary appearance-none">
+              <option value="">— Sin asignar —</option>
+              @for (s of salesman(); track s.salesmancode) {
+                <option [value]="s.salesmancode">{{ s.salesmanname }}</option>
+              }
+            </select>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Contacto -->
+      <div class="bg-surface-container-lowest rounded-xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
+        <div class="flex items-center gap-3 mb-6">
+          <span class="material-symbols-outlined text-primary">contact_phone</span>
+          <h2 class="text-xl font-bold tracking-tight">Contacto</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+          <div>
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">
+              Teléfono
+            </label>
+            <input name="phoneno" [(ngModel)]="form.phoneno" type="text"
+              placeholder="0412-1234567"
+              class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary transition-all" />
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">
+              Email
+            </label>
+            <input name="email" [(ngModel)]="form.email" type="email"
+              placeholder="contacto@empresa.com"
+              class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary transition-all" />
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">
+              Persona de Contacto
+            </label>
+            <input name="contactname" [(ngModel)]="form.contactname" type="text"
+              placeholder="Nombre del contacto"
+              class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary transition-all" />
+          </div>
+
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div class="flex justify-between items-center mt-8">
+        <button (click)="cancelar()" type="button"
+          class="px-6 py-3 rounded-xl font-bold text-sm text-on-surface-variant hover:bg-surface-container-high transition-all">
+          Cancelar
+        </button>
+        <button type="submit" [disabled]="saving()"
+          class="group relative bg-primary-container text-on-primary-container px-10 py-4 rounded-xl font-black text-base tracking-wider shadow-[0_20px_50px_rgba(148,74,0,0.15)] hover:shadow-[0_20px_50px_rgba(148,74,0,0.25)] transition-all active:scale-95 flex items-center gap-3 disabled:opacity-60 disabled:pointer-events-none">
+          {{ saving() ? 'GUARDANDO...' : (modo() === 'new' ? 'CREAR DELEGACIÓN' : 'GUARDAR CAMBIOS') }}
+          @if (!saving()) {
+            <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">
+              {{ modo() === 'new' ? 'add_circle' : 'save' }}
+            </span>
+          } @else {
+            <span class="material-symbols-outlined animate-spin">progress_activity</span>
+          }
+        </button>
+      </div>
+
+    </form>
+  }
+
+</main>

@@ -13,6 +13,7 @@ import {
 } from '../models/transfer.model';
 import { CatalogsResponse, CompanyConfig } from '../models/company_config.model';
 import { AddLinePayload, AddLineResponse, CreateOrderPayload, CreateOrderResponse, CustomerSearchResponse, ExecuteInvoicePayload, ExecuteInvoiceResponse, InvoicePreviewResponse, UpdateLinePayload, UpdateLineResponse, ValidateResponse } from '../models/invoice.models';
+import { BranchCatalogsResponse, CreateBranchPayload, CustomerDetailResult, CustomerSearchResult } from '../models/customer.model';
 
 @Injectable({
   providedIn: 'root',
@@ -254,6 +255,72 @@ public executeInvoice(orderno: number, payload: ExecuteInvoicePayload): Observab
   return this.http.post<ExecuteInvoiceResponse>(
     `${this.nodeBaseUrl}/invoices/${orderno}/execute`,
     payload
+  );
+}
+
+// Búsqueda unificada por nombre, RIF o teléfono
+public searchCustomers(q: string): Observable<CustomerSearchResult> {
+  return this.http.get<CustomerSearchResult>(
+    `${this.nodeBaseUrl}/customers/search`,
+    { params: new HttpParams().set('q', q) }
+  );
+}
+ 
+// Detalle completo del cliente + sus branches con transactionCount
+public getCustomer(debtorNo: string): Observable<CustomerDetailResult> {
+  return this.http.get<CustomerDetailResult>(
+    `${this.nodeBaseUrl}/customers/${debtorNo}`
+  );
+}
+ 
+// Actualizar datos del cliente
+public updateCustomer(debtorNo: string, payload: any): Observable<any> {
+  return this.http.put(
+    `${this.nodeBaseUrl}/customers/${debtorNo}`,
+    payload
+  );
+}
+ 
+// Catálogos exclusivos del formulario de branch (áreas + vendedores)
+public getBranchCatalogs(): Observable<BranchCatalogsResponse> {
+  return this.http.get<{ exito: boolean; data: BranchCatalogsResponse }>(
+    `${this.nodeBaseUrl}/config/branch-catalogs`
+  ).pipe(
+    map(res => res.data),
+    catchError(err => {
+      console.error('❌ Error en getBranchCatalogs:', err);
+      return of({ areas: [], salesman: [] });
+    })
+  );
+}
+ 
+// Listar branches de un cliente
+public getBranches(debtorNo: string): Observable<any> {
+  return this.http.get(
+    `${this.nodeBaseUrl}/customers/${debtorNo}/branches`
+  );
+}
+ 
+// Crear branch
+public addBranch(debtorNo: string, payload: CreateBranchPayload): Observable<any> {
+  return this.http.post(
+    `${this.nodeBaseUrl}/customers/${debtorNo}/branches`,
+    payload
+  );
+}
+ 
+// Editar branch
+public updateBranch(debtorNo: string, branchCode: string, payload: Partial<CreateBranchPayload>): Observable<any> {
+  return this.http.put(
+    `${this.nodeBaseUrl}/customers/${debtorNo}/branches/${branchCode}`,
+    payload
+  );
+}
+ 
+// Eliminar branch
+public deleteBranch(debtorNo: string, branchCode: string): Observable<any> {
+  return this.http.delete(
+    `${this.nodeBaseUrl}/customers/${debtorNo}/branches/${branchCode}`
   );
 }
 
