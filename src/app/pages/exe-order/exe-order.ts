@@ -41,8 +41,7 @@ export class ExeOrderComponent {
 
   
   confirmarIdentidad() {
-    console.log('--- HIJO: Intentando emitir registroCompleto ---');
-  if (!this.isFormValid()) {
+    if (!this.isFormValid()) {
     console.log('--- HIJO: Formulario no válido, abortando ---');
     return;
   }

@@ -1,6 +1,6 @@
 import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { catchError, map, Observable, of } from 'rxjs';
+import { catchError, map, Observable, of, tap, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { isPlatformServer } from '@angular/common';
 import { 
@@ -14,6 +14,7 @@ import {
 import { CatalogsResponse, CompanyConfig } from '../models/company_config.model';
 import { AddLinePayload, AddLineResponse, CreateOrderPayload, CreateOrderResponse, CustomerSearchResponse, ExecuteInvoicePayload, ExecuteInvoiceResponse, InvoicePreviewResponse, UpdateLinePayload, UpdateLineResponse, ValidateResponse } from '../models/invoice.models';
 import { BranchCatalogsResponse, CreateBranchPayload, CustomerDetailResult, CustomerSearchResult } from '../models/customer.model';
+import { OnDemandListResponse } from '../models/on-demand-model';
 
 @Injectable({
   providedIn: 'root',
@@ -190,9 +191,10 @@ public markMessageSent(id: number): Observable<{ exito: boolean; message: string
   return this.http.patch<any>(`${this.nodeBaseUrl}/outgoing-messages/${id}/sent`, {});
 }
 
-public subscribeToProduct(stockid: string): Observable<any> {
-  // Ajustamos a la ruta real del dominio de demanda
-  return this.http.post(`${this.nodeBaseUrl}/on-demand/subscribe`, { stockid });
+public subscribeToProduct(stockid: string, registro?: any): Observable<any> {
+  const body: any = { stockid };
+  if (registro) body.registro = registro;
+  return this.http.post(`${this.nodeBaseUrl}/on-demand/subscribe`, body);
 }
 
 public getDashboardMetrics(): Observable<DashboardMetrics> {
@@ -321,6 +323,26 @@ public updateBranch(debtorNo: string, branchCode: string, payload: Partial<Creat
 public deleteBranch(debtorNo: string, branchCode: string): Observable<any> {
   return this.http.delete(
     `${this.nodeBaseUrl}/customers/${debtorNo}/branches/${branchCode}`
+  );
+}
+
+public getOnDemandSubscriptions(): Observable<OnDemandListResponse> {
+  return this.http.get<OnDemandListResponse>(
+    `${this.nodeBaseUrl}/dashboard/on-demand`
+  );
+}
+ 
+public updateOnDemandStatus(id: number, status: 'closed' | 'pending'): Observable<{ exito: boolean; mensaje: string }> {
+  return this.http.patch<{ exito: boolean; mensaje: string }>(
+    `${this.nodeBaseUrl}/dashboard/on-demand/${id}/status`,
+    { status }
+  );
+}
+ 
+public notifyOnDemand(id: number): Observable<{ exito: boolean; mensaje: string }> {
+  return this.http.post<{ exito: boolean; mensaje: string }>(
+    `${this.nodeBaseUrl}/dashboard/on-demand/${id}/notify`,
+    {}
   );
 }
 

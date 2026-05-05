@@ -165,6 +165,7 @@ export interface Banner {
   titulo: string;
   descripcion: string;
   img_url: string;
+  img_url_wide?: string;
   link_url: string;
 }
 

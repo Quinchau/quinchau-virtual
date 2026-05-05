@@ -31,7 +31,6 @@ export class Dashboard {
   public readonly isLoading = signal<boolean>(true);
   public readonly hasError  = signal<boolean>(false);
  
-  // Getter seguro: el template nunca ve null ni undefined
   public readonly m = computed(() => this._metrics());
  
   constructor() {
@@ -60,5 +59,9 @@ export class Dashboard {
  
   public navigateToWhatsapp(): void {
     this.router.navigate(['/whatsapp-manual']);
+  }
+
+  public navigateToOnDemand(): void {
+    this.router.navigate(['/on-demand']);
   }
 }

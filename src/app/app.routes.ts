@@ -40,6 +40,12 @@ export const routes: Routes = [
     canActivate: [adminGuard]
   },
   {
+    path: 'on-demand',
+    loadComponent: () =>
+      import('./pages/on-demand-list/on-demand-list').then(m => m.OnDemandList),
+    canActivate: [adminGuard]
+  },
+  {
     path: 'customer',
     component: Customer,
     canActivate: [adminGuard]

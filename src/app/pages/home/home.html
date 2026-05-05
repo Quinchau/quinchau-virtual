@@ -107,32 +107,53 @@
     <div class="flex flex-col gap-12 animate-in fade-in duration-700">
 
       <!-- 1) HERO / BANNERS -->
-      <section class="rounded-[3rem] overflow-hidden shadow-2xl shadow-zinc-200 bg-zinc-100 aspect-[16/8] md:aspect-[21/7] relative">
-        @if (managerState.homeResource.isLoading()) {
-          <div class="w-full h-full flex items-center justify-center animate-pulse bg-zinc-200">
-            <span class="font-inter text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400">
-              Cargando Experiencia...
+<section class="md:rounded-[3rem] overflow-hidden shadow-2xl shadow-zinc-200 bg-zinc-100 aspect-[16/8] md:aspect-[21/7] relative">
+
+  @if (managerState.homeResource.isLoading()) {
+    <div class="w-full h-full flex items-center justify-center animate-pulse bg-zinc-200">
+      <span class="font-inter text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400">
+        Cargando Experiencia...
+      </span>
+    </div>
+
+  } @else {
+    <div class="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide h-full">
+
+      @for (banner of managerState.homeBanners(); track banner.idbanner) {
+        <div class="snap-center shrink-0 w-full h-full relative group">
+
+          <!-- Imagen responsiva: mobile 16:8 / desktop 21:7 -->
+          <picture class="block w-full h-full">
+            <source
+              media="(min-width: 768px)"
+              [srcset]="banner.img_url_wide ?? banner.img_url"
+            />
+            <img
+              [src]="banner.img_url"
+              [alt]="banner.titulo"
+              class="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-105"
+              loading="lazy"
+              decoding="async"
+            />
+          </picture>
+
+          <!-- Overlay con texto 
+          <div class="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent flex flex-col justify-end p-8 md:p-14">
+            <span class="font-inter text-[11px] font-black text-orange-400 uppercase tracking-[0.4em] mb-2">
+              {{ banner.titulo }}
             </span>
-          </div>
-        } @else {
-          <div class="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide h-full">
-            @for (banner of managerState.homeBanners(); track banner.idbanner) {
-              <div class="snap-center shrink-0 w-full relative group">
-                <img [src]="banner.img_url"
-                     class="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-105">
-                <div class="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent flex flex-col justify-end p-8 md:p-14">
-                  <span class="font-inter text-[11px] font-black text-orange-400 uppercase tracking-[0.4em] mb-2">
-                    {{ banner.titulo }}
-                  </span>
-                  <p class="font-plus-jakarta text-white text-xl md:text-3xl font-extrabold max-w-2xl leading-tight">
-                    {{ banner.descripcion }}
-                  </p>
-                </div>
-              </div>
-            }
-          </div>
-        }
-      </section>
+            <p class="font-plus-jakarta text-white text-xl md:text-3xl font-extrabold max-w-2xl leading-tight">
+              {{ banner.descripcion }}
+            </p>
+          </div> -->
+
+        </div>
+      }
+
+    </div>
+  }
+
+</section>
 
       <!-- 2) QUICK SELECT -->
       <section class="bg-white rounded-[3rem] p-4 shadow-[0_10px_50px_rgba(0,0,0,0.03)] flex flex-col gap-4">

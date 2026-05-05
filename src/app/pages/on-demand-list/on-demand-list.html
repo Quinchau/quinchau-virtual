@@ -1,0 +1,143 @@
+<div class="pt-6 px-4 pb-24 max-w-5xl mx-auto">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-black tracking-tight text-on-surface">Suscripciones On-Demand</h1>
+      <p class="text-xs text-slate-400 font-medium mt-0.5">Últimos 12 meses · {{ total() }} registros</p>
+    </div>
+    <button
+      (click)="reload()"
+      [disabled]="isLoading()"
+      class="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-orange-500 transition-colors disabled:opacity-40"
+    >
+      <span class="material-symbols-outlined text-base" [class.animate-spin]="isLoading()">refresh</span>
+      Actualizar
+    </button>
+  </div>
+
+  <!-- Filtros de status -->
+  <div class="flex gap-2 mb-5 flex-wrap">
+    @for (f of filters; track f.value) {
+      <button
+        (click)="setFilter(f.value)"
+        [class]="activeFilter() === f.value
+          ? 'px-3 py-1.5 rounded-full text-xs font-bold border-2 ' + f.activeClass
+          : 'px-3 py-1.5 rounded-full text-xs font-semibold border border-slate-200 text-slate-500 bg-white hover:border-slate-300 transition-colors'"
+      >
+        {{ f.label }}
+        @if (countByStatus(f.value) > 0) {
+          <span class="ml-1 opacity-70">({{ countByStatus(f.value) }})</span>
+        }
+      </button>
+    }
+  </div>
+
+  <!-- Loading skeleton -->
+  @if (isLoading()) {
+    <div class="space-y-3">
+      @for (i of [1,2,3,4,5]; track i) {
+        <div class="bg-slate-50 rounded-xl p-4 animate-pulse">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex-1 space-y-2">
+              <div class="h-3 bg-slate-200 rounded w-3/4"></div>
+              <div class="h-3 bg-slate-200 rounded w-1/2"></div>
+            </div>
+            <div class="h-6 w-20 bg-slate-200 rounded-full"></div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Error -->
+  @if (!isLoading() && hasError()) {
+    <div class="text-center py-16">
+      <span class="material-symbols-outlined text-4xl text-slate-300">error_outline</span>
+      <p class="text-slate-400 font-medium mt-2 text-sm">No se pudo cargar la lista.</p>
+      <button (click)="reload()" class="mt-4 text-orange-500 font-bold text-sm hover:underline">Reintentar</button>
+    </div>
+  }
+
+  <!-- Lista -->
+  @if (!isLoading() && !hasError()) {
+    @if (filtered().length === 0) {
+      <div class="text-center py-16">
+        <span class="material-symbols-outlined text-4xl text-slate-300">inbox</span>
+        <p class="text-slate-400 font-medium mt-2 text-sm">Sin resultados para este filtro.</p>
+      </div>
+    } @else {
+      <div class="space-y-3">
+        @for (sub of filtered(); track sub.id) {
+          <div
+            (click)="selectSubscription(sub)"
+            class="bg-slate-50 rounded-xl p-4 border border-transparent cursor-pointer shadow-sm shadow-slate-900/5 hover:border-orange-200 hover:shadow-md hover:shadow-orange-500/10 transition-all duration-200"
+            [class.border-orange-400]="selected()?.id === sub.id"
+            [class.shadow-orange-500\/20]="selected()?.id === sub.id"
+          >
+            <div class="flex items-start gap-3">
+
+              <!-- Imagen producto -->
+              <div class="shrink-0 w-12 h-12 rounded-lg bg-slate-200 overflow-hidden">
+                @if (sub.producto.imagen) {
+                  <img [src]="sub.producto.imagen" [alt]="sub.producto.descripcion" class="w-full h-full object-cover" />
+                } @else {
+                  <div class="w-full h-full flex items-center justify-center">
+                    <span class="material-symbols-outlined text-slate-400 text-xl">image_not_supported</span>
+                  </div>
+                }
+              </div>
+
+              <!-- Info principal -->
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-bold text-on-surface truncate">{{ sub.producto.descripcion }}</p>
+                <p class="text-xs text-slate-400 font-mono mt-0.5">{{ sub.stockid }}</p>
+
+                <div class="flex items-center gap-3 mt-2">
+                  <!-- Cliente -->
+                  <span class="flex items-center gap-1 text-xs text-slate-500">
+                    <span class="material-symbols-outlined text-[14px]">person</span>
+                    {{ sub.cliente.nombre }}
+                  </span>
+                  <!-- Fecha -->
+                  <span class="flex items-center gap-1 text-xs text-slate-400">
+                    <span class="material-symbols-outlined text-[14px]">schedule</span>
+                    {{ sub.created_at | date:'dd/MM/yy' }}
+                  </span>
+                  <!-- Tipo replacement -->
+                  @if (sub.type === 'replacement') {
+                    <span class="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">REEMPLAZO</span>
+                  }
+                </div>
+              </div>
+
+              <!-- Badge status -->
+              <div class="flex flex-col items-end gap-2 shrink-0">
+                <span [class]="badgeClass(sub.display_status)" class="text-[11px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap">
+                  {{ badgeLabel(sub.display_status) }}
+                </span>
+                @if (sub.notificacion.total_notificaciones > 0) {
+                  <span class="text-[10px] text-slate-400">
+                    {{ sub.notificacion.total_notificaciones }} notif.
+                  </span>
+                }
+              </div>
+
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+
+</div>
+
+<!-- Panel lateral detalle -->
+@if (selected()) {
+  <app-on-demand-detail
+    [subscription]="selected()!"
+    (close)="selected.set(null)"
+    (statusChanged)="onStatusChanged($event)"
+    (notified)="onNotified($event)"
+  />
+}

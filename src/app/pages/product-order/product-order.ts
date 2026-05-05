@@ -6,6 +6,8 @@ import { ManagerState } from '../../services/manager-state';
 import { ExeOrderComponent } from '../exe-order/exe-order';
 import { LayerHistoryService } from '../../services/LayerHistoryService';
 
+type PendingAction = 'cart' | 'waitlist' | null;
+
 @Component({
   selector: 'app-product-order',
   standalone: true,
@@ -23,9 +25,10 @@ export class ProductOrder {
   public addStatus = this.state.addStatus;
   protected readonly inWaitlist = this.state.currentProductInWaitlist;
   protected readonly notifySuccess = signal(false);
+  private pendingAction = signal<PendingAction>(null);
 
-  get quantity(): number { 
-    return this.product()?.qty_in_order || 1; 
+  get quantity(): number {
+    return this.product()?.qty_in_order || 1;
   }
 
   set quantity(value: number) {
@@ -43,42 +46,62 @@ export class ProductOrder {
     this.state.addCurrentProductToCart().subscribe({
       next: (res) => console.log('🟢 Añadido:', res),
       error: (err) => {
-        if (err?.requiere_registro) this.abrirModalRegistro();
+        if (err?.requiere_registro) {
+          this.pendingAction.set('cart');
+          this.abrirModalRegistro();
+        }
       }
     });
   }
 
   confirmConRegistro(datos: any) {
     this.state.addCurrentProductToCart(datos).subscribe({
-      next: (res) => {
-        this.cancel(); // Cierra el producto usando la URL
-      },
+      next: () => this.cancel(),
       error: (err) => console.error('❌ Error:', err)
     });
   }
+
+  notifyMe(): void {
+    const stockid = this.productId();
+    this.state.waitlist.update(current => [...current, stockid]);
+
+    this.state.subscribeToWaitlist(stockid).subscribe({
+      next: () => {
+        this.notifySuccess.set(true);
+      },
+      error: (err) => {
+        this.state.waitlist.update(current => current.filter(id => id !== stockid));
+        if (err?.requiere_registro) {
+          this.pendingAction.set('waitlist');
+          this.abrirModalRegistro();
+        }
+      }
+    });
+  }
+
+  confirmWaitlistConRegistro(datos: any): void {
+  const stockid = this.productId();
+  this.state.subscribeToWaitlist(stockid, datos).subscribe({
+    next: () => {
+      this.nav.back();
+      this.notifySuccess.set(true);
+    },
+    error: (err) => console.error('❌ Error en waitlist con registro:', err)
+  });
+}
 
   abrirModalRegistro() {
     this.nav.push('checkout', window.location.pathname + '?registro=true');
   }
 
   onRegistroCompleto(datos: any) {
-    this.nav.back();
+  if (this.pendingAction() === 'waitlist') {
+    this.pendingAction.set(null);
+    this.confirmWaitlistConRegistro(datos);
+  } else {
+    this.pendingAction.set(null);
     this.confirmConRegistro(datos);
   }
-
-  notifyMe(): void {
-  const stockid = this.productId();
-
-  this.state.waitlist.update(current => [...current, stockid]);
-
-  this.state.subscribeToWaitlist(stockid).subscribe({
-    next: () => {
-      this.notifySuccess.set(true);
-    },
-    error: () => {
-      this.state.waitlist.update(current => current.filter(id => id !== stockid));
-    }
-  });
 }
 
   cancel() {

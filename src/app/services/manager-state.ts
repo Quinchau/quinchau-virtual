@@ -653,15 +653,24 @@ updateCartCount(count: number): void {
     }
   }
 
-  public subscribeToWaitlist(stockid: string): Observable<any> {
-  return this.managerApis.subscribeToProduct(stockid).pipe(
-    tap(res => {
-      if (res.exito && res.identidad?.waitlist) {
+  public subscribeToWaitlist(stockid: string, registro?: any): Observable<any> {
+  return this.managerApis.subscribeToProduct(stockid, registro).pipe(
+    switchMap(res => {
+      if (!res.exito) {
+        return throwError(() => ({
+          requiere_registro: true,
+          mensaje: res.mensaje
+        }));
+      }
+      if (res.identidad?.waitlist) {
         this.setWaitlist(res.identidad.waitlist);
       }
+      return of(res);
     })
   );
 }
+
+
 
 // --- WHATSAPP MANUAL ---
 
