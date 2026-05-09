@@ -93,6 +93,11 @@ public readonly productsResource = rxResource({
   public readonly cartData = computed(() => 
   this.cartResource.value() ?? this.defaultCartResponse
 );
+  public readonly confirmingPayment = signal<boolean>(false);
+  public readonly dispatchingToCustomer = signal<boolean>(false);
+  public readonly confirmingDelivery = signal<boolean>(false);
+  public readonly uploadingVoucher = signal<boolean>(false);
+  public readonly uploadingShippingDoc = signal<boolean>(false);
 
   // --- COMPANY CONFIG --- //
 
@@ -504,6 +509,106 @@ public loadTransferenciaDetalle(id: string): void {
     });
   }
 
+  public confirmPayment(idtransfer: string): Observable<any> {
+  this.confirmingPayment.set(true);
+  return this.managerApis.confirmPayment(idtransfer).pipe(
+    tap(() => this.updateTransferPaymentStatus(idtransfer, 'paid')),
+    finalize(() => this.confirmingPayment.set(false))
+  );
+}
+
+public dispatchToCustomer(idtransfer: string): Observable<any> {
+  this.dispatchingToCustomer.set(true);
+  return this.managerApis.dispatchToCustomer(idtransfer).pipe(
+    tap(() => {
+      this.updateTransferDeliveryStatus(idtransfer, 'dispatched');
+      // Remover de listas activas porque closed=1
+      this.transfers.update(transfers => 
+        transfers.filter(t => t.idtransfer !== Number(idtransfer))
+      );
+    }),
+    finalize(() => this.dispatchingToCustomer.set(false))
+  );
+}
+
+public confirmDelivery(idtransfer: string): Observable<any> {
+  this.confirmingDelivery.set(true);
+  return this.managerApis.confirmDelivery(idtransfer).pipe(
+    tap(() => this.updateTransferDeliveryStatus(idtransfer, 'delivered')),
+    finalize(() => this.confirmingDelivery.set(false))
+  );
+}
+
+public uploadVoucher(idtransfer: string, file: File): Observable<any> {
+  this.uploadingVoucher.set(true);
+  return this.managerApis.uploadVoucher(idtransfer, file).pipe(
+    tap((res) => {
+      if (res.voucher_url) {
+        this.updateTransferVoucherUrl(idtransfer, res.voucher_url);
+      }
+      // Si el backend confirma pago automáticamente
+      if (res.payment_status === 'paid') {
+        this.updateTransferPaymentStatus(idtransfer, 'paid');
+      }
+    }),
+    finalize(() => this.uploadingVoucher.set(false))
+  );
+}
+
+public uploadShippingDoc(idtransfer: string, file: File): Observable<any> {
+  this.uploadingShippingDoc.set(true);
+  return this.managerApis.uploadShippingDoc(idtransfer, file).pipe(
+    tap((res) => {
+      if (res.shipping_doc_url) {
+        this.updateTransferShippingDocUrl(idtransfer, res.shipping_doc_url);
+      }
+    }),
+    finalize(() => this.uploadingShippingDoc.set(false))
+  );
+}
+
+private updateTransferPaymentStatus(idtransfer: string, status: 'unpaid' | 'paid'): void {
+  this.transfers.update(transfers =>
+    transfers.map(t => 
+      t.idtransfer === Number(idtransfer) 
+        ? { ...t, payment_status: status } 
+        : t
+    )
+  );
+  const detalle = this.transferenciaDetalle();
+  if (detalle?.idtransfer === Number(idtransfer)) {
+    this.transferenciaDetalle.set({ ...detalle, payment_status: status });
+  }
+}
+
+private updateTransferDeliveryStatus(idtransfer: string, status: 'pending' | 'dispatched' | 'delivered'): void {
+  this.transfers.update(transfers =>
+    transfers.map(t => 
+      t.idtransfer === Number(idtransfer) 
+        ? { ...t, delivery_status: status } 
+        : t
+    )
+  );
+  const detalle = this.transferenciaDetalle();
+  if (detalle?.idtransfer === Number(idtransfer)) {
+    this.transferenciaDetalle.set({ ...detalle, delivery_status: status });
+  }
+}
+
+private updateTransferVoucherUrl(idtransfer: string, url: string): void {
+  const detalle = this.transferenciaDetalle();
+  if (detalle?.idtransfer === Number(idtransfer)) {
+    this.transferenciaDetalle.set({ ...detalle, voucher_url: url });
+  }
+}
+
+private updateTransferShippingDocUrl(idtransfer: string, url: string): void {
+  const detalle = this.transferenciaDetalle();
+  if (detalle?.idtransfer === Number(idtransfer)) {
+    this.transferenciaDetalle.set({ ...detalle, shipping_doc_url: url });
+  }
+}
+
   setUserData(data: User | null): void {
   this.currentUser.set(data);
   
@@ -599,6 +704,8 @@ public updateTransferStatus(idtransfer: string, newStatus: string) {
         this.clearNewTransfer();
         this.currentProduct.set(null);
         this.transferCompleted.set(true);
+        
+        this.loadTransfers();
       },
       error: (err) => {
         console.error('Error al crear la transferencia', err);

@@ -30,8 +30,6 @@ export class ManagerApis {
       : environment.apiUrlBrowser; 
   }
 
-  // --- MÉTODOS DE TRANSFERENCIAS (MIGRADO A NODE) ---
-
   public getTransfers(): Observable<DashboardResponse> {
     return this.http.get<DashboardResponse>(`${this.nodeBaseUrl}/transfers`, {
       withCredentials: true
@@ -61,7 +59,38 @@ export class ManagerApis {
     return this.http.post(`${this.nodeBaseUrl}/transfers`, transferData);
   }
 
-  // --- MÉTODOS DE PRODUCTOS ---
+  public confirmPayment(idtransfer: string): Observable<any> {
+  return this.http.patch(`${this.nodeBaseUrl}/transfers/status`, {
+    idtransfer,
+    action: 'confirm_payment'
+  });
+}
+
+  public dispatchToCustomer(idtransfer: string): Observable<any> {
+    return this.http.patch(`${this.nodeBaseUrl}/transfers/status`, {
+      idtransfer,
+      action: 'dispatch_to_customer'
+    });
+  }
+
+  public confirmDelivery(idtransfer: string): Observable<any> {
+    return this.http.patch(`${this.nodeBaseUrl}/transfers/status`, {
+      idtransfer,
+      action: 'confirm_delivery'
+    });
+  }
+
+  public uploadVoucher(idtransfer: string, file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.patch(`${this.nodeBaseUrl}/transfers/${idtransfer}/voucher`, formData);
+  }
+
+  public uploadShippingDoc(idtransfer: string, file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.patch(`${this.nodeBaseUrl}/transfers/${idtransfer}/shipping-doc`, formData);
+  }
 
   public getProducts(
     searchTerm: string = '', 
@@ -344,6 +373,12 @@ public notifyOnDemand(id: number): Observable<{ exito: boolean; mensaje: string 
     `${this.nodeBaseUrl}/dashboard/on-demand/${id}/notify`,
     {}
   );
+}
+
+public getShippers(): Observable<any> {
+    return this.http.get(`${this.nodeBaseUrl}/transfers/shippers`, {
+        withCredentials: true
+    });
 }
 
 }

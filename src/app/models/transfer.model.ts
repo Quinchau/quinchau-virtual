@@ -9,6 +9,16 @@ export interface Transfer {
   location_name: string;
   loccode: string; 
   cover_image_url: string | null;
+  is_customer_delivery?: 0 | 1;
+  customer_name?: string;
+  customer_phone?: string;
+  customer_address?: string;
+  delivery_type?: string;
+  shipping_carrier?: string;
+  delivery_status?: 'pending' | 'dispatched' | 'delivered';
+  payment_status?: 'unpaid' | 'paid';
+  voucher_url?: string;
+  shipping_doc_url?: string;
 }
 
 export interface TransferenciaDetalle {
@@ -19,7 +29,7 @@ export interface TransferenciaDetalle {
   recqty: number;
   shipdate: string;
   recdate: string;
-  status: 'Pendiente' | 'Recogido' | 'Entregado' | 'Devuelto' ;
+  status: 'Pendiente' | 'Recogido' | 'Enviado al cliente' | 'Entregado al cliente' | 'Devuelto' | 'Entregado';
   longdescription: string;
   units: string;
   shiploc_name: string;
@@ -31,6 +41,17 @@ export interface TransferenciaDetalle {
   user_name: string;
   tipo: 'ship' | 'rec' | 'unknown';
   imagenes: string[];
+  is_customer_delivery?: 0 | 1;
+  customer_name?: string;
+  customer_phone?: string;
+  customer_id?: string;
+  customer_address?: string;
+  delivery_type?: string;
+  shipping_carrier?: string;
+  delivery_status?: 'pending' | 'dispatched' | 'delivered';
+  payment_status?: 'unpaid' | 'paid';
+  voucher_url?: string;
+  shipping_doc_url?: string;
 }
 
 export interface NewTransfer {
@@ -39,6 +60,14 @@ export interface NewTransfer {
   shiploc: string;
   recloc: string;
   user: string;
+  customer_delivery?: {
+    customer_name: string;
+    customer_phone?: string;
+    customer_id?: string;
+    customer_address?: string;
+    delivery_type: string; 
+    shipping_carrier?: string;
+  };
 }
 
 export interface User {
@@ -73,6 +102,7 @@ export interface Product {
   modelos: string[];
   qty_in_order: number;
   slug: string;
+  available_locations?: AvailableLocation[];
 }
 
 export interface ProductListResponse {
@@ -239,4 +269,15 @@ export interface DashboardMetrics {
     pendientes:  number;
     enviadosHoy: number;
   };
+}
+
+export interface Shipper {
+    shipper_id: number;
+    shippername: string;
+    mincharge: number;
+}
+
+export interface PhoneNumber {
+    prefix: '0412' | '0414' | '0416' | '0422' | '0424' | '0426';
+    number: string;
 }

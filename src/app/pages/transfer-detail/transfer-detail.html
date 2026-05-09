@@ -1,15 +1,18 @@
-<div class="fixed inset-0 bg-gray-900 bg-opacity-75 z-40 overflow-y-auto">
-  <div class="flex items-center justify-center min-h-screen p-3">
-    <div class="relative bg-white rounded-xl shadow-xl w-full max-w-sm text-gray-800 overflow-hidden">
+<!-- Modal con z-index alto para cubrir toda la pantalla -->
+<div class="fixed left-0 right-0 bg-gray-900 bg-opacity-75 overflow-y-auto" style="z-index: 40; top: 80px; bottom: 0;">
+  <!-- Scroll normal - sin flex centrado -->
+  <div class="min-h-screen py-4 px-3">
+    <!-- Contenedor blanco con margen inferior grande para scroll -->
+    <div class="relative bg-white rounded-xl shadow-xl w-full max-w-sm text-gray-800 mx-auto mb-32">
 
       @if (transferenciaDetalle$(); as t) {
 
         <!-- Imagen -->
-        <div class="relative h-40 bg-gray-50">
+        <div class="relative h-40 bg-gray-50 rounded-t-xl">
           <img [src]="t.imagenes[0]" alt="Imagen del producto" class="w-full h-full object-contain" />
           <button
             (click)="goBack()"
-            class="absolute top-2 right-2 bg-white rounded-full p-1.5 shadow text-gray-400 hover:text-gray-700 transition-colors"
+            class="absolute top-2 right-2 bg-white rounded-full p-1.5 shadow text-gray-400 hover:text-gray-700 transition-colors z-10"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -17,11 +20,11 @@
           </button>
         </div>
 
-        <!-- Contenido -->
-        <div class="p-4 space-y-3">
+        <!-- Contenido principal -->
+        <div class="p-4 space-y-4">
 
           <!-- ID + Puesto + Stock + Estado -->
-          <div class="flex items-start justify-between gap-2">
+          <div class="flex items-start justify-between gap-2 flex-wrap">
             <div>
               <h2 class="text-xl font-bold text-gray-900 leading-none">{{ t.stockid }}</h2>
               <div class="flex items-center gap-2 mt-0.5">
@@ -29,11 +32,12 @@
                 <span class="text-xs text-gray-500">Stock: <span class="font-semibold text-gray-700">{{ t.tipo === 'ship' ? t.shiploc_qty : t.recloc_qty ?? 'N/A' }}</span></span>
               </div>
             </div>
-            <span class="text-[10px] font-bold rounded-full border px-2 py-0.5 flex-none whitespace-nowrap mt-0.5"
+            <span class="text-[10px] font-bold rounded-full border px-2 py-0.5 flex-none whitespace-nowrap"
               [ngClass]="{
                 'bg-gray-100 text-gray-600 border-gray-300':    t.status === 'Pendiente',
-                'bg-green-100 text-green-700 border-green-300': t.status === 'Recogido',
-                'bg-green-600 text-white border-green-700':     t.status === 'Entregado',
+                'bg-blue-100 text-blue-700 border-blue-300':    t.status === 'Recogido',
+                'bg-yellow-100 text-yellow-700 border-yellow-300': t.status === 'Enviado al cliente',
+                'bg-green-100 text-green-700 border-green-300': t.status === 'Entregado al cliente' || t.status === 'Entregado',
                 'bg-red-100 text-red-700 border-red-300':       t.status === 'Devuelto'
               }">
               {{ t.status }}
@@ -41,13 +45,13 @@
           </div>
 
           <!-- Descripción -->
-          <p class="text-xs text-gray-500 leading-snug line-clamp-2">{{ t.longdescription }}</p>
+          <p class="text-xs text-gray-500 leading-snug">{{ t.longdescription }}</p>
 
-          <!-- Info grid -->
-          <div class="grid grid-cols-2 gap-2 text-sm">
+          <!-- Info grid básica -->
+          <div class="grid grid-cols-2 gap-3 text-sm bg-gray-50 p-3 rounded-lg">
             <div>
               <p class="text-[10px] text-gray-400 uppercase font-medium">{{ t.tipo === 'ship' ? 'Enviar a' : 'Viene de' }}</p>
-              <p class="font-bold text-gray-900 truncate">{{ t.tipo === 'ship' ? t.recloc_name : t.shiploc_name }}</p>
+              <p class="font-bold text-gray-900">{{ t.tipo === 'ship' ? t.recloc_name : t.shiploc_name }}</p>
             </div>
             <div>
               <p class="text-[10px] text-gray-400 uppercase font-medium">Cantidad</p>
@@ -55,31 +59,186 @@
             </div>
           </div>
 
-          <!-- Botón acción -->
+          <!-- ============================================ -->
+          <!-- SECCIÓN TIPO B: DATOS DEL CLIENTE -->
+          <!-- ============================================ -->
+          @if (t.is_customer_delivery === 1) {
+            
+            <!-- Badges de estado -->
+            <div class="flex flex-wrap gap-2">
+              @if (t.payment_status) {
+                <span class="text-[10px] px-2 py-1 rounded-full font-medium"
+                  [ngClass]="{
+                    'bg-yellow-100 text-yellow-700': t.payment_status === 'unpaid',
+                    'bg-green-100 text-green-700': t.payment_status === 'paid'
+                  }">
+                  @if (t.payment_status === 'unpaid') { 💰 Por cobrar }
+                  @if (t.payment_status === 'paid') { ✅ Pagado }
+                </span>
+              }
+              @if (t.delivery_type && t.delivery_type !== 'DELIVERY' && t.delivery_status) {
+                <span class="text-[10px] px-2 py-1 rounded-full font-medium"
+                  [ngClass]="{
+                    'bg-gray-100 text-gray-600': t.delivery_status === 'pending',
+                    'bg-blue-100 text-blue-700': t.delivery_status === 'dispatched',
+                    'bg-green-100 text-green-700': t.delivery_status === 'delivered'
+                  }">
+                  @if (t.delivery_status === 'pending') { 📦 Pendiente envío }
+                  @if (t.delivery_status === 'dispatched') { 🚚 En camino }
+                  @if (t.delivery_status === 'delivered') { ✅ Entregado }
+                </span>
+              }
+            </div>
+
+            <!-- Datos del Cliente -->
+            <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <h3 class="text-xs font-bold text-blue-800 uppercase mb-2 flex items-center gap-1">
+                🎯 Datos del Cliente
+              </h3>
+              <div class="space-y-1.5 text-sm">
+                <div class="flex justify-between flex-wrap gap-1">
+                  <span class="text-gray-500">Nombre:</span>
+                  <span class="font-medium text-gray-800">{{ t.customer_name }}</span>
+                </div>
+                @if (t.customer_phone) {
+                  <div class="flex justify-between flex-wrap gap-1">
+                    <span class="text-gray-500">Teléfono:</span>
+                    <a [href]="'tel:' + t.customer_phone" 
+                      class="font-medium text-gray-800 underline decoration-dotted">
+                      {{ t.customer_phone }}
+                    </a>
+                  </div>
+                }
+                @if (t.customer_id) {
+                  <div class="flex justify-between flex-wrap gap-1">
+                    <span class="text-gray-500">Cédula / Rif:</span>
+                    <span class="font-medium text-gray-800">{{ t.customer_id }}</span>
+                  </div>
+                }
+                @if (t.customer_address) {
+                  <div class="flex justify-between flex-wrap gap-1">
+                    <span class="text-gray-500">Dirección:</span>
+                    <span class="font-medium text-gray-800 text-right">{{ t.customer_address }}</span>
+                  </div>
+                }
+                <div class="flex justify-between flex-wrap gap-1">
+                  <span class="text-gray-500">Envío:</span>
+                  <span class="font-bold text-gray-800">{{ t.delivery_type || 'No especificado' }}</span>
+                </div>
+                @if (t.shipping_carrier) {
+                  <div class="flex justify-between flex-wrap gap-1">
+                    <span class="text-gray-500">Transportista:</span>
+                    <span class="font-medium text-gray-800">{{ t.shipping_carrier }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- PAGO Y DOCUMENTOS -->
+            <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <h3 class="text-xs font-bold text-gray-600 uppercase mb-2 flex items-center gap-1">
+                💰 Pago y Documentos
+              </h3>
+              <div class="space-y-2">
+                <!-- Comprobante de pago -->
+                <div class="flex justify-between items-center flex-wrap gap-2">
+                  <span class="text-sm">Comprobante de pago:</span>
+                  <div class="flex items-center gap-2">
+                    @if (t.voucher_url) {
+                      <a [href]="t.voucher_url" target="_blank" class="text-blue-600 text-sm underline hover:text-blue-800">
+                        Ver archivo ↗
+                      </a>
+                    }
+                    @if (t.payment_status === 'unpaid') {
+                      <button 
+                        (click)="onActionClick(TransferAction.UploadVoucher, null)" 
+                        class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition-colors">
+                        📷 Subir
+                      </button>
+                      <button 
+                        (click)="onActionClick(TransferAction.ConfirmPayment, null)" 
+                        class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 transition-colors">
+                        💰 Confirmar Pago
+                      </button>
+                    }
+                    @if (t.payment_status === 'paid') {
+                      <span class="text-green-600 text-sm font-medium">✓ Pagado</span>
+                    }
+                  </div>
+                </div>
+                
+                <!-- Guía de envío -->
+                @if (t.delivery_type && t.delivery_type !== 'DELIVERY') {
+                  <div class="flex justify-between items-center flex-wrap gap-2">
+                    <span class="text-sm">📋 Guía de envío:</span>
+                    <div class="flex items-center gap-2">
+                      @if (t.shipping_doc_url) {
+                        <a [href]="t.shipping_doc_url" target="_blank" class="text-blue-600 text-sm underline hover:text-blue-800">
+                          Ver archivo ↗
+                        </a>
+                      }
+                      <button 
+                        (click)="onActionClick(TransferAction.UploadShippingDoc, null)" 
+                        class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition-colors">
+                        📎 Subir guía
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+
+          } @else {
+            <div class="border-t border-gray-100 my-1"></div>
+          }
+
+          <!-- ============================================ -->
+          <!-- BOTÓN DE ACCIÓN PRINCIPAL -->
+          <!-- ============================================ -->
           <button
             [disabled]="managerState.transferButtonInfo$().disabled"
             (click)="onActionClick(managerState.transferButtonInfo$().action, managerState.transferButtonInfo$().nextStatus)"
             [class.opacity-50]="managerState.transferButtonInfo$().disabled"
             [class.cursor-not-allowed]="managerState.transferButtonInfo$().disabled"
-            class="w-full py-2.5 px-4 rounded-lg text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition-colors"
+            [ngClass]="{
+              'bg-indigo-600 hover:bg-indigo-700': managerState.transferButtonInfo$().variant === 'primary',
+              'bg-green-600 hover:bg-green-700': managerState.transferButtonInfo$().variant === 'success',
+              'bg-yellow-600 hover:bg-yellow-700': managerState.transferButtonInfo$().variant === 'warning',
+              'bg-red-600 hover:bg-red-700': managerState.transferButtonInfo$().variant === 'danger'
+            }"
+            class="w-full py-3 px-4 rounded-lg text-sm font-bold text-white focus:outline-none transition-colors"
           >
             {{ managerState.transferButtonInfo$().label }}
           </button>
 
+          <!-- Indicadores de carga -->
+          @if (managerState.confirmingPayment()) {
+            <div class="text-center text-xs text-gray-400 animate-pulse">
+              Confirmando pago...
+            </div>
+          }
+          @if (managerState.uploadingVoucher() || managerState.uploadingShippingDoc()) {
+            <div class="text-center text-xs text-gray-400 animate-pulse">
+              Subiendo archivo...
+            </div>
+          }
+
         </div>
 
       } @else {
+        <!-- Estado de carga -->
+        <div class="text-center p-12 text-gray-500">
+          <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500 mx-auto mb-3"></div>
+          <p class="font-medium">Cargando detalles...</p>
+        </div>
         <button
           (click)="goBack()"
-          class="absolute top-2 right-2 bg-white rounded-full p-1.5 shadow text-gray-400 hover:text-gray-700 transition-colors"
+          class="absolute top-2 right-2 bg-white rounded-full p-1.5 shadow text-gray-400 hover:text-gray-700 transition-colors z-10"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-        <div class="text-center p-12 text-gray-500">
-          <p class="font-medium">No se encontraron datos para esta transferencia.</p>
-        </div>
       }
 
     </div>

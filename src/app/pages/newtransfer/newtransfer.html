@@ -1,71 +1,354 @@
-<div class="p-4 sm:p-6 lg:p-8">
-  <div class="bg-white rounded-lg shadow-lg p-4 sm:p-6 mb-6 border border-slate-100">
-    <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">Selecciona un Producto</h1>
-    
-    <app-search-box />
+<div class="min-h-screen bg-gray-50 pb-24">
+  
+  <!-- Header de la página (sticky para que siempre se vea) -->
+  <div class="sticky top-0 z-30 bg-white border-b border-gray-200 px-4 py-3 shadow-sm">
+    <div class="flex items-center gap-3">
+      <button (click)="goBack()" class="p-1 -ml-1">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+      <h1 class="text-xl font-bold text-gray-900">
+        {{ selectedProduct() ? 'Solicitar Producto' : 'Selecciona un Producto' }}
+      </h1>
+    </div>
   </div>
 
-  @if (!selectedStockid) {
+  <!-- Contenido principal -->
+  <div class="p-4 sm:p-6 lg:p-8">
     
-    <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      
-      @for (product of managerState.products(); track product.stockid) {
-        <div
-          (click)="onProductClick(product.stockid)"
-          class="bg-white rounded-lg shadow-md overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer border border-slate-100"
-        >
-          <div class="w-full h-48 bg-slate-50 flex items-center justify-center overflow-hidden border-b border-slate-50">
-            <img 
-              [src]="product.cover_image_id" 
-              [alt]="product.description"
-              class="object-contain w-full h-full p-4"
-              loading="lazy"
-              onerror="this.onerror=null; this.src='https://placehold.co/400x300/e2e8f0/6b7280?text=No+Image';"
-            >
-          </div>
-          
-          <div class="p-4">
-            <h2 class="text-sm font-bold text-gray-800 line-clamp-2 min-h-[40px] mb-1">
-              {{ product.description }}
-            </h2>
-            <p class="text-slate-400 text-[10px] font-mono mb-3 uppercase tracking-wider">
-              SKU: {{ product.stockid }}
-            </p>
+    @if (!selectedProduct()) {
+      <!-- Search Box - SOLO cuando no hay producto seleccionado -->
+      <div class="bg-white rounded-lg shadow-lg p-4 sm:p-6 mb-6 border border-slate-100">
+        <app-search-box />
+      </div>
 
-            <div class="flex flex-col gap-3 mt-auto">
-              <span class="text-xl font-black text-orange-600">
-                ${{ product.price_with_tax | number: '1.2-2' }}
-              </span>
-
-              <span
-                [ngClass]="{
-                  'bg-green-100 text-green-700': product.total_quantity > 0,
-                  'bg-red-50 text-red-600': product.total_quantity <= 0
-                }"
-                class="text-[10px] font-black px-2.5 py-1 rounded-md w-fit uppercase"
+      <!-- Grid de productos - SOLO cuando no hay producto seleccionado -->
+      <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        @for (product of managerState.products(); track product.stockid) {
+          <div
+            (click)="onProductClick(product)"
+            class="bg-white rounded-lg shadow-md overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer border border-slate-100"
+          >
+            <div class="w-full h-48 bg-slate-50 flex items-center justify-center overflow-hidden border-b border-slate-50">
+              <img
+                [src]="product.cover_image_id"
+                [alt]="product.description"
+                class="object-contain w-full h-full p-4"
+                loading="lazy"
+                onerror="this.onerror=null; this.src='https://placehold.co/400x300/e2e8f0/6b7280?text=No+Image';"
               >
-                {{ product.total_quantity > 0 ? 'Disponible' : 'Sin Stock' }} ({{ product.total_quantity }})
+            </div>
+            <div class="p-4">
+              <h2 class="text-sm font-bold text-gray-800 line-clamp-2 min-h-[40px] mb-1">
+                {{ product.description }}
+              </h2>
+              <p class="text-slate-400 text-[10px] font-mono mb-3 uppercase tracking-wider">
+                SKU: {{ product.stockid }}
+              </p>
+              <div class="flex flex-col gap-3 mt-auto">
+                <span class="text-xl font-black text-orange-600">
+                  ${{ product.price_with_tax | number: '1.2-2' }}
+                </span>
+                <span
+                  [ngClass]="{
+                    'bg-green-100 text-green-700': product.total_quantity > 0,
+                    'bg-red-50 text-red-600': product.total_quantity <= 0
+                  }"
+                  class="text-[10px] font-black px-2.5 py-1 rounded-md w-fit uppercase"
+                >
+                  {{ product.total_quantity > 0 ? 'Disponible' : 'Sin Stock' }} ({{ product.total_quantity }})
+                </span>
+              </div>
+            </div>
+          </div>
+        } @empty {
+          <div class="col-span-full py-20 flex flex-col items-center justify-center text-center bg-white rounded-xl border-2 border-dashed border-slate-200">
+            <div class="bg-slate-50 p-4 rounded-full mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0z" />
+              </svg>
+            </div>
+            <p class="text-slate-500 font-bold text-lg">
+              {{ managerState.productSearchTerm() ? 'No se encontraron resultados' : '¿Qué estás buscando hoy?' }}
+            </p>
+            <p class="text-slate-400 text-sm mt-1">
+              {{ managerState.productSearchTerm() ? 'Intenta con otros términos de búsqueda.' : 'Escribe arriba para filtrar el inventario.' }}
+            </p>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ============================================ -->
+    <!-- FORMULARIO DE CREACIÓN DE TRANSFERENCIA      -->
+    <!-- (se muestra cuando hay producto seleccionado) -->
+    <!-- ============================================ -->
+    @if (selectedProduct(); as product) {
+      
+      <!-- Producto seleccionado (resumen) -->
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4">
+        <p class="text-xs text-gray-500 uppercase font-medium">Producto seleccionado</p>
+        <p class="font-bold text-gray-800">{{ product.description }}</p>
+        <p class="text-xs text-gray-400 font-mono mt-0.5">SKU: {{ product.stockid }}</p>
+      </div>
+
+      <!-- Indicador de carga -->
+      @if (managerState.loadingProductDetail()) {
+        <div class="text-center text-xs text-blue-500 animate-pulse p-2 bg-blue-50 rounded-lg mb-4">
+          ⏳ Cargando ubicaciones...
+        </div>
+      }
+
+      <!-- Cantidad -->
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4">
+        <label class="block text-sm font-bold text-gray-700 mb-2">
+          Cantidad a transferir <span class="text-red-500">*</span>
+        </label>
+        <input
+          type="number"
+          [(ngModel)]="shipqty"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+          min="1"
+          [max]="maxQuantity()">
+        <div class="flex justify-between items-center mt-1">
+          <p class="text-xs text-gray-500">
+            Disponible en <span class="font-medium">{{ shiploc() || 'almacén origen' }}</span>:
+            <span class="font-bold">{{ maxQuantity() }}</span> unidades
+          </p>
+        </div>
+        @if (shipqty() > maxQuantity() && maxQuantity() > 0) {
+          <p class="text-xs text-red-500 mt-1">
+            ⚠️ La cantidad supera el stock disponible (máximo {{ maxQuantity() }})
+          </p>
+        }
+        @if (maxQuantity() === 0 && shiploc()) {
+          <p class="text-xs text-red-500 mt-1">
+            ⚠️ No hay stock disponible en este almacén
+          </p>
+        }
+      </div>
+
+      <!-- Almacenes -->
+      <div class="space-y-3 mb-4">
+
+        @if (availableLocations().length === 0 && !managerState.loadingProductDetail()) {
+          <p class="text-xs text-red-500">⚠️ No hay stock disponible en ningún almacén</p>
+        }
+
+        @if (transferMode() === 'ship') {
+          <!-- ENVIAR: origen fijo (mi almacén), destino seleccionable -->
+          <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-slate-500">📤 Origen (tu almacén):</span>
+                <span class="font-bold text-slate-800">{{ shiploc() }}</span>
+              </div>
+              <span class="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">
+                {{ maxQuantity() }} disponibles
               </span>
             </div>
           </div>
-        </div>
-      } @empty {
-        <div class="col-span-full py-20 flex flex-col items-center justify-center text-center bg-white rounded-xl border-2 border-dashed border-slate-200">
-          <div class="bg-slate-50 p-4 rounded-full mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+
+          <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <label class="block text-sm font-bold text-gray-700 mb-2">
+              Destino <span class="text-red-500">*</span>
+            </label>
+            <select
+              [(ngModel)]="recloc"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500">
+              <option value="">Seleccionar destino</option>
+              @for (loc of destinationOptions(); track loc.loccode) {
+                <option [value]="loc.loccode">{{ loc.locationname }}</option>
+              }
+            </select>
           </div>
-          <p class="text-slate-500 font-bold text-lg">
-            {{ managerState.productSearchTerm() ? 'No se encontraron resultados' : '¿Qué estás buscando hoy?' }}
-          </p>
-          <p class="text-slate-400 text-sm mt-1">
-            {{ managerState.productSearchTerm() ? 'Intenta con otros términos de búsqueda.' : 'Escribe arriba para filtrar el inventario.' }}
-          </p>
+
+        } @else {
+          <!-- RECIBIR: origen seleccionable, destino fijo (mi almacén) -->
+          <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <label class="block text-sm font-bold text-gray-700 mb-2">
+              Origen (almacén que enviará) <span class="text-red-500">*</span>
+            </label>
+            <select
+              [(ngModel)]="shiploc"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500">
+              <option value="">Seleccionar origen</option>
+              @for (loc of destinationOptions(); track loc.loccode) {
+                <option [value]="loc.loccode">{{ loc.locationname }} ({{ loc.qty }} disponibles)</option>
+              }
+            </select>
+          </div>
+
+          <!-- Destino fijo (se muestra siempre en modo recibir) 
+          <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-slate-500">📥 Destino (tu almacén):</span>
+              <span class="font-bold text-slate-800">{{ recloc() || userDefaultLocation() }}</span>
+            </div>
+          </div> -->
+        }
+
+      </div>
+
+      <!-- Tipo B: Despacho directo al cliente — SOLO en modo RECIBIR -->
+      @if (transferMode() === 'rec') {
+
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4">
+          <label class="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              [(ngModel)]="isCustomerDelivery"
+              class="mt-1 w-4 h-4 text-orange-600 rounded focus:ring-orange-500">
+            <div>
+              <span class="text-sm font-bold text-gray-700">
+                📦 ¿El producto será entregado directamente al cliente?
+              </span>
+              <p class="text-xs text-gray-500 mt-1">
+                Si marcas esta opción, el producto no llegará a tu almacén,
+                sino que se despachará directamente al cliente final.
+              </p>
+            </div>
+          </label>
         </div>
+
+        @if (isCustomerDelivery()) {
+          <div class="bg-blue-50 rounded-xl p-4 border border-blue-200 mb-4">
+            <h3 class="font-bold text-sm text-blue-800 flex items-center gap-1 mb-3">
+              🎯 Datos del Cliente
+            </h3>
+
+            <div class="space-y-3">
+              <!-- Nombre del cliente -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Nombre del cliente <span class="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="customerName"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500"
+                  placeholder="Ej: Juan Pérez">
+              </div>
+
+              <!-- Teléfono (opcional) -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Teléfono <span class="text-red-500">*</span>
+                </label>
+                <div class="flex gap-2">
+                  <!-- Selector de código de área -->
+                  <select
+                    [(ngModel)]="phonePrefix"
+                    class="w-28 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500">
+                    @for (prefix of phonePrefixes; track prefix.value) {
+                      <option [value]="prefix.value">{{ prefix.label }}</option>
+                    }
+                  </select>
+                  <!-- Número de 7 dígitos -->
+                  <input
+                    type="text"
+                    [(ngModel)]="phoneNumber"
+                    (input)="phoneNumber.set($any($event.target).value.replace(/[^0-9]/g, '').slice(0, 7))"
+                    class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500"
+                    placeholder="1234567"
+                    maxlength="7"
+                    pattern="[0-9]{7}">
+                </div>
+                @if (phoneNumber() && !isPhoneNumberValid()) {
+                  <p class="text-xs text-red-500 mt-1">
+                    ⚠️ El número debe tener exactamente 7 dígitos
+                  </p>
+                }
+              </div>
+
+              <!-- Método de entrega (combo de shippers dinámico) -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Método de entrega <span class="text-red-500">*</span>
+                </label>
+                <select
+                  [(ngModel)]="selectedShipper"
+                  [compareWith]="compareShippers"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500">
+                  <option [ngValue]="null" disabled>Seleccionar método</option>
+                  @for (shipper of shippers(); track shipper.shipper_id) {
+                    <option [ngValue]="shipper">{{ shipper.shippername }}</option>
+                  }
+                </select>
+                @if (loadingShippers()) {
+                  <p class="text-xs text-gray-500 mt-1">⏳ Cargando métodos de envío...</p>
+                }
+              </div>
+
+              <!-- Documento de identidad (solo para shipping, no para DELIVERY) -->
+              @if (selectedShipper() && !isDelivery()) {
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Documento de identidad (Cédula/RIF/Pasaporte) <span class="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    [(ngModel)]="customerId"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500"
+                    placeholder="Ej: 12345678">
+                </div>
+              }
+
+              <!-- Dirección de entrega - SIEMPRE visible para ambos tipos -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Dirección de entrega <span class="text-red-500">*</span>
+                </label>
+                <textarea
+                  [(ngModel)]="customerAddress"
+                  rows="2"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500"
+                  placeholder="Dirección completa, referencia, etc."></textarea>
+              </div>
+
+              <!-- Transportista (solo para shipping, no para DELIVERY) -->
+              @if (selectedShipper() && !isDelivery()) {
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Transportista <span class="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    [(ngModel)]="shippingCarrier"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500"
+                    placeholder="Ej: MRW, Domesa, Zoom, Tealca">
+                </div>
+              }
+            </div>
+          </div>
+        }
+
       }
-    </div>
-  }
+
+      <!-- Botones de acción -->
+      <div class="flex gap-3 mt-6">
+        <button
+          (click)="closeModal()"
+          class="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium">
+          Cambiar producto
+        </button>
+        <button
+          (click)="createTransfer()"
+          [disabled]="!isFormValid() || managerState.loadingCreateTransfer()"
+          class="flex-1 bg-orange-600 text-white rounded-lg px-4 py-3 hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium">
+          @if (managerState.loadingCreateTransfer()) {
+            <span class="inline-block animate-spin mr-2">⏳</span>
+            Creando...
+          } @else {
+            ✅ Crear Transferencia
+          }
+        </button>
+      </div>
+
+    }
+
+  </div>
 
   <router-outlet />
 </div>

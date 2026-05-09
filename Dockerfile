@@ -1,11 +1,11 @@
-FROM node:22-alpine
+FROM node:18-alpine
 
 WORKDIR /app
 
-# Asumimos que dentro de gestion-quinchau/ habrá una carpeta 'dist'
-# que subiste en el .zip
-COPY dist/quinchau_virtual ./dist/quinchau_virtual
+COPY package.json ./
+RUN npm install --omit=dev
 
-EXPOSE 4004
+COPY dist ./dist
 
-CMD ["node", "dist/quinchau_virtual/server/server.mjs"]
+EXPOSE 3003
+CMD ["node", "dist/server.js"]
