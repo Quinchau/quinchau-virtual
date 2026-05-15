@@ -27,15 +27,17 @@
 
       <!-- Botones de acción -->
       <div class="flex items-center justify-between">
+        @if (searchResults().length > 0) {
         <button
           (click)="toggleOnlyStock()"
           [class]="onlyStock() 
-            ? 'bg-primary-container text-on-primary-container' 
-            : 'bg-surface-container-low text-slate-500'"
+            ? 'bg-surface-container-low text-slate-500' 
+            : 'bg-orange-500 text-white'"
           class="flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-bold transition-all">
           <span class="material-symbols-outlined text-sm">inventory_2</span>
-          {{ onlyStock() ? 'Solo disponibles' : 'Todos los productos' }}
+          {{ onlyStock() ? 'Incluir no disponibles' : 'Ver solo disponibles' }}
         </button>
+      }
 
         <button
           (click)="onSearch()"

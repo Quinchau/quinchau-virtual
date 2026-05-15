@@ -371,51 +371,52 @@ export class Invoice implements OnDestroy {
   }
 
   generateInvoice(): void {
-    if (!this.canInvoice()) return;
-    const orderno = this.orderno();
-    if (!orderno) return;
+  if (!this.canInvoice()) return;
+  const orderno = this.orderno();
+  if (!orderno) return;
 
-    this.loadingInvoice.set(true);
-    this.invoiceError.set('');
+  this.loadingInvoice.set(true);
+  this.invoiceError.set('');
 
-    this.apis.validateInvoiceConcurrency(orderno).pipe(
-      switchMap((valRes) => {
-        if (!valRes.data?.valido) {
-          throw new Error(
-            valRes.data?.mensaje ||
-            'El pedido fue modificado por otro usuario. Recarga el resumen antes de continuar.'
-          );
-        }
-        const payload: ExecuteInvoicePayload = {
-          dispatchDate:      this.dispatchDate(),
-          paymentMethodId:   this.paymentMethodId(),
-          invoiceText:       this.invoiceText().trim(),
-          consignment:       this.consignment().trim(),
-          boPolicy:          this.boPolicy(),
-          chargeFreightCost: this.freight(),
-        };
-        return this.apis.executeInvoice(orderno, payload);
-      })
-    ).subscribe({
-      next: (res) => {
-        this.loadingInvoice.set(false);
-        if (!res.exito) {
-          this.invoiceError.set(res.mensaje || 'Error al generar la factura.');
-          return;
-        }
-        this.successMessage.set(
-          `Factura #${res.data.invoiceNo} generada — Total: $${res.data.grandTotal.toFixed(2)}`
-        );
-        setTimeout(() => this.resetAll(), 3000);
-      },
-      error: (err) => {
-        this.loadingInvoice.set(false);
-        this.invoiceError.set(
-          err?.message || err?.error?.mensaje || 'Error al procesar la factura.'
-        );
+  // 1. Extraemos la fecha local "YYYY-MM-DD" para evitar el desfase horario
+  const localDate = new Date(this.dispatchDate()).toLocaleDateString('en-CA');
+
+  this.apis.validateInvoiceConcurrency(orderno).pipe(
+    switchMap((valRes) => {
+      if (!valRes.data?.valido) {
+        // Usamos un error estructurado para el catch
+        throw new Error(valRes.data?.mensaje || 'El pedido fue modificado.');
       }
-    });
-  }
+
+      const payload: ExecuteInvoicePayload = {
+        dispatchDate:      localDate, // Usamos la fecha formateada
+        paymentMethodId:   this.paymentMethodId(),
+        invoiceText:       this.invoiceText().trim(),
+        consignment:       this.consignment().trim(),
+        boPolicy:          this.boPolicy(),
+        chargeFreightCost: this.freight(),
+      };
+      return this.apis.executeInvoice(orderno, payload);
+    })
+  ).subscribe({
+    next: (res) => {
+      this.loadingInvoice.set(false);
+      if (!res.exito) {
+        this.invoiceError.set(res.mensaje || 'Error al generar la factura.');
+        return;
+      }
+      // Usamos el pipe currency o un formato seguro para el mensaje
+      this.successMessage.set(
+        `Factura #${res.data.invoiceNo} generada — Total: $${Number(res.data.grandTotal).toFixed(2)}`
+      );
+      setTimeout(() => this.resetAll(), 3000);
+    },
+    error: (err) => {
+      this.loadingInvoice.set(false);
+      this.invoiceError.set(err.message || 'Error al procesar la factura.');
+    }
+  });
+}
 
   // ─────────────────────────────────────────────────────────
   //  HELPERS

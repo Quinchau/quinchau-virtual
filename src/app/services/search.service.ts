@@ -1,4 +1,4 @@
-// services/search.service.ts
+// src/app/services/search.service.ts
 import { Injectable, signal } from '@angular/core';
 
 @Injectable({
@@ -6,6 +6,7 @@ import { Injectable, signal } from '@angular/core';
 })
 export class SearchService {
   public searchTerm = signal<string>('');
+  public isSearchOpen = signal<boolean>(false);
   
   setSearchTerm(term: string) {
     this.searchTerm.set(term);
@@ -13,5 +14,14 @@ export class SearchService {
   
   clearSearch() {
     this.searchTerm.set('');
+  }
+  
+  openSearch() {
+    this.isSearchOpen.set(true);
+  }
+  
+  closeSearch() {
+    this.isSearchOpen.set(false);
+    this.clearSearch(); // Limpiamos al cerrar
   }
 }

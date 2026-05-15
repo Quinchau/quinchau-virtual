@@ -12,10 +12,31 @@
       </button>
     </div>
 
-    <!-- Barra de Búsqueda -->
-    <div class="flex-1 flex">
-      <app-search-box class="w-full" />
-    </div>
+    <!-- Barra de Búsqueda - Versión Final -->
+<div class="flex-1 flex justify-end">
+  <button 
+    (click)="openGlobalSearch()"
+    class="p-2 rounded-full hover:bg-gray-100 transition-colors relative"
+    aria-label="Buscar productos">
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      class="h-5 w-5 text-gray-600" 
+      fill="none" 
+      viewBox="0 0 24 24" 
+      stroke="currentColor">
+      <path 
+        stroke-linecap="round" 
+        stroke-linejoin="round" 
+        stroke-width="2" 
+        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    </svg>
+    
+    <!-- Indicador de búsqueda activa -->
+    @if (searchService.searchTerm()) {
+      <span class="absolute top-1 right-1 w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
+    }
+  </button>
+</div>
 
     <!-- Carrito -->
     <div class="flex items-center gap-3">
@@ -111,6 +132,15 @@
             class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
             <span class="material-symbols-outlined text-xl">badge</span>
             <span class="text-sm font-bold uppercase tracking-wide">Clientes</span>
+          </a>
+        }
+
+        <!-- ORDERS -->
+        @if (canSeeInvoice()) {
+          <a [routerLink]="['/order-list']" (click)="toggleMenu()"
+            class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
+            <span class="material-symbols-outlined text-xl">badge</span>
+            <span class="text-sm font-bold uppercase tracking-wide">Ordenes</span>
           </a>
         }
 

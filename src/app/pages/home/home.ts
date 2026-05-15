@@ -11,7 +11,7 @@ import { Modelo, MarcaBackend, CategoriaBackend } from '../../models/transfer.mo
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, ProductOrder],
+  imports: [CommonModule, RouterLink],
   templateUrl: './home.html',
 })
 export class Home {
@@ -39,8 +39,9 @@ export class Home {
   // Convertimos los queryParams en una Signal para que todo el componente reaccione a la URL
   private queryParams = toSignal(this.route.queryParams);
 
-  // Determina si hay un producto seleccionado para mostrar el modal/detalle
-  public selectedProductId = computed(() => this.queryParams()?.['p']);
+  public selectedProductId = computed(() => 
+  this.managerState.currentProductCard()?.stockid ?? null
+  );
 
   // Estado del filtro de stock obtenido directamente de la URL
   public onlyStock = computed(() => this.queryParams()?.['stock'] === 'true');
@@ -72,46 +73,24 @@ export class Home {
     });
   }
 
-  // --- Gestión de Visualización de Productos ---
-
-  /**
-   * Comportamiento bifurcado según el modo:
-   * - 'catalog': navega al detalle (comportamiento original intacto).
-   * - 'picker':  emite el producto al componente padre y no navega.
-   */
   public handleProductSelection(producto: any): void {
-    if (!producto?.stockid) return;
+  if (!producto?.stockid) return;
 
-    if (this.mode() === 'picker') {
-      // Modo picker: devolver el producto seleccionado al padre
-      this.productSelected.emit(producto);
-      return;
-    }
-
-    // Modo catalog: comportamiento original
-    this.managerState.currentProductCard.set(producto);
-
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { p: producto.stockid },
-      queryParamsHandling: 'merge'
-    });
+  if (this.mode() === 'picker') {
+    this.productSelected.emit(producto);
+    return;
   }
+
+  this.managerState.currentProductCard.set({
+    ...producto,
+    qty_in_order: producto.qty_in_order ?? 1,
+  });
+}
 
   public closeProduct(): void {
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { p: null },
-      queryParamsHandling: 'merge'
-    });
-  }
+  this.managerState.closeProductDetail();
+}
 
-  // --- Lógica de Presentación de Filtros ---
-
-  /**
-   * Filtrado reactivo: Se ejecuta solo cuando cambia la lista del servicio
-   * o el estado de 'onlyStock' en la URL.
-   */
   public filteredProducts = computed(() => {
     const list = this.managerState.products() || [];
     return this.onlyStock() ? list.filter(p => p.total_quantity > 0) : list;

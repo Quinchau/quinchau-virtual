@@ -45,9 +45,9 @@
         </a>
 
         <button (click)="toggleOnlyStock()"
-                class="px-6 py-2.5 rounded-full font-inter text-[11px] font-extrabold uppercase tracking-widest transition-all shadow-sm border-none active:scale-95"
-                [class]="onlyStock() ? 'bg-orange-500 text-white shadow-orange-200' : 'bg-white text-zinc-500 hover:bg-zinc-50'">
-          {{ onlyStock() ? 'Viendo Disponibles' : 'Todos los productos' }}
+          class="px-6 py-2.5 rounded-full font-inter text-[11px] font-extrabold uppercase tracking-widest transition-all shadow-sm border-none active:scale-95"
+          [class]="onlyStock() ? 'bg-white text-zinc-500 hover:bg-zinc-50' : 'bg-orange-500 text-white shadow-orange-200'">
+          {{ onlyStock() ? 'Incluir no disponibles' : 'Solo disponibles' }}
         </button>
       </div>
 
@@ -301,20 +301,3 @@
     </div>
   }
 </main>
-
-@if (selectedProductId(); as id) {
-  <div class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-zinc-950/40 backdrop-blur-md p-0 sm:p-6 animate-in fade-in duration-500"
-       (click)="closeProduct()">
-    <div class="relative w-full max-w-3xl animate-in slide-in-from-bottom-20 duration-700 ease-out"
-         (click)="$event.stopPropagation()">
-      <button (click)="closeProduct()"
-              class="absolute -top-16 right-6 sm:-right-4 sm:-top-12 text-white flex items-center gap-2 font-inter font-black uppercase text-[11px] tracking-[0.3em] hover:text-orange-400 transition-colors">
-        ESC
-        <span class="material-symbols-outlined text-2xl font-light">close</span>
-      </button>
-      <div class="bg-white rounded-t-[3.5rem] sm:rounded-[3.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.2)] overflow-hidden">
-        <app-product-order [productId]="id" />
-      </div>
-    </div>
-  </div>
-}

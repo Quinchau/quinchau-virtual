@@ -1,7 +1,3 @@
-// ─────────────────────────────────────────────────────────────
-//  MODELOS — invoice.models.ts
-// ─────────────────────────────────────────────────────────────
-
 export interface CustomerResult {
   debtorno: string;
   name: string;
@@ -133,16 +129,44 @@ export interface InvoicePreview {
   ordertype: string;
   currencyRate: number;
   freightCost: number;
-  lines: PreviewLine[];
+  deliveryDate: string;
+  shipvia: number;
+  lines: InvoiceLine[];
   subtotal: number;
   taxTotal: number;
-  freightTax: number;
   grandTotal: number;
   paymentMethods: PaymentMethod[];
 }
 
+export interface InvoiceLine {
+  orderlineno: number;
+  stkcode: string;
+  description: string;
+  units: string;
+  mbflag: string;
+  quantity: number;
+  qtyPending: number;
+  unitprice: number;
+  discountpercent: number;
+  lineTotal: number;
+  taxAmount: number;
+  lineTotalWithTax: number;
+  taxes?: InvoiceTax[];
+}
+
+export interface InvoiceTax {
+  taxAuthId: number;
+  description: string;
+  taxRate: number;
+  taxGLCode: number;
+  taxCalculationOrder: number;
+  taxOnTax: number;
+  taxAmount: number;
+}
+
 export interface InvoicePreviewResponse {
   exito: boolean;
+  mensaje?: string;
   data: InvoicePreview;
 }
 

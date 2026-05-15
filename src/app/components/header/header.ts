@@ -1,24 +1,26 @@
+// src/app/components/header/header.ts
 import { Component, computed, inject, signal, viewChild, ElementRef, OnDestroy, afterNextRender } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ManagerState } from '../../services/manager-state';
 import { AuthService } from '../../services/auth';
-import { SearchBox } from '../search-box/search-box';
+import { SearchService } from '../../services/search.service'; // <-- Importamos
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [RouterLink, SearchBox],
+  imports: [RouterLink], // <-- Removemos SearchBox de imports
   templateUrl: './header.html',
 })
 export class Header implements OnDestroy {
   // Inyección de dependencias
   public state = inject(ManagerState);
   private authService = inject(AuthService);
+  public searchService = inject(SearchService); // <-- Inyectamos
 
   // Estado de la UI
   readonly isMenuOpen = signal(false);
   
-  // Signals computadas para una vista reactiva y eficiente
+  // Signals computadas
   readonly cartCount = computed(() => this.state.cartCount());
   readonly isLogged = computed(() => !!this.state.currentUser());
   readonly canSeeDashboard = computed(() => {
@@ -36,24 +38,17 @@ export class Header implements OnDestroy {
     return user ? [8, 10].includes(user.fullaccess ?? 0) : false;
   });
 
-  
-
   // Animación del badge del carrito
   public pulso = signal(0);
   private cartBadge = viewChild<ElementRef<HTMLSpanElement>>('cartBadge');
   private intervalId: any = null;
 
   constructor() {
-    // afterNextRender asegura que el código solo se ejecute en el navegador (SSR friendly)
     afterNextRender(() => {
       this.iniciarAnimacionPeriodica();
     });
   }
 
-  /**
-   * Ejecuta una pequeña animación visual en el carrito cada 5 segundos
-   * si hay productos agregados, para incentivar el checkout (UX).
-   */
   private iniciarAnimacionPeriodica(): void {
     if (this.intervalId) clearInterval(this.intervalId);
 
@@ -63,7 +58,6 @@ export class Header implements OnDestroy {
 
         const badgeEl = this.cartBadge()?.nativeElement;
         if (badgeEl) {
-          // Truco técnico: Forzar reflujo para reiniciar la animación CSS
           badgeEl.style.animation = 'none';
           void badgeEl.offsetWidth; 
           badgeEl.style.animation = '';
@@ -81,13 +75,12 @@ export class Header implements OnDestroy {
     this.authService.logout();
   }
 
-  /**
-   * Nota de Tutor: Hemos eliminado 'onSearchInput' porque el componente 
-   * <app-search-box /> ya se encarga de gestionar la búsqueda de forma autónoma.
-   */
+  // <-- Nuevo método para abrir búsqueda global
+  public openGlobalSearch(): void {
+    this.searchService.openSearch();
+  }
 
   ngOnDestroy(): void {
-    // Limpieza de recursos para evitar fugas de memoria
     if (this.intervalId) clearInterval(this.intervalId);
   }
 }

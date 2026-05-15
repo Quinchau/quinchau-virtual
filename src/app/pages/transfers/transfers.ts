@@ -2,9 +2,11 @@ import { Component, OnInit, inject, signal, computed, effect, Inject, PLATFORM_I
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ManagerState } from '../../services/manager-state';
 import { Router, ActivatedRoute, RouterOutlet } from '@angular/router';
-import { Transfer } from '../../models/transfer.model';
+import { Transfer, TransferGroup } from '../../models/transfer.model';
 import { SearchService } from '../../services/search.service';
 import { FormsModule } from '@angular/forms';
+
+type UnifiedItem = { type: 'single'; data: Transfer } | { type: 'group'; data: TransferGroup };
 
 @Component({
   selector: 'app-home',
@@ -21,40 +23,62 @@ export class Transfers implements OnInit {
   
   public readonly envios = this.managerState.envios;
   public readonly recepciones = this.managerState.recepciones;
+  public readonly gruposEnvio = this.managerState.gruposEnvio;
+  public readonly gruposRecepcion = this.managerState.gruposRecepcion;
   
   public activeTab = computed<'ship' | 'rec'>(() => {
     return this.managerState.newTransferType() || 'ship';
   });
   public searchTerm = this.searchService.searchTerm;
 
-  public filteredTransfers = computed<Transfer[]>(() => {
-    const transfers = this.activeTab() === 'ship' ? this.envios() : this.recepciones();
+  public unifiedList = computed<UnifiedItem[]>(() => {
+    const isShip = this.activeTab() === 'ship';
+    const transfers = isShip ? this.envios() : this.recepciones();
+    const groups = isShip ? this.gruposEnvio() : this.gruposRecepcion();
     const term = this.searchTerm().toLowerCase().trim();
     
-    if (!term) return transfers;
+    const items: UnifiedItem[] = [];
     
-    return transfers.filter(transfer => 
-      transfer.idtransfer.toString().includes(term) ||
-      transfer.stockid?.toLowerCase().includes(term) ||
-      transfer.description?.toLowerCase().includes(term) ||
-      transfer.location_name?.toLowerCase().includes(term) ||
-      transfer.status?.toLowerCase().includes(term) ||
-      transfer.shipqty?.toString().includes(term)
-    );
+    // Agregar grupos
+    for (const group of groups) {
+      items.push({ type: 'group', data: group });
+    }
+    
+    // Agregar transferencias individuales
+    for (const transfer of transfers) {
+      items.push({ type: 'single', data: transfer });
+    }
+    
+    // Aplicar filtro de búsqueda si hay término
+    if (!term) return items;
+    
+    return items.filter(item => {
+      if (item.type === 'group') {
+        const group = item.data;
+        return group.transfer_group.toLowerCase().includes(term) ||
+               group.items.some(i => i.stockid.toLowerCase().includes(term)) ||
+               group.customer_name?.toLowerCase().includes(term) ||
+               group.delivery_type?.toLowerCase().includes(term);
+      } else {
+        const transfer = item.data;
+        return transfer.idtransfer.toString().includes(term) ||
+               transfer.stockid?.toLowerCase().includes(term) ||
+               transfer.description?.toLowerCase().includes(term) ||
+               transfer.location_name?.toLowerCase().includes(term) ||
+               transfer.status?.toLowerCase().includes(term) ||
+               transfer.shipqty?.toString().includes(term) ||
+               transfer.customer_name?.toLowerCase().includes(term);
+      }
+    });
   });
 
   constructor(@Inject(PLATFORM_ID) platformId: Object) {
-
-//     effect(() => {
-//   console.log('🔧 [HOME] Transfer type:', this.managerState.newTransferType());
-//   // Deberías ver 'ship' o 'rec' según la tarjeta clickeada
-// });
     this.isBrowser = isPlatformBrowser(platformId);
     
     if (this.isBrowser) {
       effect(() => {
         const term = this.searchTerm();
-        if (term && this.filteredTransfers().length > 0) {
+        if (term && this.unifiedList().length > 0) {
           setTimeout(() => this.scrollToFirstMatch(), 100);
         }
       });
@@ -64,8 +88,8 @@ export class Transfers implements OnInit {
   ngOnInit(): void {
     this.managerState.loadTransfers();
     if (this.managerState.newTransferType() === null) {
-    this.managerState.setNewTransferType(this.activeTab());
-  }
+      this.managerState.setNewTransferType(this.activeTab());
+    }
   }
 
   public selectTab(tab: 'ship' | 'rec'): void {
@@ -76,10 +100,49 @@ export class Transfers implements OnInit {
     this.router.navigate(['detail', idtransfer], { relativeTo: this.route });
   }
 
+  public openGroupDetail(transferGroup: string): void {
+  this.router.navigate(['/transfer-group', transferGroup], {
+    queryParams: {}  // 👈 Limpiar todos los query params
+  });
+}
+
   public createNewTransfer(): void {
     const transferType = this.activeTab();
     this.managerState.setNewTransferType(transferType);
     this.router.navigate(['/new-transfer']);
+  }
+
+  public completeGroup(transferGroup: string): void {
+    // Abrir modal para completar datos de cliente y shipper
+    this.router.navigate(['group', transferGroup, 'complete'], { relativeTo: this.route });
+  }
+
+  public dispatchGroup(transferGroup: string): void {
+    if (confirm('¿Despachar todo el grupo? Se marcará como enviado al cliente.')) {
+      this.managerState.dispatchGroup(transferGroup).subscribe({
+        next: () => {
+          this.managerState.loadTransfers();
+        },
+        error: (err) => {
+          console.error('Error al despachar grupo:', err);
+          alert(err?.error?.mensaje || 'Error al despachar el grupo');
+        }
+      });
+    }
+  }
+
+  public receiveGroup(transferGroup: string): void {
+    if (confirm('¿Recibir todo el grupo? Esto moverá el stock.')) {
+      this.managerState.receiveGroup(transferGroup).subscribe({
+        next: () => {
+          this.managerState.loadTransfers();
+        },
+        error: (err) => {
+          console.error('Error al recibir grupo:', err);
+          alert(err?.error?.mensaje || 'Error al recibir el grupo');
+        }
+      });
+    }
   }
 
   public clearSearch(): void {
@@ -89,7 +152,7 @@ export class Transfers implements OnInit {
   private scrollToFirstMatch(): void {
     if (!this.isBrowser) return;
     
-    const firstMatch = document.querySelector('.transfer-item:first-child');
+    const firstMatch = document.querySelector('.transfer-card:first-child');
     if (firstMatch) {
       firstMatch.scrollIntoView({ 
         behavior: 'smooth', 

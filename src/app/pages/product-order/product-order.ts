@@ -1,4 +1,4 @@
-import { Component, inject, input, computed, signal } from '@angular/core';
+import { Component, inject, input, computed, signal, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -19,6 +19,8 @@ export class ProductOrder {
   private router = inject(Router);
   public nav = inject(LayerHistoryService);
   public productId = input.required<string>();
+  public embeddedMode = input<boolean>(false);   // ← NUEVO
+  public closed = output<void>();                // ← NUEVO
   public product = this.state.currentProductCard;
   public loadingProductCard = this.state.loadingProductCard;
   public error = this.state.productCardError;
@@ -26,6 +28,14 @@ export class ProductOrder {
   protected readonly inWaitlist = this.state.currentProductInWaitlist;
   protected readonly notifySuccess = signal(false);
   private pendingAction = signal<PendingAction>(null);
+
+  constructor() {
+  console.log('ProductOrder MONTADO');
+}
+
+ngOnDestroy() {
+  console.log('ProductOrder DESTRUIDO');
+}
 
   get quantity(): number {
     return this.product()?.qty_in_order || 1;
@@ -42,17 +52,21 @@ export class ProductOrder {
   decrement() { this.quantity = this.quantity - 1; }
 
   confirm() {
-    if (!this.product() || this.quantity < 1) return;
-    this.state.addCurrentProductToCart().subscribe({
-      next: (res) => console.log('🟢 Añadido:', res),
-      error: (err) => {
-        if (err?.requiere_registro) {
-          this.pendingAction.set('cart');
-          this.abrirModalRegistro();
-        }
+  if (!this.product() || this.quantity < 1) return;
+  this.state.addCurrentProductToCart().subscribe({
+    next: () => {
+      if (this.embeddedMode()) {
+        this.closed.emit();
       }
-    });
-  }
+    },
+    error: (err) => {
+      if (err?.requiere_registro) {
+        this.pendingAction.set('cart');
+        this.abrirModalRegistro();
+      }
+    }
+  });
+}
 
   confirmConRegistro(datos: any) {
     this.state.addCurrentProductToCart(datos).subscribe({
@@ -80,34 +94,39 @@ export class ProductOrder {
   }
 
   confirmWaitlistConRegistro(datos: any): void {
-  const stockid = this.productId();
-  this.state.subscribeToWaitlist(stockid, datos).subscribe({
-    next: () => {
-      this.nav.back();
-      this.notifySuccess.set(true);
-    },
-    error: (err) => console.error('❌ Error en waitlist con registro:', err)
-  });
-}
+    const stockid = this.productId();
+    this.state.subscribeToWaitlist(stockid, datos).subscribe({
+      next: () => {
+        this.nav.back();
+        this.notifySuccess.set(true);
+      },
+      error: (err) => console.error('❌ Error en waitlist con registro:', err)
+    });
+  }
 
   abrirModalRegistro() {
     this.nav.push('checkout', window.location.pathname + '?registro=true');
   }
 
   onRegistroCompleto(datos: any) {
-  if (this.pendingAction() === 'waitlist') {
-    this.pendingAction.set(null);
-    this.confirmWaitlistConRegistro(datos);
-  } else {
-    this.pendingAction.set(null);
-    this.confirmConRegistro(datos);
+    if (this.pendingAction() === 'waitlist') {
+      this.pendingAction.set(null);
+      this.confirmWaitlistConRegistro(datos);
+    } else {
+      this.pendingAction.set(null);
+      this.confirmConRegistro(datos);
+    }
   }
-}
 
   cancel() {
-    this.router.navigate([], {
-      queryParams: { p: null },
-      queryParamsHandling: 'merge'
-    });
+  console.log('cancel() llamado, embeddedMode:', this.embeddedMode());
+  if (this.embeddedMode()) {
+    this.closed.emit();
+    return;
   }
+  this.router.navigate([], {
+    queryParams: { p: null },
+    queryParamsHandling: 'merge'
+  });
+}
 }

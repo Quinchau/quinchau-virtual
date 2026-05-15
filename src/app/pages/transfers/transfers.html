@@ -5,14 +5,14 @@
       [class]="activeTab() === 'ship' ? 'border-b-2 border-blue-500 text-blue-600 font-medium' : 'text-gray-500'"
       class="px-4 py-2 focus:outline-none transition-colors"
     >
-      📦 Por Enviar ({{ envios().length }})
+      📦 Por Enviar ({{ envios().length + gruposEnvio().length }})
     </button>
     <button
       (click)="selectTab('rec')"
       [class]="activeTab() === 'rec' ? 'border-b-2 border-blue-500 text-blue-600 font-medium' : 'text-gray-500'"
       class="px-4 py-2 focus:outline-none transition-colors"
     >
-      📥 Por Recibir ({{ recepciones().length }})
+      📥 Por Recibir ({{ recepciones().length + gruposRecepcion().length }})
     </button>
   </div>
 
@@ -26,21 +26,16 @@
         type="text"
         [ngModel]="searchTerm()"
         (ngModelChange)="searchTerm.set($event)"
-        placeholder="Filtrar por ID o descripción..."
+        placeholder="Filtrar por ID, grupo, cliente o descripción..."
         class="w-full px-4 py-2.5 pl-10 rounded-xl bg-white border border-gray-300 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all"
       />
-
       <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
           <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
         </svg>
       </div>
-
       @if (searchTerm()) {
-        <button
-          (click)="clearSearch()"
-          class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-        >
+        <button (click)="clearSearch()" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
             <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
           </svg>
@@ -52,8 +47,8 @@
   @if (searchTerm()) {
     <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
       <p class="text-sm text-blue-800">
-        @if (filteredTransfers().length > 0) {
-          Mostrando {{ filteredTransfers().length }} de {{ (activeTab() === 'ship' ? envios() : recepciones()).length }} transferencias para: "<strong>{{ searchTerm() }}</strong>"
+        @if (unifiedList().length > 0) {
+          Mostrando {{ unifiedList().length }} de {{ (activeTab() === 'ship' ? envios().length + gruposEnvio().length : recepciones().length + gruposRecepcion().length) }} elementos para: "<strong>{{ searchTerm() }}</strong>"
         } @else {
           No se encontraron resultados para: "<strong>{{ searchTerm() }}</strong>"
         }
@@ -64,7 +59,7 @@
     </div>
   }
 
-  @if (filteredTransfers().length > 0) {
+  @if (unifiedList().length > 0) {
 
     <!-- ============================================ -->
     <!-- TABLA DESKTOP                               -->
@@ -74,196 +69,215 @@
         <table class="w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Imagen</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID / Puesto</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Imagen / Grupo</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID / Productos</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción / Cliente</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            @for (transfer of filteredTransfers(); track transfer.idtransfer) {
-              <tr class="hover:bg-blue-50/50 transition-colors cursor-pointer group" (click)="openTransferDetail(transfer.idtransfer)">
-                <!-- Imagen -->
-                <td class="px-6 py-4 whitespace-nowrap">
-                  @if (transfer.cover_image_url) {
-                    <img [src]="transfer.cover_image_url" alt="Imagen" class="w-12 h-12 object-cover rounded-lg border border-gray-200 shadow-sm" />
-                  } @else {
-                    <div class="w-12 h-12 rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center text-gray-300 text-xl">📦</div>
-                  }
-                </td>
-                
-                <!-- ID / Puesto -->
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="text-sm font-bold text-gray-900 group-hover:text-blue-600">{{ transfer.stockid }}</span>
-                  <p class="text-xs text-gray-400 mt-0.5">{{ transfer.location_name }}</p>
-                  <!-- Badge Tipo B (identificador visual) -->
-                  @if (transfer.is_customer_delivery === 1) {
-                    <span class="inline-flex items-center mt-1 px-1.5 py-0.5 text-[9px] font-medium rounded bg-purple-100 text-purple-700">
-                      🚚 Delivery
+            @for (item of unifiedList(); track item.type === 'group' ? item.data.transfer_group : item.data.idtransfer) {
+              
+              <!-- TRANSFERENCIA INDIVIDUAL -->
+              @if (item.type === 'single') {
+                <tr class="hover:bg-blue-50/50 transition-colors cursor-pointer group" (click)="openTransferDetail(item.data.idtransfer)">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    @if (item.data.cover_image_url) {
+                      <img [src]="item.data.cover_image_url" alt="Imagen" class="w-12 h-12 object-cover rounded-lg border border-gray-200 shadow-sm" />
+                    } @else {
+                      <div class="w-12 h-12 rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center text-gray-300 text-xl">📦</div>
+                    }
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="text-sm font-bold text-gray-900 group-hover:text-blue-600">{{ item.data.stockid }}</span>
+                    <p class="text-xs text-gray-400 mt-0.5">{{ item.data.location_name }}</p>
+                    @if (item.data.is_customer_delivery === 1) {
+                      <span class="inline-flex items-center mt-1 px-1.5 py-0.5 text-[9px] font-medium rounded bg-purple-100 text-purple-700">🚚 Delivery</span>
+                    }
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="text-sm text-gray-700">{{ item.data.description }}</span>
+                    @if (item.data.customer_name) {
+                      <p class="text-xs text-gray-500 mt-0.5">👤 {{ item.data.customer_name }}</p>
+                    }
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="text-sm text-gray-600 font-mono font-bold">{{ item.data.shipqty }}</span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex px-2.5 py-0.5 text-xs font-bold rounded-full shadow-sm"
+                      [ngClass]="{
+                        'bg-gray-100 text-gray-800': item.data.status === 'Pendiente',
+                        'bg-orange-100 text-orange-800': item.data.status === 'Recogido',
+                        'bg-green-100 text-green-800': item.data.status === 'Entregado'
+                      }">
+                      {{ item.data.status }}
                     </span>
-                  }
-                </td>
-                
-                <!-- Descripción -->
-                <td class="px-6 py-4">
-                  <span class="text-sm text-gray-700">{{ transfer.description }}</span>
-                </td>
-                
-                <!-- Cantidad -->
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="text-sm text-gray-600 font-mono font-bold">{{ transfer.shipqty }}</span>
-                </td>
-                
-                <!-- Estado + Badges Tipo B -->
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <!-- Status principal -->
-                  <span class="inline-flex px-2.5 py-0.5 text-xs font-bold rounded-full shadow-sm"
-                    [ngClass]="{
-                      'bg-gray-100 text-gray-800': transfer.status === 'Pendiente',
-                      'bg-orange-100 text-orange-800': transfer.status === 'Recogido',
-                      'bg-green-100 text-green-800': transfer.status === 'Entregado'
-                    }">
-                    {{ transfer.status }}
-                  </span>
-                  
-                  <!-- Badges adicionales para Tipo B -->
-                  @if (transfer.is_customer_delivery === 1) {
-                    <div class="flex flex-col gap-1 mt-1.5">
-                      @if (transfer.payment_status === 'unpaid') {
-                        <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-medium rounded bg-yellow-100 text-yellow-700">
-                          💰 Por cobrar
-                        </span>
-                      }
-                      @if (transfer.payment_status === 'paid') {
-                        <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-medium rounded bg-green-100 text-green-700">
-                          ✅ Pagado
-                        </span>
-                      }
-                      @if (transfer.delivery_status === 'dispatched') {
-                        <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-medium rounded bg-blue-100 text-blue-700">
-                          🚚 En camino
-                        </span>
-                      }
-                      @if (transfer.delivery_status === 'delivered') {
-                        <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-medium rounded bg-green-100 text-green-700">
-                          ✅ Entregado
-                        </span>
-                      }
+                    @if (item.data.is_customer_delivery === 1) {
+                      <div class="flex flex-col gap-1 mt-1.5">
+                        @if (item.data.payment_status === 'unpaid') {
+                          <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-medium rounded bg-yellow-100 text-yellow-700">💰 Por cobrar</span>
+                        }
+                        @if (item.data.payment_status === 'paid') {
+                          <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-medium rounded bg-green-100 text-green-700">✅ Pagado</span>
+                        }
+                        @if (item.data.delivery_status === 'dispatched') {
+                          <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-medium rounded bg-blue-100 text-blue-700">🚚 En camino</span>
+                        }
+                      </div>
+                    }
+                  </td>
+                </tr>
+              }
+
+              <!-- GRUPO CONSOLIDADO MOBILE -->
+            @if (item.type === 'group') {
+              <div class="bg-gradient-to-r from-purple-50 to-white rounded-xl shadow-sm border border-purple-200 overflow-hidden cursor-pointer"
+                  (click)="openGroupDetail(item.data.transfer_group)">
+                <div class="p-3">
+                  <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                      <span class="text-sm font-bold text-purple-700">📦 {{ item.data.transfer_group }}</span>
+                      <span class="text-xs text-gray-500">{{ item.data.totalItems }} producto(s)</span>
                     </div>
-                  }
-                </td>
-              </tr>
+                    @if (item.data.allPickedUp && item.data.delivery_status !== 'dispatched') {
+                      <span class="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-bold">✅ Listo</span>
+                    } @else if (item.data.delivery_status === 'dispatched') {
+                      <span class="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold">🚚 Enviado</span>
+                    }
+                  </div>
+                  
+                  <p class="text-sm font-medium text-gray-800">👤 {{ item.data.customer_name || 'Sin cliente' }}</p>
+                  <p class="text-xs text-gray-500">{{ item.data.delivery_type || 'Sin método' }} {{ item.data.shipping_carrier ? '| ' + item.data.shipping_carrier : '' }}</p>
+                  
+                  <div class="mt-2 text-xs text-gray-500">
+                    @for (product of item.data.items.slice(0, 2); track product.idtransfer) {
+                      <div class="flex justify-between">
+                        <span>{{ product.stockid }}</span>
+                        <span>x{{ product.shipqty }}</span>
+                      </div>
+                    }
+                    @if (item.data.items.length > 2) {
+                      <div class="text-purple-500 text-xs mt-1">+ {{ item.data.items.length - 2 }} más</div>
+                    }
+                  </div>
+                  
+                  <div class="flex justify-between items-center mt-2 pt-2 border-t border-purple-100">
+                    <span class="text-[10px] text-gray-500">{{ item.data.pickedUpItems }}/{{ item.data.totalItems }} recogidos</span>
+                    <div class="w-20 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                      <div class="h-full bg-purple-600 rounded-full" 
+                          [style.width.%]="(item.data.pickedUpItems / item.data.totalItems) * 100"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
             }
           </tbody>
         </table>
       </div>
     </div>
 
-        <!-- ============================================ -->
-    <!-- TARJETAS MOBILE (CON IMAGEN)                 -->
+    <!-- ============================================ -->
+    <!-- TARJETAS MOBILE                             -->
     <!-- ============================================ -->
     <div class="block md:hidden">
       <div class="grid gap-3">
-        @for (transfer of filteredTransfers(); track transfer.idtransfer) {
-          <div
-            class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all active:bg-gray-50 cursor-pointer"
-            (click)="openTransferDetail(transfer.idtransfer)"
-          >
-            <div class="p-3">
-              <!-- Fila superior: Imagen + ID+Ubicación / Badges -->
-              <div class="flex gap-3 mb-2">
-                <!-- Imagen -->
-                @if (transfer.cover_image_url) {
-                  <img [src]="transfer.cover_image_url" alt="Imagen"
-                    class="w-12 h-12 object-cover rounded-lg border border-gray-200 flex-none" />
+        @for (item of unifiedList(); track item.type === 'group' ? item.data.transfer_group : item.data.idtransfer) {
+          
+          <!-- TRANSFERENCIA INDIVIDUAL MOBILE -->
+          @if (item.type === 'single') {
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all active:bg-gray-50 cursor-pointer" (click)="openTransferDetail(item.data.idtransfer)">
+              <div class="p-3">
+                <div class="flex gap-3 mb-2">
+                  @if (item.data.cover_image_url) {
+                    <img [src]="item.data.cover_image_url" class="w-12 h-12 object-cover rounded-lg border border-gray-200 flex-none" />
+                  } @else {
+                    <div class="w-12 h-12 rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center text-gray-400 text-xl flex-none">📦</div>
+                  }
+                  <div class="flex-1 min-w-0">
+                    <span class="text-sm font-bold text-gray-800">{{ item.data.stockid }}</span>
+                    <p class="text-[11px] text-gray-400 truncate">{{ item.data.location_name }}</p>
+                  </div>
+                  <div class="flex flex-row items-center gap-1.5">
+                    @if (item.data.is_customer_delivery === 1) {
+                      <span class="text-[11px] px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 font-bold">Delivery</span>
+                    }
+                    @if (item.data.payment_status === 'paid') {
+                      <span class="text-[11px] px-2.5 py-1 rounded-full bg-green-100 text-green-700 font-bold">Pagado</span>
+                    }
+                    @if (item.data.payment_status === 'unpaid') {
+                      <span class="text-[11px] px-2.5 py-1 rounded-full bg-yellow-100 text-yellow-700 font-bold">Por cobrar</span>
+                    }
+                  </div>
+                </div>
+                <p class="text-gray-800 text-sm font-medium leading-tight mb-2 line-clamp-2">{{ item.data.description }}</p>
+                <div class="flex items-center justify-between mt-1">
+                  <span class="text-xs text-gray-500">Cant.: <span class="text-gray-800 font-bold">{{ item.data.shipqty }}</span></span>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" [ngClass]="{'bg-gray-100 text-gray-600': item.data.status === 'Pendiente', 'bg-orange-100 text-orange-700': item.data.status === 'Recogido', 'bg-green-100 text-green-700': item.data.status === 'Entregado'}">{{ item.data.status }}</span>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- GRUPO CONSOLIDADO MOBILE -->
+          @if (item.type === 'group') {
+            <div class="bg-gradient-to-r from-purple-50 to-white rounded-xl shadow-sm border border-purple-200 overflow-hidden" (click)="openGroupDetail(item.data.transfer_group)">
+              <div class="p-3">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-bold text-purple-700">📦 {{ item.data.transfer_group }}</span>
+                    <span class="text-xs text-gray-500">{{ item.data.totalItems }} producto(s)</span>
+                  </div>
+                  @if (!item.data.customer_name) {
+                    <button (click)="$event.stopPropagation(); completeGroup(item.data.transfer_group)" class="text-xs bg-purple-600 text-white px-2 py-1 rounded-lg">Completar</button>
+                  } @else if (item.data.allPickedUp && item.data.delivery_status !== 'dispatched') {
+                    <button (click)="$event.stopPropagation(); dispatchGroup(item.data.transfer_group)" class="text-xs bg-green-600 text-white px-2 py-1 rounded-lg">🚚 Despachar</button>
+                  }
+                </div>
+                @if (item.data.customer_name) {
+                  <p class="text-sm font-medium text-gray-800">👤 {{ item.data.customer_name }}</p>
+                  <p class="text-xs text-gray-500">{{ item.data.delivery_type }} {{ item.data.shipping_carrier }}</p>
                 } @else {
-                  <div class="w-12 h-12 rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center text-gray-400 text-xl flex-none">📦</div>
+                  <p class="text-xs text-amber-600">⚠️ Pendiente completar datos</p>
                 }
-                
-                <!-- ID + Ubicación -->
-                <div class="flex-1 min-w-0">
-                  <span class="text-sm font-bold text-gray-800">{{ transfer.stockid }}</span>
-                  <p class="text-[11px] text-gray-400 truncate">{{ transfer.location_name }}</p>
-                </div>
-                
-                <!-- Badges (uno al lado del otro) - MÁS GRANDES -->
-                <div class="flex flex-row items-center gap-1.5">
-                  @if (transfer.is_customer_delivery === 1) {
-                    <span class="text-[11px] px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 font-bold whitespace-nowrap">
-                      Delivery
-                    </span>
+                <div class="mt-2 text-xs text-gray-500">
+                  @for (product of item.data.items.slice(0, 2); track product.idtransfer) {
+                    <div class="flex justify-between">
+                      <span>{{ product.stockid }}</span>
+                      <span>x{{ product.shipqty }}</span>
+                    </div>
                   }
-                  @if (transfer.payment_status === 'paid') {
-                    <span class="text-[11px] px-2.5 py-1 rounded-full bg-green-100 text-green-700 font-bold whitespace-nowrap">
-                      Pagado
-                    </span>
-                  }
-                  @if (transfer.payment_status === 'unpaid') {
-                    <span class="text-[11px] px-2.5 py-1 rounded-full bg-yellow-100 text-yellow-700 font-bold whitespace-nowrap">
-                      Por cobrar
-                    </span>
+                  @if (item.data.items.length > 2) {
+                    <div class="text-purple-500 text-xs mt-1">+ {{ item.data.items.length - 2 }} más</div>
                   }
                 </div>
-              </div>
-
-              <!-- Descripción del producto -->
-              <p class="text-gray-800 text-sm font-medium leading-tight mb-2 line-clamp-2">
-                {{ transfer.description }}
-              </p>
-
-              <!-- Fila inferior: Cantidad / Estado -->
-              <div class="flex items-center justify-between mt-1">
-                <span class="text-xs text-gray-500">
-                  Cant.: <span class="text-gray-800 font-bold">{{ transfer.shipqty }}</span>
-                </span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                  [ngClass]="{
-                    'bg-gray-100 text-gray-600': transfer.status === 'Pendiente',
-                    'bg-orange-100 text-orange-700': transfer.status === 'Recogido',
-                    'bg-green-100 text-green-700': transfer.status === 'Entregado',
-                    'bg-red-100 text-red-700': transfer.status === 'Devuelto'
-                  }">
-                  {{ transfer.status }}
-                </span>
-              </div>
-
-              <!-- Badge adicional para envío en camino (si aplica) -->
-              @if (transfer.delivery_status === 'dispatched') {
-                <div class="mt-2 pt-2 border-t border-gray-100">
-                  <span class="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
-                    🚚 En camino
+                <div class="flex justify-between items-center mt-2 pt-2 border-t border-purple-100">
+                  <span class="text-[10px] text-gray-500">{{ item.data.pickedUpItems }}/{{ item.data.totalItems }} recogidos</span>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" [ngClass]="{'bg-orange-100 text-orange-700': item.data.pickedUpItems > 0 && !item.data.allPickedUp, 'bg-green-100 text-green-700': item.data.allPickedUp}">
+                    @if (item.data.allPickedUp) { ✅ Listo } @else if (item.data.pickedUpItems > 0) { ⏳ Parcial } @else { 📋 Pendiente }
                   </span>
                 </div>
-              }
+              </div>
             </div>
-          </div>
+          }
         }
       </div>
     </div>
 
   } @else {
-    <!-- Estado vacío -->
     <div class="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-200">
       <div class="text-gray-300 text-7xl mb-4">🔍</div>
-      <h2 class="text-xl font-bold text-gray-700 mb-2">
-        {{ searchTerm() ? 'Sin coincidencias' : 'Lista vacía' }}
-      </h2>
-      <p class="text-gray-500 max-w-xs mx-auto">
-        {{ searchTerm() ? 'No encontramos transferencias que coincidan con "' + searchTerm() + '"' : 'No hay transferencias pendientes en este momento.' }}
-      </p>
+      <h2 class="text-xl font-bold text-gray-700 mb-2">{{ searchTerm() ? 'Sin coincidencias' : 'Lista vacía' }}</h2>
+      <p class="text-gray-500 max-w-xs mx-auto">{{ searchTerm() ? 'No encontramos resultados para "' + searchTerm() + '"' : 'No hay elementos pendientes en este momento.' }}</p>
       @if (searchTerm()) {
-        <button (click)="clearSearch()" class="mt-6 px-6 py-2 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 transition-all shadow-md">
-          Limpiar Filtros
-        </button>
+        <button (click)="clearSearch()" class="mt-6 px-6 py-2 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 transition-all shadow-md">Limpiar Filtros</button>
       }
     </div>
   }
 
-  <!-- Botón flotante para crear nueva transferencia -->
-  <button
-    (click)="createNewTransfer()"
-    class="fixed bottom-24 left-1/2 -translate-x-1/2 p-4 rounded-full shadow-2xl bg-blue-600 text-white hover:bg-blue-700 hover:scale-110 active:scale-95 transition-all focus:outline-none z-10">
+  <button (click)="createNewTransfer()" class="fixed bottom-24 left-1/2 -translate-x-1/2 p-4 rounded-full shadow-2xl bg-blue-600 text-white hover:bg-blue-700 hover:scale-110 active:scale-95 transition-all focus:outline-none z-10">
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="w-3 h-3">
       <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
     </svg>

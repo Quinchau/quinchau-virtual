@@ -15,6 +15,7 @@ import { CatalogsResponse, CompanyConfig } from '../models/company_config.model'
 import { AddLinePayload, AddLineResponse, CreateOrderPayload, CreateOrderResponse, CustomerSearchResponse, ExecuteInvoicePayload, ExecuteInvoiceResponse, InvoicePreviewResponse, UpdateLinePayload, UpdateLineResponse, ValidateResponse } from '../models/invoice.models';
 import { BranchCatalogsResponse, CreateBranchPayload, CustomerDetailResult, CustomerSearchResult } from '../models/customer.model';
 import { OnDemandListResponse } from '../models/on-demand-model';
+import { StockAvailabilityResponse, WarehouseOption } from '../models/orders.models';
 
 @Injectable({
   providedIn: 'root',
@@ -380,5 +381,126 @@ public getShippers(): Observable<any> {
         withCredentials: true
     });
 }
+
+public dispatchGroup(transfer_group: string): Observable<any> {
+  return this.http.patch(
+    `${this.nodeBaseUrl}/transfers/group/${transfer_group}/dispatch`,
+    {}
+  );
+}
+
+public receiveGroup(transfer_group: string): Observable<any> {
+  return this.http.post(
+    `${this.nodeBaseUrl}/transfers/group/${transfer_group}/receive`,
+    {}
+  );
+}
+
+public getWarehouses(): Observable<{ exito: boolean; data: WarehouseOption[] }> {
+    return this.http.get<{ exito: boolean; data: WarehouseOption[] }>(
+        `${this.nodeBaseUrl}/config/warehouses`
+    );
+}
+
+/**
+ * Verifica disponibilidad de stock en shiploc antes de agregar una línea
+ * GET /orders-sales/{orderno}/lines/stock-check
+ */
+public checkStockAvailability(
+    orderno: number,
+    stkcode: string,
+    quantity: number
+): Observable<StockAvailabilityResponse> {
+    const params = new HttpParams()
+        .set('stkcode', stkcode)
+        .set('quantity', quantity.toString());
+    return this.http.get<StockAvailabilityResponse>(
+        `${this.nodeBaseUrl}/orders-sales/${orderno}/lines/stock-check`,
+        { params }
+    );
+}
+
+/**
+ * Obtiene la lista de pedidos pendientes de facturación
+ * GET /orders-sales/pending-for-invoice
+ */
+public getPendingOrdersForInvoice(): Observable<{ exito: boolean; data: any[] }> {
+    return this.http.get<{ exito: boolean; data: any[] }>(
+        `${this.nodeBaseUrl}/orders-sales/pending-for-invoice`
+    );
+}
+
+/**
+ * Obtiene la lista de pedidos pendientes de despacho (para exe-order)
+ * GET /orders-sales/pending-for-dispatch?shiploc={loccode}
+ */
+public getPendingOrdersForDispatch(shiploc: string): Observable<{ exito: boolean; data: any[] }> {
+    const params = new HttpParams().set('shiploc', shiploc);
+    return this.http.get<{ exito: boolean; data: any[] }>(
+        `${this.nodeBaseUrl}/orders-sales/pending-for-dispatch`,
+        { params }
+    );
+}
+
+/**
+ * Marca un pedido como entregado (solo para el almacén shiploc)
+ * POST /orders-sales/{orderno}/deliver
+ */
+public markOrderAsDelivered(orderno: number): Observable<{ exito: boolean; mensaje: string; data: any }> {
+    return this.http.post<{ exito: boolean; mensaje: string; data: any }>(
+        `${this.nodeBaseUrl}/orders-sales/${orderno}/deliver`,
+        {}
+    );
+}
+
+  public listOrders(): Observable<{ exito: boolean; data: any[] }> {
+    return this.http.get<{ exito: boolean; data: any[] }>(
+        `${this.nodeBaseUrl}/orders-sales`
+    );
+}
+
+public pickLine(orderno: number, lineno: number): Observable<{ exito: boolean; mensaje: string; data: any }> {
+    return this.http.patch<{ exito: boolean; mensaje: string; data: any }>(
+        `${this.nodeBaseUrl}/orders-sales/${orderno}/lines/${lineno}/pick`,
+        {}
+    );
+}
+
+public getOrderDetail(orderno: number): Observable<{ exito: boolean; data: any }> {
+    return this.http.get<{ exito: boolean; data: any }>(
+        `${this.nodeBaseUrl}/orders-sales/${orderno}`
+    );
+}
+
+  public unpickLine(orderno: number, lineno: number): Observable<{ exito: boolean; mensaje: string; data: any }> {
+    return this.http.delete<{ exito: boolean; mensaje: string; data: any }>(
+        `${this.nodeBaseUrl}/orders-sales/${orderno}/lines/${lineno}/pick`
+    );
+}
+
+  public markOrderAsReady(orderno: number): Observable<{ exito: boolean; mensaje: string; data: any }> {
+    return this.http.post<{ exito: boolean; mensaje: string; data: any }>(
+        `${this.nodeBaseUrl}/orders-sales/${orderno}/ready-for-dispatch`,
+        {}
+    );
+}
+
+  uploadOrderVoucher(orderno: number, file: File) {
+        const formData = new FormData();
+        formData.append('file', file);
+        return this.http.patch<any>(
+            `${this.nodeBaseUrl}/orders-sales/${orderno}/voucher`,
+            formData
+        );
+    }
+ 
+    uploadOrderShippingDoc(orderno: number, file: File) {
+        const formData = new FormData();
+        formData.append('file', file);
+        return this.http.patch<any>(
+            `${this.nodeBaseUrl}/orders-sales/${orderno}/shipping-doc`,
+            formData
+        );
+    }
 
 }

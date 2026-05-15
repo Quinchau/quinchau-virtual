@@ -1,8 +1,8 @@
 // src/app/services/manager-state.ts
 import { Injectable, inject, signal, computed, PLATFORM_ID, linkedSignal } from '@angular/core';
 import { ManagerApis } from './manager-apis';
-import { Transfer, TransferenciaDetalle, User, NewTransfer, ProductDetailData, DashboardResponse, HomeData, Visitante, Product, OutgoingMessage, SentStats } from '../models/transfer.model';
-import { TransferButtonInfo, getTransferButtonInfo } from '../data/transfer-actions';
+import { Transfer, TransferGroup, TransferenciaDetalle, User, NewTransfer, ProductDetailData, DashboardResponse, HomeData, Visitante, Product, OutgoingMessage, SentStats } from '../models/transfer.model';
+import { TransferButtonInfo, getTransferButtonInfo, getGroupButtonInfo } from '../data/transfer-actions';
 import { tap, catchError, of, throwError, finalize, map, fromEvent, merge, startWith, filter, Observable, switchMap, distinctUntilChanged } from 'rxjs';
 import { isPlatformBrowser, Location } from '@angular/common';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
@@ -65,10 +65,16 @@ public readonly productsResource = rxResource({
   private managerApis = inject(ManagerApis);
   private transfers = signal<Transfer[]>([]);
   public readonly envios = computed(() =>
-    this.transfers().filter((t) => t.tipo === 'ship')
+  this.transfers().filter(t => t.tipo === 'ship' && !t.transfer_group)
   );
   public readonly recepciones = computed(() =>
-    this.transfers().filter((t) => t.tipo === 'rec')
+  this.transfers().filter(t => t.tipo === 'rec' && !t.transfer_group)
+  );
+  public readonly gruposEnvio = computed(() =>
+  this.buildGroups(this.transfers().filter(t => t.tipo === 'ship' && !!t.transfer_group))
+  );
+  public readonly gruposRecepcion = computed(() =>
+  this.buildGroups(this.transfers().filter(t => t.tipo === 'rec' && !!t.transfer_group))
   );
   private transferenciaDetalle = signal<TransferenciaDetalle | null>(null);
   public readonly transferenciaDetalle$ = this.transferenciaDetalle;
@@ -95,6 +101,8 @@ public readonly productsResource = rxResource({
 );
   public readonly confirmingPayment = signal<boolean>(false);
   public readonly dispatchingToCustomer = signal<boolean>(false);
+  public readonly dispatchingGroup = signal<boolean>(false);
+  public readonly receivingGroup   = signal<boolean>(false);
   public readonly confirmingDelivery = signal<boolean>(false);
   public readonly uploadingVoucher = signal<boolean>(false);
   public readonly uploadingShippingDoc = signal<boolean>(false);
@@ -235,9 +243,6 @@ public selectProductFromHome(product: Product): void {
 
 public closeProductDetail(): void {
   this.currentProductCard.set(null);
-  if (typeof window !== 'undefined') {
-    window.history.replaceState({}, '', '/home'); 
-  }
 }
 
 public currentProductCard = signal<Product | null>(null);
@@ -268,7 +273,7 @@ public addStatus = linkedSignal<string | undefined, ActionStatus>({
 
 public addCurrentProductToCart(registro?: any): Observable<any> {
   const p = this.currentProductCard();
-  const currentTax = this.globalTaxRate(); // <--- Usamos el valor dinámico
+  const currentTax = this.globalTaxRate();
 
   if (!p || p.qty_in_order < 1) {
     return throwError(() => new Error('No product or invalid quantity'));
@@ -285,7 +290,8 @@ public addCurrentProductToCart(registro?: any): Observable<any> {
     }],
     typeabbrev: "01"
   };
-    if (registro) {
+
+  if (registro) {
     payload.registro = registro;
   }
 
@@ -301,11 +307,10 @@ public addCurrentProductToCart(registro?: any): Observable<any> {
 
       this.addStatus.set('success');
       
-  if (response.identidad?.token) {
-  this.actualizarIdentidad(response.identidad.token, response.identidad);
-}
-
-      this.location.back();
+      if (response.identidad?.token) {
+        this.actualizarIdentidad(response.identidad.token, response.identidad);
+      }
+      this.reloadCart();
       return of(response);
     }),
     catchError((err) => {
@@ -409,9 +414,11 @@ constructor() {
 // --- IMPLANTAR TOKENS --- //
 
 private actualizarIdentidad(token: string, identidad?: any) {
-    if (!isPlatformBrowser(this.platformId)) return;
-    const thirtyDays = 30 * 24 * 60 * 60;
-    document.cookie = `auth_token=${token}; Path=/; Max-Age=${thirtyDays}; SameSite=Lax; Secure`;
+  if (!isPlatformBrowser(this.platformId)) return;
+  const thirtyDays = 30 * 24 * 60 * 60;
+  const isSecure = location.protocol === 'https:';
+  const secureFlag = isSecure ? '; Secure' : '';
+  document.cookie = `auth_token=${token}; Path=/; Max-Age=${thirtyDays}; SameSite=Lax${secureFlag}`;
 }
 
 public readonly currentProductInWaitlist = computed(() => {
@@ -836,6 +843,70 @@ public markMessageSent(id: number): Observable<any> {
       console.error('❌ Error al marcar mensaje como enviado:', err);
       return throwError(() => err);
     })
+  );
+}
+
+private buildGroups(items: Transfer[]): TransferGroup[] {
+  const map = new Map<string, Transfer[]>();
+
+  for (const item of items) {
+    const key = item.transfer_group!;
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(item);
+  }
+
+  return Array.from(map.entries()).map(([groupId, groupItems]) => {
+    const first = groupItems[0];
+    const pickedUpItems = groupItems.filter(i => i.status === 'Recogido').length;
+    const totalItems = groupItems.length;
+
+    return {
+      transfer_group: groupId,
+      shiploc: first.loccode,
+      recloc: '',           // el backend no expone recloc en el listado; se puede ampliar si se necesita
+      user: '',
+      items: groupItems,
+      totalItems,
+      pickedUpItems,
+      allPickedUp: pickedUpItems === totalItems,
+      // Datos de despacho: tomados del primer ítem (son comunes a todo el grupo)
+      customer_name:    first.customer_name,
+      customer_phone:   first.customer_phone,
+      customer_address: first.customer_address,
+      delivery_type:    first.delivery_type,
+      shipping_carrier: first.shipping_carrier,
+      payment_status:   first.payment_status,
+      delivery_status:  first.delivery_status,
+    };
+  });
+}
+
+public dispatchGroup(transfer_group: string): Observable<any> {
+  this.dispatchingGroup.set(true);
+  return this.managerApis.dispatchGroup(transfer_group).pipe(
+    tap(() => {
+      // Actualizar status de todos los ítems del grupo en el estado local
+      this.transfers.update(ts =>
+        ts.map(t => t.transfer_group === transfer_group
+          ? { ...t, status: t.delivery_type !== 'DELIVERY' ? 'Enviado al cliente' : 'Entregado al cliente' }
+          : t
+        )
+      );
+    }),
+    finalize(() => this.dispatchingGroup.set(false))
+  );
+}
+
+public receiveGroup(transfer_group: string): Observable<any> {
+  this.receivingGroup.set(true);
+  return this.managerApis.receiveGroup(transfer_group).pipe(
+    tap(() => {
+      // Remover todos los ítems del grupo de la lista activa (closed=1 tras ejecutarse en ERP)
+      this.transfers.update(ts =>
+        ts.filter(t => t.transfer_group !== transfer_group)
+      );
+    }),
+    finalize(() => this.receivingGroup.set(false))
   );
 }
 

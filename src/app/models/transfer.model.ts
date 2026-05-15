@@ -12,6 +12,7 @@ export interface Transfer {
   is_customer_delivery?: 0 | 1;
   customer_name?: string;
   customer_phone?: string;
+  customer_id?: string; 
   customer_address?: string;
   delivery_type?: string;
   shipping_carrier?: string;
@@ -19,6 +20,7 @@ export interface Transfer {
   payment_status?: 'unpaid' | 'paid';
   voucher_url?: string;
   shipping_doc_url?: string;
+  transfer_group?: string | null;
 }
 
 export interface TransferenciaDetalle {
@@ -52,6 +54,7 @@ export interface TransferenciaDetalle {
   payment_status?: 'unpaid' | 'paid';
   voucher_url?: string;
   shipping_doc_url?: string;
+  transfer_group?: string | null;
 }
 
 export interface NewTransfer {
@@ -280,4 +283,25 @@ export interface Shipper {
 export interface PhoneNumber {
     prefix: '0412' | '0414' | '0416' | '0422' | '0424' | '0426';
     number: string;
+}
+
+export interface TransferGroup {
+  transfer_group: string;
+  shiploc: string;
+  recloc: string;
+  shiploc_name?: string;
+  recloc_name?: string;
+  user: string;
+  items: Transfer[];
+  allPickedUp: boolean;
+  totalItems: number;
+  pickedUpItems: number;
+  customer_name?: string;
+  customer_phone?: string;
+  customer_id?: string;
+  customer_address?: string;
+  delivery_type?: string;
+  shipping_carrier?: string;
+  payment_status?: 'unpaid' | 'paid';
+  delivery_status?: 'pending' | 'dispatched' | 'delivered';
 }

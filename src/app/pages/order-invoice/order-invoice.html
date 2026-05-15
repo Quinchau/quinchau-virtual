@@ -1,0 +1,97 @@
+<div class="min-h-screen bg-surface py-8 px-4">
+  <div class="max-w-4xl mx-auto">
+    
+    <button (click)="goBack()" class="text-primary flex items-center gap-2 mb-6 hover:underline">
+      <span class="material-symbols-outlined">arrow_back</span> Volver
+    </button>
+
+    @if (loading()) {
+      <div class="flex justify-center py-20"><div class="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full"></div></div>
+    }
+
+    @if (preview() && !loading()) {
+      <div class="space-y-6">
+        <h1 class="text-3xl font-black text-on-surface">Facturar Pedido #{{ orderno() }}</h1>
+
+        <div class="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/30 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <div>
+            <label class="block text-xs font-bold text-primary uppercase mb-2">Método de Pago *</label>
+            <select [ngModel]="selectedPaymentMethodId()" (ngModelChange)="selectedPaymentMethodId.set(+$event)"
+                    class="w-full h-12 px-4 bg-surface-container-low rounded-xl border-none focus:ring-2 focus:ring-primary">
+              @for (m of preview()?.paymentMethods; track m.paymentid) {
+                <option [value]="m.paymentid">{{ m.paymentname }}</option>
+              }
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-primary uppercase mb-2">Fecha de Despacho *</label>
+            <input type="date" [ngModel]="dispatchDate()" (ngModelChange)="dispatchDate.set($event)"
+                   class="w-full h-12 px-4 bg-surface-container-low rounded-xl border-none">
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-primary uppercase mb-2">Flete ($)</label>
+            <input type="number" [ngModel]="freightCost()" (ngModelChange)="freightCost.set($event)"
+                   class="w-full h-12 px-4 bg-surface-container-low rounded-xl border-none font-mono">
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-primary uppercase mb-2">Nº Consignación</label>
+            <input type="text" [ngModel]="consignment()" (ngModelChange)="consignment.set($event)"
+                   class="w-full h-12 px-4 bg-surface-container-low rounded-xl border-none" placeholder="Opcional">
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-xs font-bold text-primary uppercase mb-2">Referencia / Comentarios *</label>
+            <textarea [ngModel]="invoiceText()" (ngModelChange)="invoiceText.set($event)" rows="2"
+                      class="w-full p-4 bg-surface-container-low rounded-xl border-none resize-none"></textarea>
+          </div>
+        </div>
+
+        <div class="bg-primary-container/20 p-6 rounded-2xl border border-primary/10">
+          <div class="space-y-3">
+            <div class="flex justify-between text-on-surface-variant">
+              <span>Subtotal:</span>
+              <span class="font-mono">{{ formatCurrency(currentTotals().subtotal) }}</span>
+            </div>
+            <div class="flex justify-between text-on-surface-variant">
+              <span>Impuestos:</span>
+              <span class="font-mono">{{ formatCurrency(currentTotals().tax) }}</span>
+            </div>
+            <div class="flex justify-between text-primary font-bold">
+              <span>Flete:</span>
+              <span class="font-mono">{{ formatCurrency(currentTotals().freight) }}</span>
+            </div>
+            <div class="flex justify-between items-center pt-4 border-t border-primary/20 text-on-surface">
+              <span class="font-black text-lg">TOTAL A COBRAR</span>
+              <span class="text-3xl font-black font-mono text-primary">{{ formatCurrency(currentTotals().total) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <button (click)="generateInvoice()" [disabled]="!canInvoice()"
+                class="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl shadow-xl hover:brightness-110 disabled:opacity-40 transition-all flex justify-center items-center gap-3">
+          @if (loadingInvoice()) {
+            <div class="animate-spin h-6 w-6 border-2 border-white border-t-transparent rounded-full"></div>
+            <span>Generando...</span>
+          } @else {
+            <span class="material-symbols-outlined">payments</span>
+            <span>PROCESAR FACTURA</span>
+          }
+        </button>
+
+        @if (invoiceError()) {
+          <p class="text-error text-center font-bold animate-pulse">{{ invoiceError() }}</p>
+        }
+      </div>
+    }
+  </div>
+
+  @if (successMessage()) {
+    <div class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-secondary text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-3">
+      <span class="material-symbols-outlined">check_circle</span> {{ successMessage() }}
+    </div>
+  }
+</div>

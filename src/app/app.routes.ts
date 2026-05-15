@@ -14,6 +14,8 @@ import { ManualWhatsapp } from './pages/manual-whatsapp/manual-whatsapp';
 import { Customer } from './pages/customer/customer';
 import { Invoice } from './pages/invoice/invoice';
 import { Branch } from './pages/branch/branch';
+import { Orders } from './pages/orders/orders';
+import { OrderInvoice } from './pages/order-invoice/order-invoice';
 
 export const routes: Routes = [
   // === RUTAS PÚBLICAS ===
@@ -77,7 +79,44 @@ export const routes: Routes = [
     component: Branch,
   },
 
+  {
+    path: 'orders',
+    component: Orders,
+    canActivate: [adminGuard]
+  },
+
+  {
+    path: 'order-list',
+    loadComponent: () =>
+        import('./pages/order-list/order-list').then(m => m.OrderList),
+    canActivate: [adminGuard]
+},
+{
+    path: 'order-list/:orderno',
+    loadComponent: () =>
+        import('./pages/order-detail/order-detail').then(m => m.OrderDetail),
+    canActivate: [adminGuard]
+},
+
+{
+    path: 'pick-list/:orderno',
+    loadComponent: () =>
+      import('./pages/pick-list/pick-list').then(m => m.PickList),
+    canActivate: [adminGuard]
+  },
+
+  {
+    path: 'order/:orderno/invoice',
+    component: OrderInvoice,
+    canActivate: [adminGuard]
+},
+
   // === RUTAS PROTEGIDAS POR AUTENTICACIÓN ===
+  {
+  path: 'transfer-group/:groupId',
+  loadComponent: () =>
+    import('./pages/transfer-group-detail/transfer-group-detail').then(m => m.TransferGroupDetailComponent)
+},
   {
     path: 'new-transfer',
     component: NewTransferComponent,

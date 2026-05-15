@@ -1,0 +1,715 @@
+<!-- src/app/pages/orders/orders.html -->
+<div class="max-w-5xl mx-auto px-4 mt-8 space-y-6">
+
+    <!-- Page Title -->
+    <div class="mb-10">
+        <span class="text-[#944a00] font-bold tracking-widest text-xs uppercase mb-2 block">Operaciones de Venta</span>
+        <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-[#1b1c1c] leading-none">Nuevo Pedido</h1>
+        <div class="h-1 w-24 bg-[#fb923c] mt-4"></div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         SECCIÓN 1: CLIENTE
+    ═══════════════════════════════════════════ -->
+    <section class="bg-white shadow-sm rounded-xl overflow-hidden border border-[#dbc1b2]/15"
+        [class.pulse-once]="sec1State() === 'frozen'">
+        
+        <div class="p-6 border-l-4 flex items-center gap-4"
+            [class.border-[#944a00]]="sec1State() === 'frozen'"
+            [class.border-[#dbc1b2]]="sec1State() !== 'frozen'">
+            <div class="p-2 rounded-lg"
+                [class.bg-[#fb923c]]="sec1State() === 'frozen'"
+                [class.bg-[#f0eded]]="sec1State() !== 'frozen'"
+                [class.text-white]="sec1State() === 'frozen'"
+                [class.text-slate-400]="sec1State() !== 'frozen'">
+                <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">person_search</span>
+            </div>
+            <div class="flex-1">
+                <h2 class="text-lg font-bold font-['Plus_Jakarta_Sans']">Cliente</h2>
+                <p class="text-sm text-slate-500">
+                    @if (sec1State() === 'frozen' && orderno()) {
+                        Cliente verificado · Pedido #{{ orderno() }}
+                    } @else {
+                        Identifique al cliente por su número de teléfono
+                    }
+                </p>
+            </div>
+            @if (sec1State() === 'frozen') {
+                <div class="flex items-center gap-1 bg-green-50 text-green-700 text-xs font-bold px-3 py-1 rounded-full border border-green-200">
+                    <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1">check_circle</span>
+                    Cliente verificado
+                </div>
+            }
+        </div>
+
+        <div class="p-6 space-y-4">
+            <!-- Campo búsqueda -->
+            <div [class.opacity-50]="sec1State() === 'frozen'" [class.pointer-events-none]="sec1State() === 'frozen'" class="max-w-md">
+                <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">Buscar por Teléfono (mín. 5 dígitos)</label>
+                <div class="flex gap-2">
+                    <div class="relative flex-1">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">phone</span>
+                        <input [(ngModel)]="phoneInput" (keydown.enter)="onSearchCustomer()"
+                            class="w-full pl-10 pr-4 h-11 bg-[#f6f3f2] border-none rounded-sm focus:ring-2 focus:ring-[#fb923c] text-sm" 
+                            placeholder="Ej: 4123219451" type="tel"/>
+                    </div>
+                    <button (click)="onSearchCustomer()" [disabled]="loadingSearch()"
+                        class="bg-[#fb923c] text-[#301400] px-6 rounded-md font-bold text-sm shadow-md hover:brightness-110 active:scale-95 transition-all disabled:opacity-50">
+                        @if (loadingSearch()) {
+                            <span class="material-symbols-outlined text-sm animate-spin">refresh</span>
+                        } @else {
+                            BUSCAR
+                        }
+                    </button>
+                </div>
+                @if (searchError()) {
+                    <p class="text-xs text-red-500 mt-2">{{ searchError() }}</p>
+                }
+            </div>
+
+            <!-- Lista de clientes -->
+            @if (sec1State() === 'confirm' && customerResults().length > 0) {
+                <div class="max-w-lg space-y-2 fade-in">
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Seleccione el cliente:</p>
+                    @for (customer of customerResults(); track customer.debtorno) {
+                        <button (click)="onSelectCustomer(customer)"
+                            class="w-full text-left p-3 bg-white border border-[#dbc1b2]/30 rounded-lg hover:border-[#944a00] hover:bg-orange-50/40 transition-all text-sm">
+                            <span class="font-bold text-[#1b1c1c]">{{ customer.name }}</span>
+                            <span class="text-slate-400 ml-2 text-xs">{{ customer.debtorno }}</span>
+                            <br><span class="text-xs text-slate-500">{{ customer.area || '' }} · {{ customer.salesman || '' }}</span>
+                        </button>
+                    }
+                </div>
+            }
+
+            <!-- Cliente seleccionado -->
+@if (selectedCustomer() && sec1State() !== 'search') {
+    <div class="fade-in">
+        <div class="p-4 bg-orange-50/60 rounded-lg border border-orange-100 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+            <div>
+                <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-1">Nombre</label>
+                <p class="font-bold text-[#1b1c1c] text-sm">{{ selectedCustomer()?.name || '—' }}</p>
+            </div>
+            <div>
+                <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-1">RUT / Identificación</label>
+                <p class="font-semibold text-[#1b1c1c] text-sm">{{ selectedCustomer()?.taxref || 'No registrado' }}</p>
+            </div>
+            <div>
+                <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-1">Área / Vendedor</label>
+                <p class="font-semibold text-[#1b1c1c] text-sm">{{ selectedCustomer()?.area || '—' }} · {{ selectedCustomer()?.salesman || '—' }}</p>
+            </div>
+            <div class="flex items-center md:justify-end">
+                <button (click)="onChangeCustomer()" class="text-[#944a00] text-xs font-bold uppercase tracking-tight hover:underline flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm">sync</span>
+                    Cambiar Cliente
+                </button>
+            </div>
+        </div>
+        
+        <!-- ⭐ BOTÓN CONFIRMAR CLIENTE - AGREGAR AQUÍ ⭐ -->
+        <div class="mt-4">
+            <button (click)="onConfirmCustomer()" 
+                    [disabled]="loadingConfirm()"
+                    class="bg-[#944a00] text-white px-8 h-11 rounded-md font-bold text-sm shadow-md hover:brightness-110 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50">
+                @if (loadingConfirm()) {
+                    <span class="material-symbols-outlined text-sm animate-spin">refresh</span>
+                } @else {
+                    <span class="material-symbols-outlined text-sm">check</span>
+                }
+                CONFIRMAR CLIENTE Y CREAR PEDIDO
+            </button>
+        </div>
+    </div>
+}
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════
+         SECCIÓN SHIPLOC (Selección de almacén de despacho)
+    ═══════════════════════════════════════════ -->
+   
+@if (sec1State() === 'shiploc') {
+    <section class="fade-in">
+        <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-[#dbc1b2]/15">
+            <!-- Header con info del cliente -->
+            <div class="p-4 bg-gradient-to-r from-orange-50 to-amber-50 border-b border-orange-100">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-orange-100 rounded-full">
+                        <span class="material-symbols-outlined text-[#944a00] text-lg">storefront</span>
+                    </div>
+                    <div>
+                        <p class="text-xs text-orange-600 font-bold uppercase tracking-wider">Cliente seleccionado</p>
+                        <p class="text-sm font-bold text-[#1b1c1c]">{{ selectedCustomer()?.name }}</p>
+                        <p class="text-xs text-slate-500">Almacén del vendedor: {{ userLocation() }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <div class="max-w-md mx-auto">
+                    
+                    <!-- ============================================ -->
+                    <!-- CHECKBOX: Despacho directo al cliente        -->
+                    <!-- ============================================ -->
+                    <div class="mb-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <input type="checkbox" 
+                                   [(ngModel)]="isDirectShipping"
+                                   class="mt-1 w-5 h-5 text-[#944a00] rounded border-amber-300 focus:ring-[#fb923c]">
+                            <div class="flex-1">
+                                <span class="font-bold text-[#1b1c1c] text-sm">📦 Despacho directo al cliente</span>
+                                <p class="text-xs text-amber-700 mt-1">
+                                    Marca esta opción si el producto debe enviarse directamente al cliente.
+                                    De lo contrario, el cliente recogerá en tu tienda.
+                                </p>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- ============================================ -->
+                    <!-- FORMULARIO DE ENVÍO (solo si está marcado)   -->
+                    <!-- ============================================ -->
+                    @if (isDirectShipping()) {
+                        <div class="space-y-4">
+                            <!-- Almacén de origen (solo otros almacenes) -->
+                            <div>
+                                <label class="block text-[11px] uppercase tracking-widest text-slate-500 font-bold mb-2">
+                                    🏚️ Almacén de origen (despacha)
+                                </label>
+                                <select [(ngModel)]="selectedShiploc" 
+                                        class="w-full h-12 bg-[#f6f3f2] border-none rounded-lg focus:ring-2 focus:ring-[#fb923c] text-sm font-medium">
+                                    <option [ngValue]="null" disabled>Seleccione un almacén...</option>
+                                    @for (wh of otherWarehouses(); track wh.stkloc) {
+                                        <option [ngValue]="wh.stkloc">
+                                            {{ wh.stkloc }} - {{ wh.description }}
+                                        </option>
+                                    }
+                                </select>
+                                @if (otherWarehouses().length === 0) {
+                                    <p class="text-xs text-red-500 mt-1">
+                                        ⚠️ No hay otros almacenes disponibles para despachar.
+                                    </p>
+                                }
+                            </div>
+
+                            <!-- Método de envío -->
+                            <div>
+                                <label class="block text-[11px] uppercase tracking-widest text-slate-500 font-bold mb-2">
+                                    🚚 Método de envío
+                                </label>
+                                <select [(ngModel)]="selectedShipper" 
+                                        [compareWith]="compareShippers"
+                                        class="w-full h-12 bg-[#f6f3f2] border-none rounded-lg focus:ring-2 focus:ring-[#fb923c] text-sm font-medium">
+                                    <option [ngValue]="null" disabled>Seleccionar método...</option>
+                                    @for (shipper of shippers(); track shipper.shipper_id) {
+                                        <option [ngValue]="shipper">{{ shipper.shippername }}</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <!-- Datos de entrega -->
+                            <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                <h3 class="font-bold text-sm text-blue-800 mb-3">🎯 Datos de entrega</h3>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre completo *</label>
+                                        <input type="text" [(ngModel)]="customerName" class="w-full border rounded-lg px-3 py-2 text-sm">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono *</label>
+                                        <div class="flex gap-2">
+                                            <select [(ngModel)]="customerPhonePrefix" class="w-24 border rounded-lg px-2">
+                                                @for (p of phonePrefixes; track p.value) {
+                                                    <option [value]="p.value">{{ p.label }}</option>
+                                                }
+                                            </select>
+                                            <input type="text" [(ngModel)]="customerPhoneNumber" class="flex-1 border rounded-lg px-3 py-2" placeholder="1234567" maxlength="7">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Dirección de entrega *</label>
+                                        <textarea [(ngModel)]="customerAddress" rows="2" class="w-full border rounded-lg px-3 py-2 text-sm"></textarea>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Comentario adicional</label>
+                                        <textarea [(ngModel)]="orderComment" rows="2" class="w-full border rounded-lg px-3 py-2 text-sm"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- ============================================ -->
+                    <!-- BOTÓN CREAR PEDIDO / AGREGAR PRODUCTOS       -->
+                    <!-- ============================================ -->
+                    <button (click)="onCreateOrder()" 
+                            [disabled]="loadingConfirm() || (isDirectShipping() && !isDirectShippingFormValid())"
+                            class="w-full mt-6 bg-gradient-to-r from-[#944a00] to-[#fb923c] text-white py-3 rounded-lg font-bold text-base shadow-lg shadow-orange-500/30 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50">
+                        @if (loadingConfirm()) {
+                            <span>CREANDO PEDIDO...</span>
+                        } @else {
+                            @if (isDirectShipping()) {
+                                <span>✅ CREAR PEDIDO Y AGREGAR PRODUCTOS →</span>
+                            } @else {
+                                <span>✅ AGREGAR PRODUCTOS →</span>
+                            }
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+}
+            </div>
+
+
+    <!-- ═══════════════════════════════════════════
+         SECCIÓN 2: PRODUCTOS
+    ═══════════════════════════════════════════ -->
+    <section class="bg-white shadow-sm rounded-xl overflow-hidden border border-[#dbc1b2]/15 transition-all duration-300"
+        [class.section-disabled]="!sec2Active()">
+        
+        <div class="p-6 border-l-4 flex items-center gap-4"
+            [class.border-[#944a00]]="sec2Active()"
+            [class.border-[#dbc1b2]]="!sec2Active()">
+            <div class="p-2 rounded-lg"
+                [class.bg-[#fb923c]]="sec2Active()"
+                [class.bg-[#f0eded]]="!sec2Active()"
+                [class.text-white]="sec2Active()"
+                [class.text-slate-400]="!sec2Active()">
+                <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">inventory_2</span>
+            </div>
+            <div>
+                <h2 class="text-lg font-bold font-['Plus_Jakarta_Sans']">Detalle de Productos</h2>
+            </div>
+        </div>
+
+        <div class="p-6 space-y-6">
+            <!-- Buscador de productos -->
+            <div class="bg-[#f6f3f2] p-4 rounded-lg">
+                <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">Agregar Producto</label>
+                <button (click)="openProductPicker()" [disabled]="!sec2Active()"
+                    class="w-full flex items-center justify-center gap-3 h-11 px-4 bg-white rounded-sm border border-dashed border-[#944a00]/40 text-[#944a00] font-bold text-sm hover:bg-orange-50 active:scale-95 transition-all disabled:opacity-50">
+                    <span class="material-symbols-outlined text-base">search</span>
+                    Catalogo de Productos
+                </button>
+                
+            </div>
+            <!-- Lista de líneas -->
+            <div class="space-y-3">
+                @if (lines().length === 0) {
+                    <div class="text-center py-10 text-slate-400">
+                        <span class="material-symbols-outlined text-4xl block mb-2" style="font-variation-settings:'FILL' 0">shopping_cart</span>
+                        <p class="text-sm">No hay productos agregados aún</p>
+                    </div>
+                } @else {
+                    @for (line of lines(); track line.orderlineno; let idx = $index) {
+                        <div class="bg-white border border-[#dbc1b2]/30 rounded-xl p-4 flex flex-col sm:flex-row gap-4 relative overflow-hidden group hover:shadow-md transition-shadow fade-in">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <span class="text-[10px] font-bold text-[#944a00] font-mono uppercase bg-orange-50 px-2 py-0.5 rounded">{{ line.stkcode }}</span>
+                                        <h3 class="font-bold text-[#1b1c1c] text-sm mt-1">{{ line.description || line.stkcode }}</h3>
+                                        <p class="text-[10px] text-slate-500">{{ line.units || '' }}</p>
+                                        <!-- Estado de transferencia -->
+                                        @if (line.transferStatus === 'pending') {
+                                            <span class="inline-flex items-center gap-1 text-xs text-amber-600 mt-1">
+                                                <span class="material-symbols-outlined text-sm">schedule</span>
+                                                Pendiente transferencia
+                                            </span>
+                                        }
+                                        @if (line.transferStatus === 'completed') {
+                                            <span class="inline-flex items-center gap-1 text-xs text-green-600 mt-1">
+                                                <span class="material-symbols-outlined text-sm">check_circle</span>
+                                                Transferencia completada
+                                            </span>
+                                        }
+                                        @if (line.sourceloc) {
+                                            <span class="text-xs text-slate-400 ml-2">
+                                                Origen: {{ line.sourceloc }}
+                                            </span>
+                                        }
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Total Línea</p>
+                                        <p class="text-lg font-black text-[#944a00]">{{ formatCurrency(line.line_total) }}</p>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+                                    <div>
+                                        <label class="block text-[9px] uppercase font-bold text-slate-400 mb-1">Stock</label>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700">{{ line.stock_disponible || '—' }} Disp.</span>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] uppercase font-bold text-slate-400 mb-1">Precio Unit.</label>
+                                        <p class="text-xs font-bold text-[#1b1c1c]">{{ formatCurrency(line.unitprice) }}</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] uppercase font-bold text-slate-400 mb-1">Cant.</label>
+                                        <input (change)="onUpdateLineQuantity(idx, $event)"
+                                            class="w-full h-8 text-xs font-bold border-[#dbc1b2]/30 rounded focus:ring-[#944a00] focus:border-[#944a00] p-1 bg-[#f6f3f2] text-center" 
+                                            type="number" [value]="line.quantity" min="1"/>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] uppercase font-bold text-slate-400 mb-1">Desc %</label>
+                                        <input (change)="onUpdateLineDiscount(idx, $event)"
+                                            class="w-full h-8 text-xs font-bold border-[#dbc1b2]/30 rounded focus:ring-[#944a00] focus:border-[#944a00] p-1 bg-[#f6f3f2] text-center" 
+                                            type="number" [value]="line.discountpercent" min="0" max="100"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button (click)="onDeleteLine(idx)" 
+                                    [disabled]="line.transferStatus === 'completed'"
+                                    [class.opacity-50]="line.transferStatus === 'completed'"
+                                    class="p-1.5 bg-white rounded shadow-sm text-red-600 hover:bg-red-50 transition-colors">
+                                    <span class="material-symbols-outlined text-sm">delete</span>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+
+            <!-- Resumen y guardar -->
+            @if (sec2Active() && lines().length > 0) {
+                <div class="border-t border-[#dbc1b2]/30 pt-6 mt-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div class="text-center sm:text-left">
+                            <p class="text-xs text-slate-500 uppercase tracking-widest">Total del Pedido</p>
+                            <p class="text-3xl font-black text-[#944a00]">{{ formatCurrency(summaryTotal()) }}</p>
+                            @if (transfersPending()) {
+                                <p class="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-sm">schedule</span>
+                                    ⏳ Esperando transferencias de inventario...
+                                </p>
+                            }
+                        </div>
+                        <button (click)="onSaveOrder()" [disabled]="!canSaveOrder()"
+                            class="bg-[#944a00] text-white px-8 py-3 rounded-lg font-bold text-sm shadow-lg shadow-orange-500/30 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2">
+                            <span class="material-symbols-outlined">save</span>
+                            GUARDAR PEDIDO
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+
+    <!-- Modal detalle de producto pendiente -->
+@if (pendingProduct(); as p) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 fade-in">
+        <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden">
+
+            <!-- Imagen -->
+            <div class="bg-[#f6f3f2] p-4 flex justify-center">
+                <img [src]="p.cover_image_id || '/assets/placeholder-part.svg'"
+                     [alt]="p.description"
+                     class="h-36 object-contain"/>
+            </div>
+
+            <!-- Info -->
+            <div class="p-5 space-y-3">
+                <span class="text-[10px] font-mono font-bold text-[#944a00] bg-orange-50 px-2 py-0.5 rounded">
+                    {{ p.stockid }}
+                </span>
+                <h3 class="font-bold text-[#1b1c1c] text-base leading-snug mt-1">{{ p.description }}</h3>
+
+                <div class="flex justify-between items-center">
+                    <p class="text-2xl font-black text-[#944a00]">${{ p.price_with_tax }}</p>
+                    <span class="text-xs font-bold px-2 py-1 rounded-full"
+                        [class.bg-green-100]="p.total_quantity > 0"
+                        [class.text-green-700]="p.total_quantity > 0"
+                        [class.bg-red-100]="p.total_quantity === 0"
+                        [class.text-red-600]="p.total_quantity === 0">
+                        {{ p.total_quantity > 0 ? p.total_quantity + ' disponibles' : 'Sin stock' }}
+                    </span>
+                </div>
+
+                <!-- Cantidad -->
+                <div class="flex items-center justify-between pt-2">
+                    <span class="text-sm font-bold text-slate-600">Cantidad:</span>
+                    <div class="flex items-center gap-3">
+                        <button (click)="decrementPendingQty()"
+                            [disabled]="pendingQty() <= 1"
+                            class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-lg font-bold hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                            −
+                        </button>
+                        <span class="text-xl font-black w-8 text-center">{{ pendingQty() }}</span>
+                        <button (click)="incrementPendingQty()"
+                            [disabled]="pendingQty() >= p.total_quantity"
+                            class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-lg font-bold hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                            +
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Total línea -->
+                <div class="flex justify-between items-center pt-1 border-t border-slate-100">
+                    <span class="text-sm text-slate-500">Total línea:</span>
+                    <span class="text-lg font-black text-[#944a00]">
+                        ${{ (p.price_with_tax * pendingQty()).toFixed(2) }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Botones -->
+            <div class="flex gap-3 p-5 pt-0">
+                <button (click)="cancelPendingProduct()"
+                    class="flex-1 py-3 rounded-lg bg-slate-100 text-slate-600 font-bold text-sm hover:bg-slate-200 transition-colors">
+                    Cancelar
+                </button>
+                <button (click)="confirmPendingProduct()"
+                    [disabled]="p.total_quantity === 0 || loadingAddLine()"
+                    class="flex-1 py-3 rounded-lg bg-gradient-to-r from-[#944a00] to-[#fb923c] text-white font-bold text-sm shadow-md hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                    @if (loadingAddLine()) {
+                        <span class="material-symbols-outlined text-sm animate-spin">refresh</span>
+                    } @else {
+                        <span class="material-symbols-outlined text-sm">add</span>
+                        Agregar al pedido
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+    <!-- Modal de selección de almacén origen (stock insuficiente) -->
+    @if (addLineState() === 'awaiting_stock_selection') {
+        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 fade-in"
+            (click)="closeStockModal()">
+            <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl animate-[fadeInUp_0.3s_ease]" 
+                (click)="$event.stopPropagation()">
+                
+                <div class="p-6">
+                    <h3 class="text-lg font-bold text-[#1b1c1c]">Stock insuficiente</h3>
+                    <p class="text-sm text-slate-600 mt-1">
+                        El almacén de despacho no tiene stock suficiente para:<br>
+                        <strong class="text-[#944a00]">{{ pendingProductCode() }}</strong>
+                    </p>
+
+                    <div class="mt-4 space-y-2">
+                        <p class="text-xs font-bold text-slate-500 uppercase">Seleccione almacén origen:</p>
+                        @for (loc of pendingStockOptions(); track loc.stkloc) {
+                            <button (click)="addLineWithSourceloc(pendingProductCode(), pendingProductQuantity(), loc.stkloc)"
+                                class="w-full text-left p-3 bg-[#f6f3f2] rounded-lg hover:bg-orange-50 transition-all">
+                                <span class="font-bold text-[#1b1c1c]">{{ loc.stkloc }}</span>
+                                <span class="text-slate-500 ml-2">{{ loc.description }}</span>
+                                <span class="text-xs text-[#944a00] float-right">{{ loc.available }} disponibles</span>
+                            </button>
+                        }
+                    </div>
+
+                    <button (click)="closeStockModal()" class="w-full mt-4 p-2 text-slate-500 hover:text-slate-700">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (addLineState() === 'awaiting_multi_stock_selection') {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+        <div class="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            
+            <!-- Header -->
+            <div class="sticky top-0 bg-white p-4 border-b">
+                <h3 class="text-lg font-bold">Distribuir stock</h3>
+                <p class="text-sm text-gray-500">
+                    Producto: <strong class="text-orange-600">{{ pendingProductCode() }}</strong>
+                </p>
+            </div>
+
+            <!-- Cantidad total solicitada -->
+            <div class="p-4 border-b bg-amber-50">
+                <label class="block text-sm font-bold mb-2">Cantidad total a agregar:</label>
+                <input type="number" 
+                       [(ngModel)]="pendingProductQuantity"
+                       (change)="onTotalQuantityChange()"
+                       class="w-full border rounded-lg px-3 py-2 text-lg font-bold"
+                       min="1"
+                       [max]="totalStockAvailable()">
+                <p class="text-xs text-gray-500 mt-1">
+                    Stock total disponible: <strong>{{ totalStockAvailable() }}</strong>
+                </p>
+            </div>
+
+            <!-- Lista de almacenes -->
+            <div class="p-4 space-y-3">
+                <p class="text-xs font-bold uppercase">Seleccione almacenes y cantidades:</p>
+                
+                @for (loc of pendingStockOptions(); track loc.stkloc) {
+                    <div class="border rounded-lg p-3">
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold">{{ loc.stkloc }}</span>
+                            <span class="text-sm text-green-600">{{ loc.available }} disponibles</span>
+                        </div>
+                        <div class="mt-2">
+                            <label class="text-sm text-gray-600">Cantidad a tomar:</label>
+                            <input type="number" 
+                                   [(ngModel)]="loc.selectedQty"
+                                   (change)="updateDistribution()"
+                                   [max]="loc.available"
+                                   [min]="0"
+                                   class="w-full border rounded-lg px-3 py-2 mt-1">
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Resumen -->
+            <div class="sticky bottom-0 bg-white p-4 border-t">
+                <div class="flex justify-between text-sm mb-3">
+                    <span>Total solicitado:</span>
+                    <span class="font-bold">{{ pendingProductQuantity() }}</span>
+                </div>
+                <div class="flex justify-between text-sm mb-3">
+                    <span>Total distribuido:</span>
+                    <span class="font-bold" 
+                          [class.text-red-500]="totalDistributed() !== pendingProductQuantity()"
+                          [class.text-green-500]="totalDistributed() === pendingProductQuantity()">
+                        {{ totalDistributed() }}
+                    </span>
+                </div>
+                
+                <div class="flex gap-2">
+                    <button (click)="closeMultiStockModal()"
+                            class="flex-1 px-4 py-2 border rounded-lg">
+                        Cancelar
+                    </button>
+                    <button (click)="addLineWithMultipleSources()"
+                            [disabled]="totalDistributed() !== pendingProductQuantity()"
+                            class="flex-1 bg-orange-600 text-white px-4 py-2 rounded-lg font-bold disabled:opacity-50">
+                        Agregar {{ totalDistributed() }} unidades
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+    <!-- Modal de Error -->
+    @if (showErrorModal()) {
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 fade-in" 
+        (click)="closeErrorModal()">
+        <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl mx-4" 
+            (click)="$event.stopPropagation()">
+            
+            <!-- Header simplificado -->
+            <div class="bg-amber-50 p-5 text-center rounded-t-2xl">
+                <div class="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <span class="material-symbols-outlined text-amber-600 text-3xl">
+                        storefront
+                    </span>
+                </div>
+                <h3 class="text-lg font-bold text-amber-800">{{ errorModalTitle() }}</h3>
+            </div>
+            
+            <!-- Mensaje claro y conciso -->
+            <div class="p-5">
+                <div class="bg-amber-50 border-l-4 border-amber-500 p-3 rounded-r-lg mb-5">
+                    <p class="text-sm text-gray-700 whitespace-pre-line">{{ errorModalMessage() }}</p>
+                </div>
+                
+                <!-- Botones en columna para móvil -->
+                <div class="flex flex-col gap-2">
+                    <button (click)="closeErrorModal()"
+                            class="w-full bg-[#944a00] text-white px-4 py-3 rounded-lg font-semibold text-sm hover:brightness-110 transition-all">
+                        Entendido
+                    </button>
+                    
+                    @if (errorModalMessage().includes('no está registrado')) {
+                        <button (click)="goToCustomerManagement()"
+                                class="w-full border-2 border-[#944a00] text-[#944a00] px-4 py-3 rounded-lg font-semibold text-sm hover:bg-orange-50 transition-all flex items-center justify-center gap-2">
+                            <span class="material-symbols-outlined text-sm">person_add</span>
+                            Gestionar Cliente
+                        </button>
+                    }
+                    
+                    @if (errorModalMessage().includes('no está registrado') || errorModalMessage().includes('almacén')) {
+                        <button (click)="closeErrorModalAndReset()"
+                                class="w-full text-[#944a00] px-4 py-3 rounded-lg font-semibold text-sm hover:bg-orange-50 transition-all">
+                            Cambiar Cliente
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+    <!-- Toast de éxito -->
+    @if (successMessage()) {
+        <div class="fixed bottom-28 left-1/2 -translate-x-1/2 bg-green-700 text-white px-6 py-4 rounded-xl shadow-2xl z-50 flex items-center gap-3 fade-in">
+            <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">check_circle</span>
+            <div>
+                <p class="font-bold text-sm">Pedido guardado</p>
+                <p class="text-xs opacity-80">{{ successMessage() }}</p>
+            </div>
+        </div>
+    }
+
+    <!-- Product Picker Overlay -->
+    @if (showProductPicker()) {
+        <div class="fixed inset-0 z-[80] bg-zinc-950/60 backdrop-blur-sm animate-in fade-in duration-200"
+            (click)="closeProductPicker()">
+        </div>
+
+        <div class="fixed inset-0 z-[90] flex flex-col pointer-events-none">
+            <div class="flex-1 pointer-events-none"></div>
+
+            <div class="pointer-events-auto bg-white rounded-t-[2rem] shadow-2xl flex flex-col"
+                style="max-height: 92dvh;"
+                (click)="$event.stopPropagation()">
+
+                <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[#dbc1b2]/20 shrink-0">
+                    <div>
+                        <p class="text-[10px] font-black uppercase tracking-widest text-[#944a00]">Seleccionar producto</p>
+                        <h3 class="text-lg font-extrabold text-[#1b1c1c] leading-tight">Buscador de Catálogo</h3>
+                    </div>
+                    <button (click)="closeProductPicker()"
+                        class="p-2 rounded-xl hover:bg-[#f0eded] transition-colors text-[#554337]">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto">
+                    <app-product-picker (productSelected)="onProductPicked($event)" />
+                </div>
+            </div>
+        </div>
+    }
+
+
+
+<!-- Estilos adicionales -->
+<style>
+    .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        display: inline-block;
+        line-height: 1;
+        text-transform: none;
+        letter-spacing: normal;
+        word-wrap: normal;
+        white-space: nowrap;
+        direction: ltr;
+    }
+    
+    .section-disabled { 
+        opacity: 0.45; 
+        pointer-events: none; 
+    }
+    
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(12px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeInUp 0.3s ease forwards; }
+    
+    @keyframes pulse-once {
+        0%   { box-shadow: 0 0 0 0 rgba(148,74,0,0.3); }
+        70%  { box-shadow: 0 0 0 10px rgba(148,74,0,0); }
+        100% { box-shadow: 0 0 0 0 rgba(148,74,0,0); }
+    }
+    .pulse-once { animation: pulse-once 0.6s ease; }
+</style>

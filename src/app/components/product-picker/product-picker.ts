@@ -20,7 +20,7 @@ export class ProductPicker {
   readonly searchResults = signal<any[]>([]);
   readonly isLoading = signal(false);
   readonly searchError = signal('');
-  readonly onlyStock = signal(true);
+  readonly onlyStock = signal(false);
 
   // Computed: productos filtrados por stock
   readonly filteredResults = computed(() => {
