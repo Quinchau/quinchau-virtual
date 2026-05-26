@@ -32,56 +32,53 @@
   @if (!loadingData() && !loadingCatalogs()) {
     <form (ngSubmit)="guardar()" class="space-y-8">
 
-      <!-- Identificación -->
+      <!-- Información generada automáticamente (solo lectura) -->
       <div class="bg-surface-container-lowest rounded-xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-l-4 border-primary">
         <div class="flex items-center gap-3 mb-6">
-          <span class="material-symbols-outlined text-primary">store</span>
-          <h2 class="text-xl font-bold tracking-tight">Identificación</h2>
+          <span class="material-symbols-outlined text-primary">info</span>
+          <h2 class="text-xl font-bold tracking-tight">Información de la Delegación</h2>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-          <!-- Código de delegación -->
+          <!-- Código de delegación - automático -->
           <div>
             <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">
               Código de Delegación
             </label>
-            <input
-              name="branchCode"
-              [(ngModel)]="form.branchCode"
-              [attr.readonly]="modo() === 'edit' ? true : null"
-              [class.opacity-60]="modo() === 'edit'"
-              class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg py-3 px-4 text-sm font-mono focus:ring-2 focus:ring-primary transition-all"
-              placeholder="Ej: MCYV12345678"
-              type="text"
-              maxlength="20"
-              required
-            />
+            <div class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg py-3 px-4 text-sm font-mono">
+              @if (modo() === 'new') {
+                {{ userLoccode() }}{{ debtorNo() }}
+              } @else {
+                {{ form.branchCode }}
+              }
+            </div>
             @if (modo() === 'new') {
               <p class="text-[10px] text-on-surface-variant mt-1">
-                Se generará automáticamente si lo dejas vacío.
+                Se genera automáticamente al guardar
               </p>
             }
           </div>
 
-          <!-- Nombre de la delegación -->
+          <!-- Nombre de delegación - automático desde cliente -->
           <div>
             <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">
               Nombre de la Delegación
             </label>
-            <input
-              name="brname"
-              [(ngModel)]="form.brname"
-              class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary transition-all"
-              placeholder="Ej: Sede Principal Maracay"
-              type="text"
-            />
+            <div class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg py-3 px-4 text-sm">
+              {{ customerName() }}
+            </div>
+            @if (modo() === 'new') {
+              <p class="text-[10px] text-on-surface-variant mt-1">
+                Toma el nombre del cliente automáticamente
+              </p>
+            }
           </div>
 
         </div>
       </div>
 
-      <!-- Asignación comercial -->
+      <!-- Asignación Comercial -->
       <div class="bg-surface-container-lowest rounded-xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-b-4 border-primary">
         <div class="flex items-center gap-3 mb-6">
           <span class="material-symbols-outlined text-primary">person_pin</span>
@@ -93,7 +90,7 @@
           <!-- Área -->
           <div>
             <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">
-              Área
+              Área <span class="text-red-500">*</span>
             </label>
             <select name="area" [(ngModel)]="form.area" required
               class="w-full bg-surface-container-high border-none rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary appearance-none">
@@ -121,43 +118,82 @@
       </div>
 
       <!-- Contacto -->
-      <div class="bg-surface-container-lowest rounded-xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
-        <div class="flex items-center gap-3 mb-6">
-          <span class="material-symbols-outlined text-primary">contact_phone</span>
-          <h2 class="text-xl font-bold tracking-tight">Contacto</h2>
-        </div>
+<div class="bg-surface-container-lowest rounded-xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
+  <div class="flex items-center gap-3 mb-6">
+    <span class="material-symbols-outlined text-primary">contact_phone</span>
+    <h2 class="text-xl font-bold tracking-tight">Contacto</h2>
+  </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-          <div>
-            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">
-              Teléfono
-            </label>
-            <input name="phoneno" [(ngModel)]="form.phoneno" type="text"
-              placeholder="0412-1234567"
-              class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary transition-all" />
-          </div>
-
-          <div>
-            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">
-              Email
-            </label>
-            <input name="email" [(ngModel)]="form.email" type="email"
-              placeholder="contacto@empresa.com"
-              class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary transition-all" />
-          </div>
-
-          <div>
-            <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">
-              Persona de Contacto
-            </label>
-            <input name="contactname" [(ngModel)]="form.contactname" type="text"
-              placeholder="Nombre del contacto"
-              class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary transition-all" />
-          </div>
-
-        </div>
+    <!-- Teléfono con código de área -->
+    <div>
+      <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">
+        Teléfono <span class="text-red-500">*</span>
+      </label>
+      <div class="flex gap-2">
+        <!-- Selector de código -->
+        <select 
+          [(ngModel)]="form.phoneCode" 
+          name="phoneCode"
+          class="w-24 bg-surface-container-high border-none rounded-lg py-3 px-2 text-sm focus:ring-2 focus:ring-primary appearance-none text-center">
+          <option value="412">412</option>
+          <option value="414">414</option>
+          <option value="416">416</option>
+          <option value="422">422</option>
+          <option value="424">424</option>
+          <option value="426">426</option>
+        </select>
+        
+        <!-- Número de 7 dígitos -->
+        <input 
+          name="phoneNumber" 
+          [(ngModel)]="form.phoneNumber"
+          type="text"
+          pattern="[0-9]{7}"
+          maxlength="7"
+          placeholder="1234567"
+          class="flex-1 bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary transition-all"
+          required
+        />
       </div>
+      @if (phoneNumberInvalid()) {
+        <p class="text-red-500 text-[10px] mt-1">Debe tener 7 dígitos numéricos</p>
+      }
+    </div>
+
+    <!-- Email - opcional -->
+    <div>
+      <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">
+        Email
+        <span class="text-on-surface-variant font-normal normal-case">(opcional)</span>
+      </label>
+      <input 
+        name="email" 
+        [(ngModel)]="form.email" 
+        type="email"
+        placeholder="contacto@empresa.com"
+        class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary transition-all" 
+      />
+    </div>
+
+    <!-- Persona de Contacto - opcional -->
+    <div>
+      <label class="block text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">
+        Persona de Contacto
+        <span class="text-on-surface-variant font-normal normal-case">(opcional)</span>
+      </label>
+      <input 
+        name="contactname" 
+        [(ngModel)]="form.contactname" 
+        type="text"
+        placeholder="Nombre del contacto"
+        class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary transition-all" 
+      />
+    </div>
+
+  </div>
+</div>
 
       <!-- CTA -->
       <div class="flex justify-between items-center mt-8">

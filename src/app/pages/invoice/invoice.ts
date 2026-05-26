@@ -379,7 +379,8 @@ export class Invoice implements OnDestroy {
   this.invoiceError.set('');
 
   // 1. Extraemos la fecha local "YYYY-MM-DD" para evitar el desfase horario
-  const localDate = new Date(this.dispatchDate()).toLocaleDateString('en-CA');
+  const [year, month, day] = this.dispatchDate().split('-').map(Number);
+  const localDate = new Date(year, month - 1, day).toLocaleDateString('en-CA');
 
   this.apis.validateInvoiceConcurrency(orderno).pipe(
     switchMap((valRes) => {

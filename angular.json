@@ -59,7 +59,13 @@
             "outputMode": "server",
             "ssr": {
               "entry": "src/server.ts"
-            }
+            },
+                  "security": {
+            "allowedHosts": [
+              "quinchau.com",
+              "www.quinchau.com"
+            ]
+          }
           },
           "configurations": {
             "production": {

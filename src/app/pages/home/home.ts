@@ -21,57 +21,17 @@ export class Home {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
 
-  /**
-   * Modo de operación del componente:
-   * - 'catalog' (default): comportamiento normal, navega al detalle del producto.
-   * - 'picker': al seleccionar un producto lo emite via `productSelected` sin navegar.
-   */
   public mode = input<'catalog' | 'picker'>('catalog');
-
-  /**
-   * Emite el producto seleccionado cuando mode === 'picker'.
-   * El padre (InvoicePage) escucha este evento para recibir el stkcode.
-   */
   public productSelected = output<any>();
-
-  // --- Signals de Estado de Ruta (Fuente de Verdad) ---
-
-  // Convertimos los queryParams en una Signal para que todo el componente reaccione a la URL
   private queryParams = toSignal(this.route.queryParams);
 
   public selectedProductId = computed(() => 
   this.managerState.currentProductCard()?.stockid ?? null
   );
 
-  // Estado del filtro de stock obtenido directamente de la URL
   public onlyStock = computed(() => this.queryParams()?.['stock'] === 'true');
 
-  // UI State local
   public mostrarCopiado = signal(false);
-
-  constructor() {
-    /**
-     * Sincronización Técnica:
-     * Si entramos por una ruta con slug (ej: /modelo/frenos-123),
-     * extraemos el ID y lo ponemos en la URL como queryParam para que el servicio cargue los datos.
-     */
-    effect(() => {
-      const modeloSlug = this.route.snapshot.paramMap.get('modelo');
-      if (!modeloSlug) return;
-
-      const idFromSlug = modeloSlug.split('-').pop();
-      const currentIdParam = this.queryParams()?.['idmodelo'];
-
-      if (idFromSlug && currentIdParam !== idFromSlug) {
-        this.router.navigate([], {
-          relativeTo: this.route,
-          queryParams: { idmodelo: idFromSlug },
-          queryParamsHandling: 'merge',
-          replaceUrl: true
-        });
-      }
-    });
-  }
 
   public handleProductSelection(producto: any): void {
   if (!producto?.stockid) return;

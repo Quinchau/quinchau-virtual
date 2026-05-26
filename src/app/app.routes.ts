@@ -167,7 +167,10 @@ export const routes: Routes = [
   // === RUTAS DINÁMICAS (DEBEN IR AL FINAL) ===
   { path: ':categoria', component: Home },
   { path: ':categoria/:marca', component: Home },
-  { path: ':categoria/:marca/:modelo', component: Home },
+  {path: ':categoria/:marca/:modelo',
+    loadComponent: () =>
+      import('./pages/modelpage/modelpage').then(m => m.Modelpage)
+  },
 
   // === REDIRECCIÓN POR DEFECTO ===
   { path: '', redirectTo: '/home', pathMatch: 'full' },

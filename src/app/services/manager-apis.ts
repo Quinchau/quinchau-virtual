@@ -472,10 +472,8 @@ public getOrderDetail(orderno: number): Observable<{ exito: boolean; data: any }
     );
 }
 
-  public unpickLine(orderno: number, lineno: number): Observable<{ exito: boolean; mensaje: string; data: any }> {
-    return this.http.delete<{ exito: boolean; mensaje: string; data: any }>(
-        `${this.nodeBaseUrl}/orders-sales/${orderno}/lines/${lineno}/pick`
-    );
+  unPickLine(orderno: number, lineno: number): Observable<any> {
+    return this.http.patch(`${this.nodeBaseUrl}/orders-sales/${orderno}/lines/${lineno}/unpick`, {});
 }
 
   public markOrderAsReady(orderno: number): Observable<{ exito: boolean; mensaje: string; data: any }> {

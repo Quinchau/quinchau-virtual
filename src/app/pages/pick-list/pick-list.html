@@ -50,7 +50,7 @@
         <!-- Contenido -->
         <div class="p-5 space-y-4">
 
-          <!-- Código + Stock (desde stock_at_location) -->
+          <!-- Código + Stock -->
           <div class="flex justify-between items-start">
             <span class="text-xs font-mono font-bold text-[#944a00] bg-orange-50 px-2 py-1 rounded">
               {{ product()?.stkcode }}
@@ -97,27 +97,43 @@
             <p class="text-3xl font-black text-[#1b1c1c]">{{ product()?.quantity }}</p>
           </div>
 
-          <!-- Botón MARCAR RECOGIDO -->
-          <button (click)="markAsPicked()"
-                  [disabled]="picking() || product()?.picking_status === 1"
-                  class="w-full py-4 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2"
-                  [class.bg-gradient-to-r]="!picking() && product()?.picking_status !== 1"
-                  [class.from-[#944a00]]="!picking() && product()?.picking_status !== 1"
-                  [class.to-[#fb923c]]="!picking() && product()?.picking_status !== 1"
-                  [class.bg-green-600]="product()?.picking_status === 1"
-                  [class.opacity-50]="product()?.picking_status === 1">
+          <!-- Botón principal: MARCAR RECOGIDO o DEVOLVER -->
+          @if (product()?.picking_status === 1) {
 
-            @if (picking()) {
-              <span class="material-symbols-outlined animate-spin">refresh</span>
-              Procesando...
-            } @else if (product()?.picking_status === 1) {
-              <span class="material-symbols-outlined">check_circle</span>
-              YA RECOGIDO
-            } @else {
-              <span class="material-symbols-outlined">inventory</span>
-              MARCAR COMO RECOGIDO
-            }
-          </button>
+            <!-- Estado recogido: mostrar badge + botón devolver -->
+            <div class="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+              <span class="material-symbols-outlined text-green-600">check_circle</span>
+              <span class="text-green-700 font-bold text-sm">Producto recogido</span>
+            </div>
+
+            <button (click)="unPickLine()"
+                    [disabled]="picking()"
+                    class="w-full py-4 rounded-xl font-bold text-white bg-slate-500 hover:bg-slate-600 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+              @if (picking()) {
+                <span class="material-symbols-outlined animate-spin">refresh</span>
+                Procesando...
+              } @else {
+                <span class="material-symbols-outlined">undo</span>
+                DEVOLVER
+              }
+            </button>
+
+          } @else {
+
+            <!-- Estado pendiente: botón marcar recogido -->
+            <button (click)="markAsPicked()"
+                    [disabled]="picking()"
+                    class="w-full py-4 rounded-xl font-bold text-white bg-gradient-to-r from-[#944a00] to-[#fb923c] hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+              @if (picking()) {
+                <span class="material-symbols-outlined animate-spin">refresh</span>
+                Procesando...
+              } @else {
+                <span class="material-symbols-outlined">inventory</span>
+                MARCAR COMO RECOGIDO
+              }
+            </button>
+
+          }
 
           <!-- Mensaje éxito -->
           @if (successMessage()) {
@@ -125,6 +141,7 @@
               {{ successMessage() }} ⏳ Redirigiendo...
             </div>
           }
+
         </div>
       </div>
     }

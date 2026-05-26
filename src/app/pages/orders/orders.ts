@@ -105,7 +105,7 @@ export class Orders implements OnDestroy {
     readonly sec2Active = computed(() => this.orderno() !== null);
     
     readonly transfersPending = computed(() =>
-        this.lines().some(l => l.transferStatus === 'pending')
+    !this.isSameWarehouse() && this.lines().some(l => l.transferStatus === 'pending')
     );
 
     readonly summarySubtotal = computed(() =>
@@ -143,33 +143,33 @@ export class Orders implements OnDestroy {
         return this.selectedShipper()?.shippername === 'DELIVERY';
     });
 
-        public readonly isDirectShippingFormValid = computed(() => {
-        if (!this.isDirectShipping()) return true;
-        
+    public readonly isDirectShippingFormValid = computed(() => {
+
+    // ✅ Campos obligatorios en TODOS los casos
+    const hasShipper = this.selectedShipper() !== null;
+    const hasName    = this.customerName()?.trim().length > 0;
+    const hasPhone   = this.customerPhoneComplete().length === 11;
+    const hasAddress = this.customerAddress()?.trim().length > 0;
+
+    if (!hasShipper || !hasName || !hasPhone || !hasAddress) return false;
+
+    // ✅ Solo si se despacha desde otro almacén
+    if (this.isDirectShipping()) {
         const hasShiploc = this.selectedShiploc() !== null;
-        const hasShipper = this.selectedShipper() !== null;
-        const hasName = this.customerName()?.trim().length > 0;
-        const hasPhone = this.customerPhoneComplete().length === 11;
-        const hasAddress = this.customerAddress()?.trim().length > 0;
-        
-        // ✅ Campos obligatorios para TODOS los métodos de envío
-        if (!hasShiploc || !hasShipper || !hasName || !hasPhone || !hasAddress) {
-            return false;
-        }
-        
-        // ✅ Ya no validamos customerId ni shippingCarrier
-        // El cliente ya está identificado por debtorno + branchcode
-        return true;
-    });
+        if (!hasShiploc) return false;
+    }
+
+    return true;
+});
 
     public readonly isCreateOrderDisabled = computed(() => {
-    if (this.loadingConfirm()) return true;
-    if (this.isDirectShipping()) {
-        return !this.isDirectShippingFormValid();
-    }
-    // ✅ Para recogida en tienda, siempre habilitado (ya tiene cliente)
-    return false;
-});
+        if (this.loadingConfirm()) return true;
+        if (this.isDirectShipping()) {
+            return !this.isDirectShippingFormValid();
+        }
+        // ✅ Para recogida en tienda, siempre habilitado (ya tiene cliente)
+        return false;
+    });
 
     public readonly totalDistributed = computed(() => {
     return this.pendingStockOptions().reduce((sum, loc) => sum + (loc.selectedQty || 0), 0);
@@ -177,6 +177,12 @@ export class Orders implements OnDestroy {
 
     public readonly totalStockAvailable = computed(() => {
     return this.pendingStockOptions().reduce((sum, loc) => sum + loc.available, 0);
+});
+
+    readonly isSameWarehouse = computed(() => {
+    const shiploc = this.selectedShiploc();
+    const fromloc = this.userLocation();
+    return shiploc !== null && shiploc === fromloc;
 });
 
     // ============================================
@@ -332,31 +338,53 @@ cancelPendingProduct(): void {
     }
 
     confirmCustomer(): void {
-        const customer = this.selectedCustomer();
-        
-        if (!customer) {
-            this.searchError.set('Por favor, seleccione un cliente de la lista.');
-            return;
-        }
-
-        const salesmanLocation = this.state.userLocation();
-        
-        const validBranch = customer.branches.find(b => b.defaultlocation === salesmanLocation);
-        
-        if (!validBranch) {
-            this.errorModalTitle.set('Cliente no registrado en su almacén');
-            this.errorModalMessage.set(
-                `⚠️ El cliente "${customer.name}" (${customer.debtorno}) aún no está registrado en su almacén "${salesmanLocation}".\n\n` +
-                `Para continuar, debe registrar una sucursal para este cliente en su almacén.`
-            );
-            this.showErrorModal.set(true);
-            return;
-        }
-
-        this.selectedBranch.set(validBranch);
-        this.sec1State.set('shiploc');
-        this.loadWarehouses();
+    const customer = this.selectedCustomer();
+    
+    if (!customer) {
+        this.searchError.set('Por favor, seleccione un cliente de la lista.');
+        return;
     }
+
+    const salesmanLocation = this.state.userLocation();
+    const validBranch = customer.branches.find(b => b.defaultlocation === salesmanLocation);
+    
+    if (!validBranch) {
+        this.errorModalTitle.set('Cliente no registrado en su almacén');
+        this.errorModalMessage.set(
+            `⚠️ El cliente "${customer.name}" (${customer.debtorno}) aún no está registrado en su almacén "${salesmanLocation}".\n\n` +
+            `Para continuar, debe registrar una sucursal para este cliente en su almacén.`
+        );
+        this.showErrorModal.set(true);
+        return;
+    }
+
+    this.selectedBranch.set(validBranch);
+
+    // ✅ Precargar datos de entrega desde la sucursal seleccionada
+    this.customerName.set(validBranch.brname || customer.name);
+    this.customerAddress.set(validBranch.braddress1 || '');
+
+    // Extraer prefijo y número desde phoneno (10 u 11 dígitos)
+    const phone = (validBranch.phoneno || '').replace(/\D/g, '');
+    const knownPrefixes = ['0412', '0414', '0416', '0422', '0424', '0426'];
+
+    if (phone.length >= 10) {
+        const number        = phone.slice(-7);
+        const prefixRaw     = phone.slice(0, -7);                                    // "412" o "0412"
+        const prefixNorm    = prefixRaw.startsWith('0') ? prefixRaw : `0${prefixRaw}`;
+        const matchedPrefix = knownPrefixes.find(p => p === prefixNorm);
+
+        this.customerPhonePrefix.set(matchedPrefix || '0412');
+        this.customerPhoneNumber.set(number);
+    } else {
+        // Formato desconocido: dejar vacío para que el vendedor complete
+        this.customerPhonePrefix.set('0412');
+        this.customerPhoneNumber.set('');
+    }
+
+    this.sec1State.set('shiploc');
+    this.loadWarehouses();
+}
 
     changeCustomer(): void {
         const confirmed = this.lines().length > 0
@@ -440,10 +468,16 @@ cancelPendingProduct(): void {
         debtorno: branch.debtorno,
         branchcode: branch.branchcode,
         ordertype: branch.salestype || '01',
-        shipvia: 1,
+        shipvia: this.selectedShipper()?.shipper_id || 1,
         deliverydate: deliveryDate,
-        comments: '',
-        shiploc: shiploc
+        comments: this.orderComment().trim(),
+        shiploc: shiploc,
+        deliverto:    this.customerName().trim(),
+        contactphone: this.customerPhoneComplete(),
+        deladd1:      this.customerAddress().trim(),
+        deladd2: '',
+        deladd3: '',
+        is_different_shipping_address: false
     };
 
     this.apis.createOrder(payload).subscribe({

@@ -39,38 +39,14 @@
             </div>
         }
 
-        <!-- Mis ventas (vendedor) -->
-        @if (ordersSeller().length > 0) {
+        <!-- Lista unificada de todos los pedidos -->
+        @if (orders().length > 0) {
             <section class="space-y-3">
                 <h2 class="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                    Mis ventas · {{ ordersSeller().length }}
+                    Pedidos activos · {{ orders().length }}
                 </h2>
-                @for (order of ordersSeller(); track order.orderno) {
-                    <ng-container *ngTemplateOutlet="orderCard; context: { $implicit: order, role: 'seller' }"/>
-                }
-            </section>
-        }
-
-        <!-- Para despachar (shiploc) -->
-        @if (ordersDispatch().length > 0) {
-            <section class="space-y-3">
-                <h2 class="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                    Para despachar · {{ ordersDispatch().length }}
-                </h2>
-                @for (order of ordersDispatch(); track order.orderno) {
-                    <ng-container *ngTemplateOutlet="orderCard; context: { $implicit: order, role: 'dispatch' }"/>
-                }
-            </section>
-        }
-
-        <!-- Propios (vendedor y despachador) -->
-        @if (ordersBoth().length > 0) {
-            <section class="space-y-3">
-                <h2 class="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                    Mis pedidos directos · {{ ordersBoth().length }}
-                </h2>
-                @for (order of ordersBoth(); track order.orderno) {
-                    <ng-container *ngTemplateOutlet="orderCard; context: { $implicit: order, role: 'both' }"/>
+                @for (order of orders(); track order.orderno) {
+                    <ng-container *ngTemplateOutlet="orderCard; context: { $implicit: order, role: getOrderRole(order) }"/>
                 }
             </section>
         }
@@ -80,20 +56,56 @@
 <!-- Template de tarjeta de pedido -->
 <ng-template #orderCard let-order let-role="role">
     <button (click)="goToDetail(order.orderno)"
-        class="w-full text-left bg-white border border-[#dbc1b2]/30 rounded-xl p-4 hover:shadow-md hover:border-[#944a00]/30 active:scale-[0.99] transition-all">
+        class="w-full text-left bg-white border-2 border-[#dbc1b2]/30 rounded-xl overflow-hidden hover:shadow-md active:scale-[0.99] transition-all"
+        [class.border-[#dbc1b2]]="role !== 'viewer'"
+        [class.hover:border-[#944a00]/30]="role !== 'viewer'"
+        [class.border-slate-200/60]="role === 'viewer'"
+        >
 
-        <div class="flex justify-between items-start mb-3">
-            <div>
+        <!-- Franja shipper -->
+        @if (order.shippername) {
+            <div class="bg-[#0f7a0f] text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-sm">local_shipping</span>
+                {{ order.shippername }}
+            </div>
+        }
+
+        <div class="p-4" [class.opacity-70]="role === 'viewer'">
+
+        <!-- Fila superior: número + estado -->
+        <div class="flex justify-between items-start mb-2">
+            <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-[10px] font-mono font-bold text-[#944a00] bg-orange-50 px-2 py-0.5 rounded">
                     #{{ order.orderno }}
                 </span>
-                <p class="font-bold text-[#1b1c1c] text-sm mt-1">{{ order.customername }}</p>
-                <p class="text-xs text-slate-400">{{ formatDate(order.orddate) }}</p>
+                <!-- Badge de rol -->
+                @switch (role) {
+                    @case ('seller') {
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">
+                            Mi venta
+                        </span>
+                    }
+                    @case ('dispatch') {
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                            Para despachar
+                        </span>
+                    }
+                    @case ('both') {
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">
+                            Venta directa
+                        </span>
+                    }
+                    @case ('viewer') {
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
+                            Otro almacén
+                        </span>
+                    }
+                }
             </div>
 
             <!-- Badge de estado -->
             @if (getOrderStatus(order); as status) {
-                <span class="text-[10px] font-bold px-2 py-1 rounded-full"
+                <span class="text-[10px] font-bold px-2 py-1 rounded-full flex-shrink-0"
                     [class.bg-green-100]="status.color === 'green'"
                     [class.text-green-700]="status.color === 'green'"
                     [class.bg-blue-100]="status.color === 'blue'"
@@ -107,28 +119,41 @@
             }
         </div>
 
-        <div class="flex justify-between items-center">
-            <div class="flex items-center gap-3 text-xs text-slate-500">
-                <!-- Progreso picking -->
+        <!-- Cliente y fecha -->
+        <p class="font-bold text-[#1b1c1c] text-sm">{{ order.customername }}</p>
+        <p class="text-xs text-slate-400 mb-3">{{ formatDate(order.orddate) }}</p>
+
+        <!-- Fila inferior: almacenes + picking + total -->
+        <div class="flex justify-between items-end gap-2">
+
+            <div class="flex flex-col gap-1 text-xs text-slate-500">
+
+                <!-- Almacén vendedor -->
+                <span class="flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm">storefront</span>
+                    <span class="font-medium text-slate-600">Vende:</span>
+                    {{ getLocName(order.fromstkloc) }}
+                </span>
+
+                <!-- Almacén despachador (solo si difiere) -->
+                @if (order.fromstkloc !== order.shiploc) {
+                    <span class="flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">local_shipping</span>
+                        <span class="font-medium text-slate-600">Despacha:</span>
+                        {{ getLocName(order.shiploc) }}
+                    </span>
+                }
+
+                <!-- Picking -->
                 <span class="flex items-center gap-1">
                     <span class="material-symbols-outlined text-sm">inventory_2</span>
                     {{ order.picked_lines }}/{{ order.total_lines }} recogidos
                 </span>
-                <!-- Almacenes involucrados -->
-                @if (role === 'seller') {
-                    <span class="flex items-center gap-1">
-                        <span class="material-symbols-outlined text-sm">local_shipping</span>
-                        Despacha: {{ order.shiploc }}
-                    </span>
-                }
-                @if (role === 'dispatch') {
-                    <span class="flex items-center gap-1">
-                        <span class="material-symbols-outlined text-sm">storefront</span>
-                        Vendedor: {{ order.fromstkloc }}
-                    </span>
-                }
             </div>
-            <p class="text-base font-black text-[#944a00]">{{ formatCurrency(order.subtotal) }}</p>
+
+            <p class="text-base font-black text-[#944a00] flex-shrink-0">
+                {{ formatCurrency(order.subtotal) }}
+            </p>
         </div>
 
         <!-- Barra de progreso picking -->
@@ -139,5 +164,7 @@
                 </div>
             </div>
         }
+
+        </div><!-- /p-4 -->
     </button>
 </ng-template>

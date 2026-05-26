@@ -99,6 +99,7 @@ export interface Product {
   tags: string | null;
   latest_trandate: string;
   cover_image_id: string;
+  cover_image: string | null;
   all_image_ids: string | null;
   url: string;
   modelo_ids: number[];

@@ -31,10 +31,7 @@ public readonly productIncludeStock = toSignal(
   { initialValue: false }
 );
 
-public readonly productModelFilter = toSignal(
-  this.route.queryParams.pipe(map(params => params['idmodelo'] || '')),
-  { initialValue: '' }
-);
+public readonly productModelFilter = signal<string>('');
 public readonly productsResource = rxResource({
   params: () => ({
     query: this.productSearchTerm(),
@@ -164,6 +161,10 @@ public readonly homeResource = rxResource<HomeData, unknown>({
   defaultValue: { banners: [], modelos: [], categorias: [], marcas: [], featured_products: [] } as HomeData
 });
 
+public setModeloId(id: string): void {
+  this.productModelFilter.set(id);
+}
+
 public readonly currentVisitante = computed(() => this.homeResource.value().visitante);
 public readonly homeBanners = computed(() => this.homeResource.value().banners);
 public readonly homeModelos = computed(() => this.homeResource.value().modelos);
@@ -176,12 +177,25 @@ public readonly modelosSecundarios = computed(() =>
 public readonly currentModel = computed(() => {
   const id = this.productModelFilter();
   if (!id) return null;
-  let modelo = this.modelosDestacados().find(m => m.idmodelo === id);
   
-  if (!modelo) {
-    modelo = this.modelosSecundarios().find(m => m.idmodelo === id);
+  const idNumber = typeof id === 'string' ? parseInt(id, 10) : id;
+  
+  // Buscar directamente en TODAS las categorías (todos los modelos)
+  const categorias = this.homeResource.value().categorias;
+  if (!categorias || !Array.isArray(categorias)) return null;
+  
+  for (const cat of categorias) {
+    if (!cat.marcas) continue;
+    for (const marca of cat.marcas) {
+      if (!marca.modelos) continue;
+      const encontrado = marca.modelos.find((m: any) => Number(m.idmodelo) === idNumber);
+      if (encontrado) {
+        return encontrado;
+      }
+    }
   }
-  return modelo || null;
+  
+  return null;
 });
 
  // --- GUEST USER ----

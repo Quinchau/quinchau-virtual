@@ -89,7 +89,8 @@ export class OrderInvoice implements OnInit {
 
   this.loadingInvoice.set(true);
 
-  const localDate = new Date(this.dispatchDate()).toLocaleDateString('en-CA'); 
+  const [year, month, day] = this.dispatchDate().split('-').map(Number);
+  const localDate = new Date(year, month - 1, day).toLocaleDateString('en-CA'); 
 
   const payload = {
     dispatchDate: localDate,

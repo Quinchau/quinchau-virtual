@@ -51,7 +51,7 @@
                     <p class="font-semibold">{{ header().shiploc }}</p>
                 </div>
 
-                <!-- Sección de envío -->
+                <!-- Envío -->
                 @if (header().shippername || header().deladd1 || header().contactphone || header().comments) {
                     <div class="col-span-2 sm:col-span-4 pt-3 border-t border-slate-100 space-y-2">
                         <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Envío</p>
@@ -62,14 +62,12 @@
                                 <span class="font-semibold">{{ header().shippername }}</span>
                             </div>
                         }
-
                         @if (header().deladd1) {
                             <div class="flex items-center gap-2 text-sm text-slate-600">
                                 <span class="material-symbols-outlined text-[#944a00] text-sm">location_on</span>
                                 {{ header().deladd1 }}
                             </div>
                         }
-
                         @if (header().contactphone) {
                             <a [href]="'tel:' + header().contactphone"
                                class="flex items-center gap-2 text-sm text-blue-600 font-medium">
@@ -77,7 +75,6 @@
                                 {{ header().contactphone }}
                             </a>
                         }
-
                         @if (header().comments) {
                             <div class="flex items-center gap-2 text-sm text-slate-400 italic">
                                 <span class="material-symbols-outlined text-sm">chat_bubble</span>
@@ -93,12 +90,12 @@
                     @if (header().delivered) {
                         <span class="inline-flex items-center gap-1 text-xs font-bold text-green-700 bg-green-100 px-3 py-1 rounded-full">
                             <span class="material-symbols-outlined text-sm">check_circle</span>
-                            Entregado · Listo para facturar
+                            Despachado · Listo para facturar
                         </span>
                     } @else if (allPicked()) {
                         <span class="inline-flex items-center gap-1 text-xs font-bold text-blue-700 bg-blue-100 px-3 py-1 rounded-full">
                             <span class="material-symbols-outlined text-sm">local_shipping</span>
-                            Listo para despachar
+                            Recogido · Listo para despachar
                         </span>
                     } @else {
                         <span class="inline-flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-100 px-3 py-1 rounded-full">
@@ -113,16 +110,13 @@
             </div>
         </section>
 
-        <!-- ── DOCUMENTOS DEL PEDIDO ─────────────────────────────────── -->
+        <!-- ── DOCUMENTOS ─────────────────────────────────────────────── -->
         <section class="bg-white rounded-xl border border-[#dbc1b2]/30 overflow-hidden">
-
-            <!-- Cabecera / toggle -->
             <button (click)="toggleDocs()"
                 class="w-full flex items-center justify-between px-5 py-3 hover:bg-orange-50 transition-colors">
                 <span class="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
                     <span class="material-symbols-outlined text-sm text-[#944a00]">attach_file</span>
                     Documentos
-                    <!-- Badges rápidos de estado -->
                     @if (header().voucher_url) {
                         <span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
                     }
@@ -136,25 +130,19 @@
                 </span>
             </button>
 
-            <!-- Panel colapsable -->
             <div class="transition-all duration-300 ease-in-out overflow-hidden"
                  [style.max-height]="docsOpen() ? '300px' : '0px'"
                  [style.opacity]="docsOpen() ? '1' : '0'">
-
                 <div class="px-5 pb-4 space-y-3">
-
-                    <!-- Miniaturas lado a lado -->
                     <div class="grid grid-cols-2 gap-3">
 
                         <!-- Voucher -->
                         <div class="space-y-1.5">
                             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Comprobante</p>
-
                             @if (header().voucher_url) {
                                 <a [href]="header().voucher_url" target="_blank" class="block">
                                     @if (isImage(header().voucher_url)) {
-                                        <img [src]="header().voucher_url"
-                                             alt="Comprobante"
+                                        <img [src]="header().voucher_url" alt="Comprobante"
                                              class="w-full h-24 object-cover rounded-lg border border-slate-200 hover:opacity-80 transition-opacity" />
                                     } @else {
                                         <div class="w-full h-24 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors flex flex-col items-center justify-center gap-1">
@@ -168,10 +156,8 @@
                                     <span class="material-symbols-outlined text-slate-300 text-2xl">image</span>
                                 </div>
                             }
-
                             @if (!header().delivered) {
-                                <button (click)="triggerFileUpload('voucher')"
-                                    [disabled]="uploadingVoucher()"
+                                <button (click)="triggerFileUpload('voucher')" [disabled]="uploadingVoucher()"
                                     class="w-full py-1.5 text-[10px] font-bold text-[#944a00] border border-dashed border-[#dbc1b2] rounded-lg hover:bg-orange-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-1">
                                     @if (uploadingVoucher()) {
                                         <span class="material-symbols-outlined text-xs animate-spin">refresh</span>
@@ -186,12 +172,10 @@
                         <!-- Guía de despacho -->
                         <div class="space-y-1.5">
                             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Guía despacho</p>
-
                             @if (header().shipping_doc_url) {
                                 <a [href]="header().shipping_doc_url" target="_blank" class="block">
                                     @if (isImage(header().shipping_doc_url)) {
-                                        <img [src]="header().shipping_doc_url"
-                                             alt="Guía de despacho"
+                                        <img [src]="header().shipping_doc_url" alt="Guía de despacho"
                                              class="w-full h-24 object-cover rounded-lg border border-slate-200 hover:opacity-80 transition-opacity" />
                                     } @else {
                                         <div class="w-full h-24 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors flex flex-col items-center justify-center gap-1">
@@ -205,10 +189,8 @@
                                     <span class="material-symbols-outlined text-slate-300 text-2xl">description</span>
                                 </div>
                             }
-
                             @if (!header().delivered) {
-                                <button (click)="triggerFileUpload('shipping-doc')"
-                                    [disabled]="uploadingShippingDoc()"
+                                <button (click)="triggerFileUpload('shipping-doc')" [disabled]="uploadingShippingDoc()"
                                     class="w-full py-1.5 text-[10px] font-bold text-[#944a00] border border-dashed border-[#dbc1b2] rounded-lg hover:bg-orange-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-1">
                                     @if (uploadingShippingDoc()) {
                                         <span class="material-symbols-outlined text-xs animate-spin">refresh</span>
@@ -223,9 +205,7 @@
                     </div>
                 </div>
             </div>
-
         </section>
-        <!-- ── FIN DOCUMENTOS ────────────────────────────────────────── -->
 
         <!-- Error de acción -->
         @if (actionError()) {
@@ -242,98 +222,189 @@
             </div>
         }
 
-        <!-- Líneas -->
+        <!-- ── LÍNEAS ─────────────────────────────────────────────────── -->
         <section class="space-y-3">
             <div class="flex justify-between items-center mb-3">
                 <h2 class="text-[10px] font-black uppercase tracking-widest text-slate-400">
                     Productos · {{ lines().length }}
                 </h2>
-                @if (isDispatch() && !header().delivered) {
-                    <button (click)="goToFullPickList()"
-                            class="text-xs text-[#944a00] font-bold flex items-center gap-1 hover:underline transition-colors">
-                        <span class="material-symbols-outlined text-sm">apps</span>
-                        Vista completa
-                    </button>
-                }
+                <div class="flex items-center gap-3">
+                    <!-- Vista completa picking (solo despachador) -->
+                    @if (isDispatch() && !header().delivered) {
+                        <button (click)="goToFullPickList()"
+                                class="text-xs text-[#944a00] font-bold flex items-center gap-1 hover:underline transition-colors">
+                            <span class="material-symbols-outlined text-sm">apps</span>
+                            Vista completa
+                        </button>
+                    }
+                </div>
             </div>
 
+            <!-- Error al agregar línea -->
+            @if (addLineError()) {
+                <div class="bg-red-50 border border-red-200 text-red-600 text-xs p-3 rounded-xl">
+                    {{ addLineError() }}
+                </div>
+            }
+
+            <!-- Loading addLine -->
+            @if (addLineState() === 'loading' || loadingAddLine()) {
+                <div class="flex items-center gap-2 text-xs text-slate-500 py-2">
+                    <div class="w-4 h-4 border-2 border-[#fb923c] border-t-transparent rounded-full animate-spin"></div>
+                    Verificando stock…
+                </div>
+            }
+
             @for (line of lines(); track line.orderlineno) {
-                <div (click)="goToPickProduct(line.orderlineno, $index)"
-                     class="bg-white border rounded-xl p-4 transition-all cursor-pointer hover:shadow-md hover:border-[#944a00]/30 active:scale-[0.99]"
+                <div class="bg-white border rounded-xl p-4 transition-all relative"
                      [class.border-green-200]="line.picking_status === 1"
                      [class.border-[#dbc1b2]/30]="line.picking_status === 0"
                      [class.bg-green-50]="line.picking_status === 1">
 
-                    <div class="flex justify-between items-start gap-4">
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <span class="text-[9px] font-mono font-bold text-[#944a00] bg-orange-50 px-2 py-0.5 rounded">
-                                    {{ line.stkcode }}
-                                </span>
-                                @if (line.defaultlocation) {
-                                    <span class="text-[9px] font-mono text-[#944a00] bg-[#944a00]/10 px-2 py-0.5 rounded flex items-center gap-0.5">
-                                        <span class="material-symbols-outlined text-[10px]">location_on</span>
-                                        {{ line.defaultlocation }}
+                    <!-- Menú 3 puntos -->
+                    @if (canEdit() && line.picking_status === 0) {
+                        <div class="absolute top-3 right-3 z-10">
+                            <button (click)="$event.stopPropagation(); toggleLineMenu(line.orderlineno)"
+                                class="p-1 rounded-lg hover:bg-slate-100 transition-colors">
+                                <span class="material-symbols-outlined text-slate-400 text-lg">more_vert</span>
+                            </button>
+
+                            @if (openMenuLineno() === line.orderlineno) {
+                                <div class="fixed inset-0 z-10" (click)="closeLineMenu()"></div>
+                                <div class="absolute right-0 top-8 z-20 bg-white border border-slate-100 rounded-xl shadow-xl overflow-hidden w-36">
+                                    <button (click)="$event.stopPropagation(); openEditModal(line)"
+                                        class="w-full flex items-center gap-2 px-4 py-3 text-sm font-medium text-[#1b1c1c] hover:bg-orange-50 transition-colors">
+                                        <span class="material-symbols-outlined text-sm text-[#944a00]">edit</span>
+                                        Editar
+                                    </button>
+                                    <button (click)="$event.stopPropagation(); deleteLine(line.orderlineno)"
+                                        class="w-full flex items-center gap-2 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors border-t border-slate-100">
+                                        <span class="material-symbols-outlined text-sm">delete</span>
+                                        Eliminar
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    <!-- Área clickeable para picking -->
+                    <div (click)="isDispatch() && !header().delivered ? goToPickProduct(line.orderlineno, $index) : null"
+                         [class.cursor-pointer]="isDispatch() && !header().delivered"
+                         [class.active:scale-[0.99]]="isDispatch() && !header().delivered">
+
+                        <div class="flex justify-between items-start gap-4"
+                             [class.pr-6]="canEdit() && line.picking_status === 0">
+
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="text-[9px] font-mono font-bold text-[#944a00] bg-orange-50 px-2 py-0.5 rounded">
+                                        {{ line.stkcode }}
                                     </span>
-                                }
+                                    @if (line.defaultlocation) {
+                                        <span class="text-[9px] font-mono text-[#944a00] bg-[#944a00]/10 px-2 py-0.5 rounded flex items-center gap-0.5">
+                                            <span class="material-symbols-outlined text-[10px]">location_on</span>
+                                            {{ line.defaultlocation }}
+                                        </span>
+                                    }
+                                </div>
+                                <p class="font-bold text-[#1b1c1c] text-sm mt-1 line-clamp-2">{{ line.description }}</p>
+                                <div class="flex items-center gap-3 mt-2 text-xs text-slate-500 flex-wrap">
+                                    <span class="flex items-center gap-0.5">
+                                        <span class="material-symbols-outlined text-sm">inventory</span>
+                                        Cant: <strong>{{ line.quantity }}</strong>
+                                    </span>
+                                    <span class="flex items-center gap-0.5">
+                                        <span class="material-symbols-outlined text-sm">attach_money</span>
+                                        Precio: <strong>{{ formatCurrency(line.unitprice) }}</strong>
+                                    </span>
+                                    @if (line.sourceloc && line.sourceloc !== header().shiploc) {
+                                        <span class="flex items-center gap-0.5 text-blue-600">
+                                            <span class="material-symbols-outlined text-sm">swap_horiz</span>
+                                            Origen: <strong>{{ line.sourceloc }}</strong>
+                                        </span>
+                                    }
+                                </div>
                             </div>
-                            <p class="font-bold text-[#1b1c1c] text-sm mt-1 line-clamp-2">{{ line.description }}</p>
-                            <div class="flex items-center gap-3 mt-2 text-xs text-slate-500 flex-wrap">
-                                <span class="flex items-center gap-0.5">
-                                    <span class="material-symbols-outlined text-sm">inventory</span>
-                                    Cant: <strong>{{ line.quantity }}</strong>
-                                </span>
-                                <span class="flex items-center gap-0.5">
-                                    <span class="material-symbols-outlined text-sm">attach_money</span>
-                                    Precio: <strong>{{ formatCurrency(line.unitprice) }}</strong>
-                                </span>
-                                @if (line.sourceloc && line.sourceloc !== header().shiploc) {
-                                    <span class="flex items-center gap-0.5 text-blue-600">
-                                        <span class="material-symbols-outlined text-sm">swap_horiz</span>
-                                        Origen: <strong>{{ line.sourceloc }}</strong>
+
+                            <div class="flex flex-col items-end gap-2 shrink-0">
+                                <p class="font-black text-[#944a00]">{{ formatCurrency(line.line_total) }}</p>
+                                @if (line.picking_status === 1) {
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                                        <span class="material-symbols-outlined text-sm">check_circle</span>
+                                        Recogido
+                                    </span>
+                                } @else if (isDispatch() && !header().delivered) {
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                                        <span class="material-symbols-outlined text-sm">touch_app</span>
+                                        Tocar para recoger
+                                    </span>
+                                } @else {
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                                        <span class="material-symbols-outlined text-sm">schedule</span>
+                                        Pendiente
                                     </span>
                                 }
                             </div>
                         </div>
 
-                        <div class="flex flex-col items-end gap-2 shrink-0">
-                            <p class="font-black text-[#944a00]">{{ formatCurrency(line.line_total) }}</p>
-                            @if (line.picking_status === 1) {
-                                <span class="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
-                                    <span class="material-symbols-outlined text-sm">check_circle</span>
-                                    Recogido
-                                </span>
-                            } @else if (isDispatch() && !header().delivered) {
-                                <span class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                        @if (isDispatch() && !header().delivered && line.picking_status !== 1) {
+                            <div class="mt-2 pt-1 text-right">
+                                <span class="text-[10px] text-[#944a00] flex items-center justify-end gap-1">
                                     <span class="material-symbols-outlined text-sm">touch_app</span>
                                     Tocar para recoger
                                 </span>
-                            } @else {
-                                <span class="inline-flex items-center gap-1 text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
-                                    <span class="material-symbols-outlined text-sm">schedule</span>
-                                    Pendiente
-                                </span>
-                            }
-                        </div>
+                            </div>
+                        }
                     </div>
-
-                    @if (isDispatch() && !header().delivered && line.picking_status !== 1) {
-                        <div class="mt-2 pt-1 text-right">
-                            <span class="text-[10px] text-[#944a00] flex items-center justify-end gap-1">
-                                <span class="material-symbols-outlined text-sm">touch_app</span>
-                                Tocar para recoger
-                            </span>
-                        </div>
-                    }
                 </div>
+            }
+            <!-- Botón agregar producto -->
+            @if (canAddProducts()) {
+                <button (click)="openProductPicker()"
+                    class="w-full mt-2 flex items-center justify-center gap-2 py-3 border-2 border-dashed border-[#dbc1b2] text-[#944a00] font-bold text-sm rounded-xl hover:bg-orange-50 hover:border-[#944a00]/40 active:scale-95 transition-all">
+                    <span class="material-symbols-outlined text-sm">add</span>
+                    Agregar producto
+                </button>
             }
         </section>
 
-        <!-- Acciones principales -->
+        <!-- Modal editar línea -->
+        @if (editingLine()) {
+            <div class="fixed inset-0 z-[200] flex items-end justify-center bg-black/50 backdrop-blur-sm p-4">
+                <div class="bg-white rounded-2xl w-full max-w-sm shadow-2xl p-6 space-y-4">
+                    <h3 class="font-bold text-[#1b1c1c]">Editar línea</h3>
+                    <p class="text-xs text-slate-400 font-mono">
+                        {{ editingLine()!.stkcode }} — {{ editingLine()!.description }}
+                    </p>
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Cantidad</label>
+                        <input type="number" min="1"
+                            [ngModel]="editQty()"
+                            (ngModelChange)="editQty.set($event)"
+                            class="w-full h-11 px-4 bg-[#f6f3f2] rounded-lg border-none focus:ring-2 focus:ring-[#fb923c] text-sm font-bold"/>
+                    </div>
+                    <div class="flex gap-3 pt-2">
+                        <button (click)="closeEditModal()"
+                            class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-600 font-bold text-sm hover:bg-slate-200 transition-colors">
+                            Cancelar
+                        </button>
+                        <button (click)="confirmEdit()" [disabled]="loadingAction()"
+                            class="flex-1 py-3 rounded-xl bg-[#944a00] text-white font-bold text-sm hover:brightness-110 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                            @if (loadingAction()) {
+                                <span class="material-symbols-outlined text-sm animate-spin">refresh</span>
+                            } @else {
+                                Guardar
+                            }
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- ── ACCIONES PRINCIPALES ───────────────────────────────────── -->
         <section class="space-y-3">
             @if (canDeliver()) {
-                <button (click)="markAsDelivered()"
-                    [disabled]="loadingAction()"
+                <button (click)="markAsDelivered()" [disabled]="loadingAction()"
                     class="w-full py-4 bg-gradient-to-r from-[#944a00] to-[#fb923c] text-white rounded-xl font-bold text-sm shadow-lg shadow-orange-500/20 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
                     @if (loadingAction()) {
                         <span class="material-symbols-outlined animate-spin">refresh</span>
@@ -360,3 +431,203 @@
         </section>
     }
 </div>
+
+<!-- ── PRODUCT PICKER OVERLAY ────────────────────────────────────── -->
+@if (showProductPicker()) {
+    <div class="fixed inset-0 z-[80] bg-zinc-950/60 backdrop-blur-sm animate-in fade-in duration-200"
+        (click)="closeProductPicker()">
+    </div>
+
+    <div class="fixed inset-0 z-[90] flex flex-col pointer-events-none">
+        <div class="flex-1 pointer-events-none"></div>
+        <div class="pointer-events-auto bg-white rounded-t-[2rem] shadow-2xl flex flex-col"
+            style="max-height: 92dvh;"
+            (click)="$event.stopPropagation()">
+
+            <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[#dbc1b2]/20 shrink-0">
+                <div>
+                    <p class="text-[10px] font-black uppercase tracking-widest text-[#944a00]">Agregar producto</p>
+                    <h3 class="text-lg font-extrabold text-[#1b1c1c] leading-tight">Buscador de Catálogo</h3>
+                </div>
+                <button (click)="closeProductPicker()"
+                    class="p-2 rounded-xl hover:bg-[#f0eded] transition-colors text-[#554337]">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto">
+                <app-product-picker (productSelected)="onProductPicked($event)" />
+            </div>
+        </div>
+    </div>
+}
+
+<!-- ── MODAL CONFIRMAR PRODUCTO ───────────────────────────────────── -->
+@if (pendingProduct(); as p) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 fade-in">
+        <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden">
+
+            <!-- Imagen -->
+            <div class="bg-[#f6f3f2] p-4 flex justify-center">
+                <img [src]="p.cover_image_id || '/assets/placeholder-part.svg'"
+                     [alt]="p.description"
+                     class="h-36 object-contain"/>
+            </div>
+
+            <!-- Info -->
+            <div class="p-5 space-y-3">
+                <span class="text-[10px] font-mono font-bold text-[#944a00] bg-orange-50 px-2 py-0.5 rounded">
+                    {{ p.stockid }}
+                </span>
+                <h3 class="font-bold text-[#1b1c1c] text-base leading-snug mt-1">{{ p.description }}</h3>
+
+                <div class="flex justify-between items-center">
+                    <p class="text-2xl font-black text-[#944a00]">${{ p.price_with_tax }}</p>
+                    <span class="text-xs font-bold px-2 py-1 rounded-full"
+                        [class.bg-green-100]="p.total_quantity > 0"
+                        [class.text-green-700]="p.total_quantity > 0"
+                        [class.bg-red-100]="p.total_quantity === 0"
+                        [class.text-red-600]="p.total_quantity === 0">
+                        {{ p.total_quantity > 0 ? p.total_quantity + ' disponibles' : 'Sin stock' }}
+                    </span>
+                </div>
+
+                <!-- Cantidad -->
+                <div class="flex items-center justify-between pt-2">
+                    <span class="text-sm font-bold text-slate-600">Cantidad:</span>
+                    <div class="flex items-center gap-3">
+                        <button (click)="decrementPendingQty()" [disabled]="pendingQty() <= 1"
+                            class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-lg font-bold hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                            −
+                        </button>
+                        <span class="text-xl font-black w-8 text-center">{{ pendingQty() }}</span>
+                        <button (click)="incrementPendingQty()" [disabled]="pendingQty() >= p.total_quantity"
+                            class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-lg font-bold hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                            +
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Total línea -->
+                <div class="flex justify-between items-center pt-1 border-t border-slate-100">
+                    <span class="text-sm text-slate-500">Total línea:</span>
+                    <span class="text-lg font-black text-[#944a00]">
+                        ${{ (p.price_with_tax * pendingQty()).toFixed(2) }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Botones -->
+            <div class="flex gap-3 p-5 pt-0">
+                <button (click)="cancelPendingProduct()"
+                    class="flex-1 py-3 rounded-lg bg-slate-100 text-slate-600 font-bold text-sm hover:bg-slate-200 transition-colors">
+                    Cancelar
+                </button>
+                <button (click)="confirmPendingProduct()"
+                    [disabled]="p.total_quantity === 0 || loadingAddLine()"
+                    class="flex-1 py-3 rounded-lg bg-gradient-to-r from-[#944a00] to-[#fb923c] text-white font-bold text-sm shadow-md hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                    @if (loadingAddLine()) {
+                        <span class="material-symbols-outlined text-sm animate-spin">refresh</span>
+                    } @else {
+                        <span class="material-symbols-outlined text-sm">add</span>
+                        Agregar al pedido
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- ── MODAL STOCK INSUFICIENTE (selección múltiple) ──────────────── -->
+@if (addLineState() === 'awaiting_multi_stock_selection') {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm fade-in">
+        <div class="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+
+            <div class="sticky top-0 bg-white p-4 border-b">
+                <h3 class="text-lg font-bold text-[#1b1c1c]">Distribuir stock</h3>
+                <p class="text-sm text-slate-500">
+                    Producto: <strong class="text-[#944a00]">{{ pendingProductCode() }}</strong>
+                </p>
+            </div>
+
+            <div class="p-4 border-b bg-amber-50">
+                <label class="block text-sm font-bold mb-2">Cantidad total a agregar:</label>
+                <input type="number"
+                       [ngModel]="pendingProductQty()"
+                       (ngModelChange)="pendingProductQty.set($event)"
+                       class="w-full border rounded-lg px-3 py-2 text-lg font-bold"
+                       min="1"
+                       [max]="totalStockAvailable()"/>
+                <p class="text-xs text-slate-500 mt-1">
+                    Stock total disponible: <strong>{{ totalStockAvailable() }}</strong>
+                </p>
+            </div>
+
+            <div class="p-4 space-y-3">
+                <p class="text-xs font-bold uppercase text-slate-500">Seleccione almacenes y cantidades:</p>
+                @for (loc of pendingStockOptions(); track loc.stkloc) {
+                    <div class="border rounded-lg p-3">
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-[#1b1c1c]">{{ loc.stkloc }}</span>
+                            <span class="text-sm text-green-600">{{ loc.available }} disponibles</span>
+                        </div>
+                        <div class="mt-2">
+                            <label class="text-sm text-slate-600">Cantidad a tomar:</label>
+                            <input type="number"
+                                   [(ngModel)]="loc.selectedQty"
+                                   (change)="updateDistribution()"
+                                   [max]="loc.available" [min]="0"
+                                   class="w-full border rounded-lg px-3 py-2 mt-1"/>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="sticky bottom-0 bg-white p-4 border-t">
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-slate-500">Total solicitado:</span>
+                    <span class="font-bold">{{ pendingProductQty() }}</span>
+                </div>
+                <div class="flex justify-between text-sm mb-3">
+                    <span class="text-slate-500">Total distribuido:</span>
+                    <span class="font-bold"
+                          [class.text-red-500]="totalDistributed() !== pendingProductQty()"
+                          [class.text-green-600]="totalDistributed() === pendingProductQty()">
+                        {{ totalDistributed() }}
+                    </span>
+                </div>
+                @if (addLineError()) {
+                    <p class="text-xs text-red-500 mb-2">{{ addLineError() }}</p>
+                }
+                <div class="flex gap-2">
+                    <button (click)="closeMultiStockModal()"
+                        class="flex-1 px-4 py-2 border rounded-lg text-slate-600 font-bold">
+                        Cancelar
+                    </button>
+                    <button (click)="addLineWithMultipleSources()"
+                        [disabled]="totalDistributed() !== pendingProductQty() || loadingAddLine()"
+                        class="flex-1 bg-[#944a00] text-white px-4 py-2 rounded-lg font-bold disabled:opacity-50 flex items-center justify-center gap-2">
+                        @if (loadingAddLine()) {
+                            <span class="material-symbols-outlined text-sm animate-spin">refresh</span>
+                        } @else {
+                            Agregar {{ totalDistributed() }} unidades
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        display: inline-block;
+        line-height: 1;
+    }
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(12px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeInUp 0.3s ease forwards; }
+</style>

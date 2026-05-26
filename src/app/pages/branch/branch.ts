@@ -2,9 +2,23 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { ManagerApis } from '../../services/manager-apis';
-import { Area, Salesman } from '../../models/customer.model';
+import { Area, CustomerDetailResult, Salesman } from '../../models/customer.model';
+import { ManagerState } from '../../services/manager-state';
 
 type Modo = 'new' | 'edit';
+
+interface BranchForm {
+  branchCode:      string;
+  brname:          string;
+  area:            string;
+  salesman:        string;
+  phoneno:         string;
+  email:           string;
+  contactname:     string;
+  defaultlocation: string;
+  phoneCode:       string;   // UI only
+  phoneNumber:     string;   // UI only
+}
 
 @Component({
   selector: 'app-branch',
@@ -14,9 +28,10 @@ type Modo = 'new' | 'edit';
 })
 export class Branch implements OnInit {
 
-  private apis  = inject(ManagerApis);
+  private apis   = inject(ManagerApis);
   private router = inject(Router);
   private route  = inject(ActivatedRoute);
+  private state  = inject(ManagerState);
 
   // ── Modo y contexto ──────────────────────────────────────
   modo        = signal<Modo>('new');
@@ -28,8 +43,12 @@ export class Branch implements OnInit {
   salesman        = signal<Salesman[]>([]);
   loadingCatalogs = signal(true);
 
-  // ── Formulario ───────────────────────────────────────────
-  form = {
+  // ── Datos del usuario y cliente ──────────────────────────
+  userLoccode  = this.state.userLocation;
+  customerName = signal('');
+
+  // ── Formulario con tipado explícito ───────────────────────
+  form: BranchForm = {
     branchCode:      '',
     brname:          '',
     area:            '',
@@ -37,7 +56,9 @@ export class Branch implements OnInit {
     phoneno:         '',
     email:           '',
     contactname:     '',
-    defaultlocation: '',   // se asigna desde el backend vía req.identity
+    defaultlocation: '',
+    phoneCode:       '412',
+    phoneNumber:     '',
   };
 
   // ── Estado ───────────────────────────────────────────────
@@ -58,21 +79,40 @@ export class Branch implements OnInit {
       this.branchCode.set(branchCode);
     }
 
-    // Cargar catálogos siempre
+    // Cargar datos del cliente
+    this.cargarCliente();
+    
+    // Cargar catálogos (áreas, vendedores)
     this.apis.getBranchCatalogs().subscribe({
       next: (data) => {
         this.areas.set(data.areas);
         this.salesman.set(data.salesman);
-        this.form.area    = data.areas[0]?.areacode    ?? '';
+        this.form.area     = data.areas[0]?.areacode    ?? '';
         this.form.salesman = data.salesman[0]?.salesmancode ?? '';
         this.loadingCatalogs.set(false);
 
-        // Si es edit, cargar datos del branch después de tener catálogos
         if (this.modo() === 'edit') {
           this.cargarBranch();
         }
       },
       error: () => this.loadingCatalogs.set(false),
+    });
+  }
+
+  private cargarCliente() {
+    this.apis.getCustomer(this.debtorNo()).subscribe({
+      next: (res: CustomerDetailResult) => {
+        const customerName = res.data.customer.name;
+        this.customerName.set(customerName);
+        
+        // Si es nueva delegación, auto-asignar el nombre
+        if (this.modo() === 'new') {
+          this.form.brname = customerName;
+        }
+      },
+      error: () => {
+        console.error('Error al cargar cliente');
+      }
     });
   }
 
@@ -83,6 +123,16 @@ export class Branch implements OnInit {
         const branches = res?.data ?? res ?? [];
         const b = branches.find((x: any) => x.branchcode === this.branchCode());
         if (b) {
+          // Extraer código y número del teléfono (ej: 04121234567 -> código=412, número=1234567)
+          const phone = b.phoneno || '';
+          let phoneCode = '412';
+          let phoneNumber = '';
+          
+          if (phone.length >= 10 && phone.startsWith('0')) {
+            phoneCode = phone.substring(1, 4);   // 412, 414, etc
+            phoneNumber = phone.substring(4);    // últimos 7 dígitos
+          }
+          
           this.form = {
             branchCode:      b.branchcode,
             brname:          b.brname,
@@ -92,6 +142,8 @@ export class Branch implements OnInit {
             email:           b.email,
             contactname:     b.contactname,
             defaultlocation: b.defaultlocation,
+            phoneCode:       phoneCode,
+            phoneNumber:     phoneNumber,
           };
         }
         this.loadingData.set(false);
@@ -104,33 +156,59 @@ export class Branch implements OnInit {
   }
 
   guardar() {
-  this.error.set(null);
-  this.saving.set(true);
+    this.error.set(null);
+    
+    // Validar teléfono
+    if (this.phoneNumberInvalid()) {
+      this.error.set('El número de teléfono debe tener 7 dígitos');
+      return;
+    }
+    
+    this.saving.set(true);
 
-  const payload: any = { ...this.form };
+    const payload: any = { ...this.form };
 
-  if (!payload.defaultlocation) {
-    delete payload.defaultlocation;
+    // Construir teléfono completo y eliminar campos auxiliares
+    payload.phoneno = this.getFullPhoneNumber();
+    delete payload.phoneCode;
+    delete payload.phoneNumber;
+
+    // Asignar la ubicación del usuario logueado
+    payload.defaultlocation = this.userLoccode();
+
+    // Generar branchCode automáticamente para nueva delegación
+    if (this.modo() === 'new') {
+      payload.branchCode = `${this.userLoccode()}${this.debtorNo()}`;
+      payload.brname = this.customerName();  // nombre del cliente
+    }
+
+    const op$ = this.modo() === 'new'
+      ? this.apis.addBranch(this.debtorNo(), payload)
+      : this.apis.updateBranch(this.debtorNo(), this.branchCode(), payload);
+
+    op$.subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.router.navigate(['/customers', this.debtorNo()]);
+      },
+      error: (err: any) => {
+        this.error.set(err?.error?.mensaje ?? 'Error al guardar la delegación');
+        this.saving.set(false);
+      },
+    });
   }
-
-  const op$ = this.modo() === 'new'
-    ? this.apis.addBranch(this.debtorNo(), payload)
-    : this.apis.updateBranch(this.debtorNo(), this.branchCode(), payload);
-
-  op$.subscribe({
-    next: () => {
-      this.saving.set(false);
-      this.router.navigate(['/customers', this.debtorNo()]);
-    },
-    error: (err: any) => {
-      this.error.set(err?.error?.mensaje ?? 'Error al guardar la delegación');
-      this.saving.set(false);
-    },
-  });
-}
-
 
   cancelar() {
     this.router.navigate(['/customers', this.debtorNo()]);
+  }
+
+  getFullPhoneNumber(): string {
+    if (!this.form.phoneNumber) return '';
+    return `0${this.form.phoneCode}${this.form.phoneNumber}`;
+  }
+
+  phoneNumberInvalid(): boolean {
+    const phone = this.form.phoneNumber;
+    return !phone || phone.length !== 7 || !/^\d+$/.test(phone);
   }
 }

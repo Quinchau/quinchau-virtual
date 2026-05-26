@@ -34,7 +34,8 @@ export const appConfig: ApplicationConfig = {
     provideClientHydration(
       withEventReplay(),
       withHttpTransferCacheOptions({
-        includeRequestsWithAuthHeaders: true
+        includeRequestsWithAuthHeaders: true,
+        includeHeaders: ['X-Cart-Count']
       })
     ),
 
