@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { ManagerState } from '../../services/manager-state';
 import { AuthService } from '../../services/auth';
 import { SearchService } from '../../services/search.service'; // <-- Importamos
+import { ChatBridgeService } from '../../services/chat-bridge';
 
 @Component({
   selector: 'app-header',
@@ -12,7 +13,7 @@ import { SearchService } from '../../services/search.service'; // <-- Importamos
   templateUrl: './header.html',
 })
 export class Header implements OnDestroy {
-  // Inyección de dependencias
+  chatBridge = inject(ChatBridgeService);
   public state = inject(ManagerState);
   private authService = inject(AuthService);
   public searchService = inject(SearchService); // <-- Inyectamos

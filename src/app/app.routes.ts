@@ -27,6 +27,16 @@ export const routes: Routes = [
   { path: 'home', component: Home },
   { path: 'checkout', component: CartComponent },
   { path: 'downloader', component: Downloaders },
+  { 
+    path: 'privacy-policy', 
+    loadComponent: () => import('./pages/privacy-policy/privacy-policy').then(m => m.PrivacyPolicy) 
+  },
+
+  {
+  path: 'desk',
+  loadComponent: () => import('./pages/desk/desk').then(m => m.Desk),
+  canActivate: [adminGuard]
+},
 
   // === RUTAS CON PARÁMETROS FIJOS ===
   {

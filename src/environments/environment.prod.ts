@@ -6,5 +6,7 @@ export const environment = {
   apiUrlServer: 'https://quinchau.com/api',
   websocketUrl: 'wss://ws.quinchau.com',
   imgBannersUrl: 'https://quinchau.com/weberp/img/b',
-  imgProductsUrl: 'https://quinchau.com/weberp/img/p'
+  imgProductsUrl: 'https://quinchau.com/weberp/img/p',
+  chatbotUrl: 'https://chatbot.quinchau.com',
+  wsUrl: 'wss://chatbot-api.quinchau.com',
 };

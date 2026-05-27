@@ -12,34 +12,59 @@
       </button>
     </div>
 
-    <!-- Barra de Búsqueda - Versión Final -->
-<div class="flex-1 flex justify-end">
-  <button 
-    (click)="openGlobalSearch()"
-    class="p-2 rounded-full hover:bg-gray-100 transition-colors relative"
-    aria-label="Buscar productos">
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      class="h-5 w-5 text-gray-600" 
-      fill="none" 
-      viewBox="0 0 24 24" 
-      stroke="currentColor">
-      <path 
-        stroke-linecap="round" 
-        stroke-linejoin="round" 
-        stroke-width="2" 
-        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-    </svg>
-    
-    <!-- Indicador de búsqueda activa -->
-    @if (searchService.searchTerm()) {
-      <span class="absolute top-1 right-1 w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
-    }
-  </button>
-</div>
+    <!-- Barra de Búsqueda -->
+    <div class="flex-1 flex justify-end">
+      <button 
+        (click)="openGlobalSearch()"
+        class="p-2 rounded-full hover:bg-gray-100 transition-colors relative"
+        aria-label="Buscar productos">
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          class="h-5 w-5 text-gray-600" 
+          fill="none" 
+          viewBox="0 0 24 24" 
+          stroke="currentColor">
+          <path 
+            stroke-linecap="round" 
+            stroke-linejoin="round" 
+            stroke-width="2" 
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        
+        <!-- Indicador de búsqueda activa -->
+        @if (searchService.searchTerm()) {
+          <span class="absolute top-1 right-1 w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
+        }
+      </button>
+    </div>
 
-    <!-- Carrito -->
+    <!-- Íconos de la derecha: Chat + Carrito -->
     <div class="flex items-center gap-3">
+      
+      <!-- Chat (solo para vendedores con fullaccess 8 o 10) -->
+      @if (canSeeDashboard()) {
+        <a 
+          [routerLink]="['/desk']" 
+          (click)="chatBridge.resetUnread()" 
+          class="relative p-1 hover:bg-zinc-100 rounded-lg transition-colors"
+          aria-label="Chat de atención">
+          
+          <span class="material-symbols-outlined text-orange-500 dark:text-orange-400 text-3xl">
+            chat
+          </span>
+          
+          <!-- Badge de mensajes no leídos -->
+          @if (chatBridge.unreadCount() > 0) {
+            <span class="absolute -top-2 -right-2 bg-red-600 text-white
+                         text-[10px] font-bold px-1.5 py-0.5 rounded-full
+                         min-w-[18px] text-center animate-pulse">
+              {{ chatBridge.unreadCount() > 99 ? "99+" : chatBridge.unreadCount() }}
+            </span>
+          }
+        </a>
+      }
+
+      <!-- Carrito -->
       <a [routerLink]="['/checkout']" class="relative p-1">
         <span class="material-symbols-outlined text-orange-500 dark:text-orange-400 text-3xl">shopping_cart</span>
 
@@ -57,7 +82,6 @@
 
   </div>
 </header>
-
 
 <!-- NavigationDrawer -->
 @if (isMenuOpen()) {
@@ -90,73 +114,93 @@
         <h2 class="text-orange-600 font-black italic font-headline text-lg tracking-tight">QUINCHAU MOTO</h2>
       </div>
 
-     <!-- Navegación -->
-    <nav class="flex-1 px-4 space-y-1 overflow-y-auto">
+      <!-- Navegación -->
+      <nav class="flex-1 px-4 space-y-1 overflow-y-auto">
 
-      <a [routerLink]="['/home']" (click)="toggleMenu()"
-        class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
-        <span class="material-symbols-outlined text-xl">home</span>
-        <span class="text-sm font-bold uppercase tracking-wide">Inicio</span>
-      </a>
-
-      <a [routerLink]="['/category']" (click)="toggleMenu()"
-        class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
-        <span class="material-symbols-outlined text-xl">grid_view</span>
-        <span class="text-sm font-bold uppercase tracking-wide">Categorías</span>
-      </a>
-
-      <a [routerLink]="['/checkout']" (click)="toggleMenu()"
-        class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
-        <span class="material-symbols-outlined text-xl">shopping_cart</span>
-        <span class="text-sm font-bold uppercase tracking-wide">Carrito</span>
-
-        @if (cartCount() > 0) {
-          <span class="ml-auto bg-orange-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">
-            {{ cartCount() }}
-          </span>
-        }
-      </a>
-
-      @if (canSeeDashboard()) {
-
-        <!-- DASHBOARD -->
-        <a [routerLink]="['/dashboard']" (click)="toggleMenu()"
+        <a [routerLink]="['/home']" (click)="toggleMenu()"
           class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
-          <span class="material-symbols-outlined text-xl">dashboard</span>
-          <span class="text-sm font-bold uppercase tracking-wide">Dashboard</span>
+          <span class="material-symbols-outlined text-xl">home</span>
+          <span class="text-sm font-bold uppercase tracking-wide">Inicio</span>
         </a>
 
-        <!-- CUSTOMER -->
-        @if (canSeeCustomer()) {
-          <a [routerLink]="['/customer']" (click)="toggleMenu()"
+        <a [routerLink]="['/category']" (click)="toggleMenu()"
+          class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
+          <span class="material-symbols-outlined text-xl">grid_view</span>
+          <span class="text-sm font-bold uppercase tracking-wide">Categorías</span>
+        </a>
+
+        <a [routerLink]="['/checkout']" (click)="toggleMenu()"
+          class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
+          <span class="material-symbols-outlined text-xl">shopping_cart</span>
+          <span class="text-sm font-bold uppercase tracking-wide">Carrito</span>
+
+          @if (cartCount() > 0) {
+            <span class="ml-auto bg-orange-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">
+              {{ cartCount() }}
+            </span>
+          }
+        </a>
+
+        <!-- PRIVACY POLICY -->
+        <a [routerLink]="['/privacy-policy']" (click)="toggleMenu()"
+          class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-500 dark:text-zinc-400 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium border-t border-zinc-100 dark:border-zinc-900 mt-2 pt-3">
+          <span class="material-symbols-outlined text-xl">gavel</span>
+          <span class="text-sm font-bold uppercase tracking-wide">Privacidad</span>
+        </a>
+
+        <!-- Sección de Administración (solo para vendedores) -->
+        @if (canSeeDashboard()) {
+
+          <!-- Chat Desk -->
+          <a [routerLink]="['/desk']" (click)="toggleMenu(); chatBridge.resetUnread()"
             class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
-            <span class="material-symbols-outlined text-xl">badge</span>
-            <span class="text-sm font-bold uppercase tracking-wide">Clientes</span>
+            <span class="material-symbols-outlined text-xl">chat</span>
+            <span class="text-sm font-bold uppercase tracking-wide">Chat</span>
+            
+            @if (chatBridge.unreadCount() > 0) {
+              <span class="ml-auto bg-red-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">
+                {{ chatBridge.unreadCount() > 99 ? "99+" : chatBridge.unreadCount() }}
+              </span>
+            }
           </a>
+
+          <!-- DASHBOARD -->
+          <a [routerLink]="['/dashboard']" (click)="toggleMenu()"
+            class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
+            <span class="material-symbols-outlined text-xl">dashboard</span>
+            <span class="text-sm font-bold uppercase tracking-wide">Dashboard</span>
+          </a>
+
+          <!-- CUSTOMER -->
+          @if (canSeeCustomer()) {
+            <a [routerLink]="['/customer']" (click)="toggleMenu()"
+              class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
+              <span class="material-symbols-outlined text-xl">badge</span>
+              <span class="text-sm font-bold uppercase tracking-wide">Clientes</span>
+            </a>
+          }
+                  
+          <!-- ORDERS -->
+          @if (canSeeInvoice()) {
+            <a [routerLink]="['/order-list']" (click)="toggleMenu()"
+              class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
+              <span class="material-symbols-outlined text-xl">badge</span>
+              <span class="text-sm font-bold uppercase tracking-wide">Ordenes</span>
+            </a>
+          }
+
+          <!-- INVOICE -->
+          @if (canSeeInvoice()) {
+            <a [routerLink]="['/invoice']" (click)="toggleMenu()"
+              class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
+              <span class="material-symbols-outlined text-xl">receipt</span>
+              <span class="text-sm font-bold uppercase tracking-wide">Facturación</span>
+            </a>
+          }
+
         }
 
-        <!-- ORDERS -->
-        @if (canSeeInvoice()) {
-          <a [routerLink]="['/order-list']" (click)="toggleMenu()"
-            class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
-            <span class="material-symbols-outlined text-xl">badge</span>
-            <span class="text-sm font-bold uppercase tracking-wide">Ordenes</span>
-          </a>
-        }
-
-        <!-- INVOICE -->
-        @if (canSeeInvoice()) {
-          <a [routerLink]="['/invoice']" (click)="toggleMenu()"
-            class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
-            <span class="material-symbols-outlined text-xl">badge</span>
-            <span class="text-sm font-bold uppercase tracking-wide">Facturacion</span>
-          </a>
-        }
-
-      }
-
-    </nav>
-
+      </nav>
 
       <!-- Footer del drawer -->
       <div class="px-6 pt-6 border-t border-zinc-200 dark:border-zinc-800">
