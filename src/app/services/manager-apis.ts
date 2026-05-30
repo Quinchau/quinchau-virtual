@@ -31,6 +31,10 @@ export class ManagerApis {
       : environment.apiUrlBrowser; 
   }
 
+  private get imgUploadUrl() {
+  return environment.imgUploadUrl;
+}
+
   public getTransfers(): Observable<DashboardResponse> {
     return this.http.get<DashboardResponse>(`${this.nodeBaseUrl}/transfers`, {
       withCredentials: true
@@ -500,5 +504,93 @@ public getOrderDetail(orderno: number): Observable<{ exito: boolean; data: any }
             formData
         );
     }
+
+    // Productos Admin - Listado
+getProductsAdmin(params: { search?: string; stockCat?: string; page: number; limit: number }) {
+  const queryParams = new URLSearchParams();
+  if (params.search) queryParams.set('search', params.search);
+  if (params.stockCat) queryParams.set('stockCat', params.stockCat);
+  queryParams.set('page', params.page.toString());
+  queryParams.set('limit', params.limit.toString());
+  
+  return this.http.get<any>(`${this.nodeBaseUrl}/products/admin?${queryParams.toString()}`, {
+    withCredentials: true
+  });
+}
+
+// Productos Admin - Obtener uno
+getProductAdmin(stockId: string) {
+  return this.http.get<any>(`${this.nodeBaseUrl}/products/${stockId}/admin`, {
+    withCredentials: true
+  });
+}
+
+// Productos Admin - Crear
+createProduct(formData: FormData) {
+  return this.http.post<any>(`${this.nodeBaseUrl}/products`, formData, {
+    withCredentials: true
+  });
+}
+
+// Productos Admin - Actualizar
+updateProduct(stockId: string, data: any) {
+  return this.http.put<any>(`${this.nodeBaseUrl}/products/${stockId}`, data, {
+    withCredentials: true
+  });
+}
+
+addProductImage(stockId: string, file: File) {
+  const formData = new FormData();
+  formData.append('image', file);
+  return this.http.post<any>(`${this.imgUploadUrl}/products/${stockId}/images`, formData, {
+    withCredentials: true
+  });
+}
+
+deleteProductImage(stockId: string, imageId: number) {
+  return this.http.delete<any>(`${this.imgUploadUrl}/products/${stockId}/images/${imageId}`, {
+    withCredentials: true
+  });
+}
+
+setPrimaryImage(stockId: string, imageId: number) {
+  return this.http.put<any>(`${this.imgUploadUrl}/products/${stockId}/images/${imageId}/primary`, {}, {
+    withCredentials: true
+  });
+}
+
+getProductCategories() {
+  return this.http.get(`${this.nodeBaseUrl}/products/categories`, {
+    withCredentials: true
+  });
+}
+
+// Obtener unidades de medida
+getUnits() {
+  return this.http.get(`${this.nodeBaseUrl}/products/units`, {
+    withCredentials: true
+  });
+}
+
+// Obtener categorías de impuestos
+getTaxCategories() {
+  return this.http.get(`${this.nodeBaseUrl}/products/tax-categories`, {
+    withCredentials: true
+  });
+}
+
+editProductImage(stockId: string, imageId: number, payload: {
+  operation: string;
+  label_text?: string;
+  dimensions?: any[];
+  image_base64?: string;
+}) {
+  return this.http.post<any>(
+    `${this.nodeBaseUrl}/products/${stockId}/images/${imageId}/edit`,
+    payload,
+    { withCredentials: true }
+  );
+}
+
 
 }

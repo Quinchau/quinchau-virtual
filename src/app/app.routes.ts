@@ -36,7 +36,22 @@ export const routes: Routes = [
   path: 'desk',
   loadComponent: () => import('./pages/desk/desk').then(m => m.Desk),
   canActivate: [adminGuard]
-},
+  },
+   {
+    path: 'product-admin',
+    loadComponent: () => import('./pages/product-admin/product-admin').then(m => m.ProductAdminPage),
+    canActivate: [adminGuard]
+  },
+  {
+    path: 'product-create',
+    loadComponent: () => import('./pages/product-create/product-create').then(m => m.ProductCreatePage),
+    canActivate: [adminGuard]
+  },
+  {
+    path: 'product-edit/:stockId',
+    loadComponent: () => import('./pages/product-edit/product-edit').then(m => m.ProductEditPage),
+    canActivate: [adminGuard]
+  },
 
   // === RUTAS CON PARÁMETROS FIJOS ===
   {

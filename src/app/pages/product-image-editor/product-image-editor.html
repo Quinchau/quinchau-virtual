@@ -1,0 +1,71 @@
+<div class="modal-fullscreen">
+  <button type="button" class="close-btn" (click)="closeModal()">&times;</button>
+  
+  <div class="toolbar">
+    <button type="button" class="btn-primary" (click)="startRemoveBg()" [disabled]="mode === 'processing'">
+      🖌️ Remove Background
+    </button>
+    <button type="button" class="btn-success" (click)="startDimensions()" [disabled]="mode === 'processing'">
+      📏 Cotas
+    </button>
+    <button type="button" class="btn-warning" (click)="startLabel()" [disabled]="mode === 'processing'">
+      🏷️ Etiqueta
+    </button>
+  </div>
+  
+  <div class="canvas-container">
+    <canvas #canvas></canvas>
+    <div class="spinner" *ngIf="mode === 'processing'">
+      ⏳ {{ mensaje }}
+    </div>
+  </div>
+  
+  <!-- Panel de configuración según modo -->
+  <div class="panel-config" *ngIf="mode === 'dimensions'">
+    <span>📍 {{ mensaje }}</span>
+      <input 
+        *ngIf="currentPointA && currentPointB"
+        type="text" 
+        [(ngModel)]="measureText" 
+        placeholder="Ej: 125 mm"
+        (keyup.enter)="$event.preventDefault(); addDimension()"
+      />
+    <button type="button" *ngIf="currentPointA && currentPointB" class="btn-primary" (click)="addDimension()">
+      + Agregar cota
+    </button>
+  </div>
+  
+  <div class="panel-config" *ngIf="mode === 'label'">
+    <input 
+      type="text" 
+      [(ngModel)]="labelText" 
+      placeholder="Texto de la etiqueta (ej: Foto referencial)"
+    />
+    <button type="button" class="btn-primary" (click)="applyLabel()">Aplicar etiqueta</button>
+  </div>
+  
+  <!-- Lista de cotas agregadas -->
+  <div class="dimensions-list" *ngIf="mode === 'dimensions' && dimensions.length > 0">
+    <div *ngFor="let dim of dimensions; let i = index" class="dimension-item">
+      <span>{{ dim.text }}</span>
+      <button type="button" class="btn-danger" (click)="removeDimension(i)">Eliminar</button>
+    </div>
+    <button type="button" class="btn-success" (click)="applyDimensions()">✅ Aplicar todas las cotas</button>
+  </div>
+  
+  <!-- Footer para preview -->
+  <div class="footer" *ngIf="mode === 'preview'">
+    <button type="button" class="btn-secondary" (click)="undo()">↩️ Deshacer</button>
+    <button type="button" class="btn-success" (click)="saveImage()">💾 Usar esta imagen</button>
+  </div>
+  
+  <div class="footer" *ngIf="mode !== 'preview' && mode !== 'processing'">
+    <button type="button" class="btn-secondary" (click)="closeModal()">Cancelar</button>
+  </div>
+  
+  <!-- Mensaje de error -->
+  <div class="mensaje-error" *ngIf="mensajeError" style="position: fixed; bottom: 20px; left: 20px; background: red; color: white; padding: 10px; border-radius: 5px;">
+    ❌ {{ mensajeError }}
+    <button type="button" (click)="mensajeError = ''" style="margin-left: 10px;">✖</button>
+  </div>
+</div>
