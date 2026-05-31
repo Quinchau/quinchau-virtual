@@ -40,7 +40,29 @@
     </div>
 
     <div class="canvas-container">
-      <canvas #canvas></canvas>
+      <canvas #canvas
+             [class.point-selection-active]="isPointSelectionActive"></canvas>
+
+      <!-- Floating blocker button for dimensions -->
+      <div class="dimension-blocker" 
+           *ngIf="mode === 'dimensions' && dimensionState !== 'completed'"
+           [class.waiting-a]="dimensionState === 'waiting_a'"
+           [class.waiting-b]="dimensionState === 'waiting_b'"
+           [class.disabled]="isPointSelectionActive"
+           (click)="onBlockerClick()">
+        <span class="status-icon" *ngIf="dimensionState === 'waiting_a' && !isPointSelectionActive">🔴</span>
+        <span class="status-icon" *ngIf="dimensionState === 'waiting_a' && isPointSelectionActive">⏺</span>
+        <span class="status-icon" *ngIf="dimensionState === 'waiting_b' && !isPointSelectionActive">🟢</span>
+        <span class="status-icon" *ngIf="dimensionState === 'waiting_b' && isPointSelectionActive">⏺</span>
+        <span class="status-text">
+          <ng-container *ngIf="dimensionState === 'waiting_a'">
+            {{ isPointSelectionActive ? '🔴 MARCA PUNTO A' : 'ACTIVAR PUNTO A' }}
+          </ng-container>
+          <ng-container *ngIf="dimensionState === 'waiting_b'">
+            {{ isPointSelectionActive ? '🟢 MARCA PUNTO B' : 'ACTIVAR PUNTO B' }}
+          </ng-container>
+        </span>
+      </div>
 
       <div class="floating-crop-icon"
            *ngIf="mode === 'idle' || mode === 'preview'"
@@ -55,18 +77,22 @@
     </div>
 
     <!-- Panel dimensiones -->
-    <div class="panel-config" *ngIf="mode === 'dimensions'">
-      <span>📍 {{ mensaje }}</span>
+    <div class="panel-config" *ngIf="mode === 'dimensions' && currentPointA && currentPointB">
+      <span>📏 {{ mensaje }}</span>
       <input
-        *ngIf="currentPointA && currentPointB"
         type="text"
         [(ngModel)]="measureText"
         placeholder="Ej: 125 mm"
         (keyup.enter)="$event.preventDefault(); addDimension()"
       />
-      <button type="button" *ngIf="currentPointA && currentPointB" class="btn-primary" (click)="addDimension()">
+      <button type="button" class="btn-primary" (click)="addDimension()">
         + Agregar cota
       </button>
+    </div>
+
+    <!-- Panel dimensiones (sin puntos marcados) -->
+    <div class="panel-config" *ngIf="mode === 'dimensions' && (!currentPointA || !currentPointB)">
+      <span>ℹ️ {{ mensaje }}</span>
     </div>
 
     <!-- Panel etiqueta -->
@@ -106,7 +132,7 @@
 
     <!-- Footer: dimensions / label -->
     <div class="footer" *ngIf="mode === 'dimensions' || mode === 'label'">
-      <button type="button" class="btn-secondary" (click)="closeModal()">Cancelar</button>
+      <button type="button" class="btn-secondary" (click)="undo()">Cancelar</button>
     </div>
 
     <!-- Footer: processing (vacío para mantener layout) -->

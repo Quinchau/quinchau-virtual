@@ -48,7 +48,13 @@ type EditorMode = 'idle' | 'remove_bg' | 'dimensions' | 'label' | 'processing' |
     flex: 1; position: relative; overflow: hidden;
     background: #333; touch-action: none;
   }
-  canvas { position: absolute; top: 0; left: 0; cursor: crosshair; }
+  canvas { 
+    position: absolute; top: 0; left: 0; 
+    cursor: grab;
+  }
+  canvas:active {
+    cursor: grabbing;
+  }
   .cropper-wrapper {
     flex: 1; display: flex; flex-direction: column;
     background: #1a1a1a; overflow: hidden; min-height: 0;
@@ -112,6 +118,61 @@ type EditorMode = 'idle' | 'remove_bg' | 'dimensions' | 'label' | 'processing' |
     box-shadow: 0 2px 8px rgba(0,0,0,0.3); transition: transform 0.2s;
   }
   .floating-crop-icon:hover { transform: scale(1.1); }
+  
+  /* Floating dimension blocker button */
+  .dimension-blocker {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    border-radius: 40px;
+    padding: 12px 20px;
+    z-index: 20;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    font-weight: bold;
+    font-size: 16px;
+    text-align: center;
+    min-width: 140px;
+  }
+  .dimension-blocker:hover {
+    transform: scale(1.02);
+    background: rgba(0, 0, 0, 0.95);
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+  .dimension-blocker.waiting-a {
+    background: rgba(220, 53, 69, 0.9);
+    border-color: #ff6b6b;
+    animation: pulse 1.5s infinite;
+  }
+  .dimension-blocker.waiting-b {
+    background: rgba(40, 167, 69, 0.9);
+    border-color: #6bff6b;
+    animation: pulse 1.5s infinite;
+  }
+  .dimension-blocker.disabled {
+    background: rgba(100, 100, 100, 0.7);
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  .dimension-blocker .status-icon {
+    font-size: 18px;
+    margin-right: 8px;
+  }
+  .dimension-blocker .status-text {
+    letter-spacing: 0.5px;
+  }
+  .point-selection-active {
+    cursor: crosshair !important;
+  }
   `]
 })
 export class ProductImageEditor implements OnInit, OnDestroy {
@@ -149,7 +210,8 @@ export class ProductImageEditor implements OnInit, OnDestroy {
   cropLoaded = false;
 
   // ── Dimensiones ───────────────────────────────────────
-  pendingPoint: 'A' | 'B' | null = null;
+  dimensionState: 'waiting_a' | 'waiting_b' | 'completed' | null = null;
+  isPointSelectionActive: boolean = false; // NEW: Controls if canvas clicks should register points
   currentPointA: Point | null = null;
   currentPointB: Point | null = null;
   dimensions: Dimension[] = [];
@@ -266,11 +328,18 @@ export class ProductImageEditor implements OnInit, OnDestroy {
     };
   }
 
-  // ── Touch events ──────────────────────────────────────
+  // ── Touch events (always pan/zoom, point selection only when active) ──
   private onTouchStart(event: TouchEvent) {
     event.preventDefault();
+    
+    // If point selection is active, handle point marking instead of panning
+    if (this.mode === 'dimensions' && this.isPointSelectionActive && event.touches.length === 1) {
+      this.markPoint(event);
+      return;
+    }
+    
+    // Otherwise handle pan/zoom
     if (event.touches.length === 1) {
-      if (this.mode === 'dimensions') return;
       this.isDragging = true;
       const coords = this.getCanvasCoordinates(event);
       this.dragStart = { x: coords.x, y: coords.y };
@@ -300,45 +369,25 @@ export class ProductImageEditor implements OnInit, OnDestroy {
   }
 
   private onTouchEnd(event: TouchEvent) {
-    if (event.touches.length === 0 && this.mode === 'dimensions' && !this.isDragging) {
-      const coords = this.getCanvasCoordinates(event.changedTouches[0] as any);
-      const point  = this.getNormalizedCoordinates(coords.x, coords.y);
-      setTimeout(() => {
-        if (this.pendingPoint === 'A') {
-          this.currentPointA = point; this.pendingPoint = 'B';
-          this.mensaje = 'Toque el segundo extremo';
-        } else if (this.pendingPoint === 'B') {
-          this.currentPointB = point; this.pendingPoint = null;
-          this.mensaje = 'Ingrese la medida en mm';
-        }
-        this.drawImage(); this.cdr.detectChanges();
-      });
-    }
     this.isDragging = false;
   }
 
-  // ── Mouse events ──────────────────────────────────────
+  // ── Mouse events (always pan/zoom, point selection only when active) ──
   private onMouseDown(event: MouseEvent) {
-    if (this.mode === 'dimensions') {
-      const coords = this.getCanvasCoordinates(event);
-      const point  = this.getNormalizedCoordinates(coords.x, coords.y);
-      if (this.pendingPoint === 'A') {
-        this.currentPointA = point; this.pendingPoint = 'B';
-        this.mensaje = 'Toque el segundo extremo';
-      } else if (this.pendingPoint === 'B') {
-        this.currentPointB = point; this.pendingPoint = null;
-        this.mensaje = 'Ingrese la medida en mm';
-      }
-      this.drawImage();
-    } else {
-      this.isDragging = true;
-      this.dragStart  = { x: event.offsetX, y: event.offsetY };
-      this.initialTransform = { ...this.transform };
+    // If point selection is active, handle point marking
+    if (this.mode === 'dimensions' && this.isPointSelectionActive) {
+      this.markPoint(event);
+      return;
     }
+    
+    // Otherwise handle panning
+    this.isDragging = true;
+    this.dragStart  = { x: event.offsetX, y: event.offsetY };
+    this.initialTransform = { ...this.transform };
   }
 
   private onMouseMove(event: MouseEvent) {
-    if (this.isDragging && this.mode !== 'dimensions') {
+    if (this.isDragging) {
       this.transform.offsetX = this.initialTransform.offsetX + (event.offsetX - this.dragStart.x);
       this.transform.offsetY = this.initialTransform.offsetY + (event.offsetY - this.dragStart.y);
       this.drawImage();
@@ -346,6 +395,104 @@ export class ProductImageEditor implements OnInit, OnDestroy {
   }
 
   private onMouseUp() { this.isDragging = false; }
+
+  // ── Mark point on canvas (only called when point selection is active) ──
+  private markPoint(event: MouseEvent | TouchEvent) {
+    let clientX: number, clientY: number;
+    
+    if (event instanceof TouchEvent) {
+      if (event.touches.length === 0) return;
+      clientX = event.touches[0].clientX;
+      clientY = event.touches[0].clientY;
+    } else {
+      clientX = event.clientX;
+      clientY = event.clientY;
+    }
+    
+    const canvas = this.canvasRef.nativeElement;
+    const rect = canvas.getBoundingClientRect();
+    const canvasX = (clientX - rect.left) * (canvas.width / rect.width);
+    const canvasY = (clientY - rect.top) * (canvas.height / rect.height);
+    const point = this.getNormalizedCoordinates(canvasX, canvasY);
+    
+    if (this.dimensionState === 'waiting_a') {
+      this.currentPointA = point;
+      this.dimensionState = 'waiting_b';
+      this.isPointSelectionActive = false; // Deactivate after marking
+      this.mensaje = '✅ Punto A marcado. Click en el bloqueador para activar Punto B';
+      this.drawImage();
+      this.cdr.detectChanges();
+    } else if (this.dimensionState === 'waiting_b') {
+      this.currentPointB = point;
+      this.dimensionState = 'completed';
+      this.isPointSelectionActive = false; // Deactivate after marking
+      this.mensaje = '✅ Punto B marcado. Ingrese la medida en el campo inferior';
+      this.drawImage();
+      this.cdr.detectChanges();
+    }
+  }
+
+  // ── Click on blocker button to activate point selection ──
+  onBlockerClick() {
+    if (this.mode !== 'dimensions') return;
+    
+    if (this.dimensionState === 'waiting_a') {
+      this.isPointSelectionActive = true;
+      this.mensaje = '🔴 Modo punto A activado. Toque la imagen para marcar el PUNTO A';
+      this.cdr.detectChanges();
+    } else if (this.dimensionState === 'waiting_b') {
+      this.isPointSelectionActive = true;
+      this.mensaje = '🟢 Modo punto B activado. Toque la imagen para marcar el PUNTO B';
+      this.cdr.detectChanges();
+    }
+  }
+
+  addDimension() {
+    if (this.currentPointA && this.currentPointB && this.measureText) {
+      this.dimensions.push({ pointA: this.currentPointA, pointB: this.currentPointB, text: this.measureText });
+      // Reset for next dimension
+      this.currentPointA = null;
+      this.currentPointB = null;
+      this.measureText = '';
+      this.dimensionState = 'waiting_a';
+      this.isPointSelectionActive = false;
+      this.mensaje = '📍 Click en el bloqueador para activar PUNTO A';
+      this.drawImage();
+      this.cdr.detectChanges();
+    } else {
+      if (!this.measureText) {
+        this.mensajeError = 'Ingrese la medida en mm';
+      } else {
+        this.mensajeError = 'Debe marcar ambos puntos antes de agregar';
+      }
+    }
+  }
+
+  removeDimension(index: number) { this.dimensions.splice(index, 1); this.drawImage(); }
+
+  applyDimensions() {
+    if (this.dimensions.length === 0) { this.mensajeError = 'Agregue al menos una cota'; return; }
+    this.mode = 'processing'; this.mensaje = 'Aplicando cotas...'; this.cdr.detectChanges();
+    const payload = this.dimensions.map(d => ({
+      x1: d.pointA.x, y1: d.pointA.y, x2: d.pointB.x, y2: d.pointB.y, text: d.text
+    }));
+    this.managerApis.editProductImage(this.stockId, this.imageId, { operation: 'dimensions', dimensions: payload }).subscribe({
+      next: (res) => {
+        this.currentImageBase64 = res.image_base64;
+        this.image.onload = () => {
+          this.imageWidth = this.image.width; this.imageHeight = this.image.height;
+          this.initCanvas(); this.drawImage();
+          this.mode = 'preview'; this.mensaje = 'Cotas aplicadas. ¿Desea guardar?';
+          this.cdr.detectChanges();
+        };
+        this.image.src = `data:image/jpeg;base64,${res.image_base64}`;
+      },
+      error: (err) => setTimeout(() => {
+        this.mensajeError = err.error?.error || 'Error al aplicar cotas';
+        this.mode = 'dimensions'; this.cdr.detectChanges();
+      })
+    });
+  }
 
   startCropOnly() {
      if (!this.currentImageBase64) {
@@ -412,49 +559,16 @@ export class ProductImageEditor implements OnInit, OnDestroy {
     });
   }
 
-  // ── Dimensiones ───────────────────────────────────────
+  // ── Dimensiones (start) ───────────────────────────────────────
   startDimensions() {
-    this.mode = 'dimensions'; this.pendingPoint = 'A';
-    this.currentPointA = null; this.currentPointB = null;
-    this.mensaje = 'Toque el primer extremo de la cota';
-  }
-
-  addDimension() {
-    if (this.currentPointA && this.currentPointB && this.measureText) {
-      this.dimensions.push({ pointA: this.currentPointA, pointB: this.currentPointB, text: this.measureText });
-      setTimeout(() => {
-        this.currentPointA = null; this.currentPointB = null;
-        this.measureText = ''; this.pendingPoint = 'A';
-        this.mensaje = 'Toque el primer extremo de la siguiente cota';
-        this.drawImage(); this.cdr.detectChanges();
-      });
-    }
-  }
-
-  removeDimension(index: number) { this.dimensions.splice(index, 1); this.drawImage(); }
-
-  applyDimensions() {
-    if (this.dimensions.length === 0) { this.mensajeError = 'Agregue al menos una cota'; return; }
-    this.mode = 'processing'; this.mensaje = 'Aplicando cotas...'; this.cdr.detectChanges();
-    const payload = this.dimensions.map(d => ({
-      x1: d.pointA.x, y1: d.pointA.y, x2: d.pointB.x, y2: d.pointB.y, text: d.text
-    }));
-    this.managerApis.editProductImage(this.stockId, this.imageId, { operation: 'dimensions', dimensions: payload }).subscribe({
-      next: (res) => {
-        this.currentImageBase64 = res.image_base64;
-        this.image.onload = () => {
-          this.imageWidth = this.image.width; this.imageHeight = this.image.height;
-          this.initCanvas(); this.drawImage();
-          this.mode = 'preview'; this.mensaje = 'Cotas aplicadas. ¿Desea guardar?';
-          this.cdr.detectChanges();
-        };
-        this.image.src = `data:image/jpeg;base64,${res.image_base64}`;
-      },
-      error: (err) => setTimeout(() => {
-        this.mensajeError = err.error?.error || 'Error al aplicar cotas';
-        this.mode = 'dimensions'; this.cdr.detectChanges();
-      })
-    });
+    this.mode = 'dimensions';
+    this.dimensionState = 'waiting_a';
+    this.isPointSelectionActive = false;
+    this.currentPointA = null;
+    this.currentPointB = null;
+    this.dimensions = [];
+    this.measureText = '';
+    this.mensaje = '📍 Click en el bloqueador flotante para activar la marca del PUNTO A';
   }
 
   // ── Etiqueta ──────────────────────────────────────────
@@ -503,6 +617,8 @@ export class ProductImageEditor implements OnInit, OnDestroy {
     this.loadImage(); this.mode = 'idle';
     this.dimensions = []; this.currentPointA = null;
     this.currentPointB = null; this.labelText = ''; this.mensaje = '';
+    this.dimensionState = null;
+    this.isPointSelectionActive = false;
   }
 
   // ── Eliminar y portada (delegados al uploader) ────────
