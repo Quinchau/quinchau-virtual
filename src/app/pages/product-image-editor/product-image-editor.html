@@ -1,71 +1,123 @@
 <div class="modal-fullscreen">
   <button type="button" class="close-btn" (click)="closeModal()">&times;</button>
-  
-  <div class="toolbar">
-    <button type="button" class="btn-primary" (click)="startRemoveBg()" [disabled]="mode === 'processing'">
-      🖌️ Remove Background
-    </button>
-    <button type="button" class="btn-success" (click)="startDimensions()" [disabled]="mode === 'processing'">
-      📏 Cotas
-    </button>
-    <button type="button" class="btn-warning" (click)="startLabel()" [disabled]="mode === 'processing'">
-      🏷️ Etiqueta
-    </button>
-  </div>
-  
-  <div class="canvas-container">
-    <canvas #canvas></canvas>
-    <div class="spinner" *ngIf="mode === 'processing'">
-      ⏳ {{ mensaje }}
+
+  <!-- ══ MODO CROP ══ -->
+  <ng-container *ngIf="cropMode">
+    <div class="cropper-wrapper">
+      <image-cropper
+        [imageBase64]="cropImageBase64"
+        [maintainAspectRatio]="true"
+        [aspectRatio]="1"
+        format="jpeg"
+        output="base64"
+        (imageCropped)="onImageCropped($event)"
+        (imageLoaded)="cropLoaded = true"
+      />
     </div>
-  </div>
-  
-  <!-- Panel de configuración según modo -->
-  <div class="panel-config" *ngIf="mode === 'dimensions'">
-    <span>📍 {{ mensaje }}</span>
-      <input 
+
+    <!-- Hint -->
+    <p class="text-center text-gray-400 text-xs py-2 bg-gray-900">
+      Redimensioná desde las esquinas · Proporción 1:1
+    </p>
+
+    <div class="crop-actions">
+      <button type="button" class="btn-secondary" (click)="cancelCrop()">Cancelar</button>
+      <button type="button" class="btn-primary"
+              [disabled]="!cropLoaded"
+              (click)="applyCrop()">
+        ✂️ Aplicar recorte
+      </button>
+    </div>
+  </ng-container>
+
+  <!-- ══ MODO NORMAL ══ -->
+  <ng-container *ngIf="!cropMode">
+
+    <div class="toolbar">
+      <button type="button" class="btn-primary"  (click)="startRemoveBg()"   [disabled]="mode === 'processing'">🖌️ Remove BG</button>
+      <button type="button" class="btn-success"  (click)="startDimensions()" [disabled]="mode === 'processing'">📏 Cotas</button>
+      <button type="button" class="btn-warning"  (click)="startLabel()"      [disabled]="mode === 'processing'">🏷️ Etiqueta</button>
+    </div>
+
+    <div class="canvas-container">
+      <canvas #canvas></canvas>
+
+      <div class="floating-crop-icon"
+           *ngIf="mode === 'idle' || mode === 'preview'"
+           (click)="startCropOnly()"
+           title="Recortar imagen">
+        ✂️
+      </div>
+
+      <div class="spinner" *ngIf="mode === 'processing'">
+        ⏳ {{ mensaje }}
+      </div>
+    </div>
+
+    <!-- Panel dimensiones -->
+    <div class="panel-config" *ngIf="mode === 'dimensions'">
+      <span>📍 {{ mensaje }}</span>
+      <input
         *ngIf="currentPointA && currentPointB"
-        type="text" 
-        [(ngModel)]="measureText" 
+        type="text"
+        [(ngModel)]="measureText"
         placeholder="Ej: 125 mm"
         (keyup.enter)="$event.preventDefault(); addDimension()"
       />
-    <button type="button" *ngIf="currentPointA && currentPointB" class="btn-primary" (click)="addDimension()">
-      + Agregar cota
-    </button>
-  </div>
-  
-  <div class="panel-config" *ngIf="mode === 'label'">
-    <input 
-      type="text" 
-      [(ngModel)]="labelText" 
-      placeholder="Texto de la etiqueta (ej: Foto referencial)"
-    />
-    <button type="button" class="btn-primary" (click)="applyLabel()">Aplicar etiqueta</button>
-  </div>
-  
-  <!-- Lista de cotas agregadas -->
-  <div class="dimensions-list" *ngIf="mode === 'dimensions' && dimensions.length > 0">
-    <div *ngFor="let dim of dimensions; let i = index" class="dimension-item">
-      <span>{{ dim.text }}</span>
-      <button type="button" class="btn-danger" (click)="removeDimension(i)">Eliminar</button>
+      <button type="button" *ngIf="currentPointA && currentPointB" class="btn-primary" (click)="addDimension()">
+        + Agregar cota
+      </button>
     </div>
-    <button type="button" class="btn-success" (click)="applyDimensions()">✅ Aplicar todas las cotas</button>
-  </div>
-  
-  <!-- Footer para preview -->
-  <div class="footer" *ngIf="mode === 'preview'">
-    <button type="button" class="btn-secondary" (click)="undo()">↩️ Deshacer</button>
-    <button type="button" class="btn-success" (click)="saveImage()">💾 Usar esta imagen</button>
-  </div>
-  
-  <div class="footer" *ngIf="mode !== 'preview' && mode !== 'processing'">
-    <button type="button" class="btn-secondary" (click)="closeModal()">Cancelar</button>
-  </div>
-  
-  <!-- Mensaje de error -->
-  <div class="mensaje-error" *ngIf="mensajeError" style="position: fixed; bottom: 20px; left: 20px; background: red; color: white; padding: 10px; border-radius: 5px;">
+
+    <!-- Panel etiqueta -->
+    <div class="panel-config" *ngIf="mode === 'label'">
+      <input type="text" [(ngModel)]="labelText" placeholder="Texto de la etiqueta (ej: Foto referencial)" />
+      <button type="button" class="btn-primary" (click)="applyLabel()">Aplicar etiqueta</button>
+    </div>
+
+    <!-- Lista de cotas -->
+    <div class="dimensions-list" *ngIf="mode === 'dimensions' && dimensions.length > 0">
+      <div *ngFor="let dim of dimensions; let i = index" class="dimension-item">
+        <span>{{ dim.text }}</span>
+        <button type="button" class="btn-danger" (click)="removeDimension(i)">Eliminar</button>
+      </div>
+      <button type="button" class="btn-success" (click)="applyDimensions()">✅ Aplicar todas las cotas</button>
+    </div>
+
+    <!-- Footer: modo preview -->
+    <div class="footer" *ngIf="mode === 'preview'">
+      <button type="button" class="btn-secondary" (click)="undo()">↩️ Deshacer</button>
+      <button type="button" class="btn-success"   (click)="saveImage()">💾 Guardar imagen</button>
+    </div>
+
+    <!-- Footer: modo idle — portada + eliminar -->
+    <div class="footer footer-idle" *ngIf="mode === 'idle'">
+      <button type="button" class="btn-cover" (click)="requestSetCover()" *ngIf="!isCover">
+        ★ Establecer portada
+      </button>
+      <span class="cover-badge" *ngIf="isCover">★ Portada</span>
+      <button type="button" class="btn-danger"
+              (click)="requestDelete()"
+              [disabled]="totalImages <= 1"
+              [title]="totalImages <= 1 ? 'No se puede eliminar la única imagen' : 'Eliminar imagen'">
+        🗑️ Eliminar
+      </button>
+    </div>
+
+    <!-- Footer: dimensions / label -->
+    <div class="footer" *ngIf="mode === 'dimensions' || mode === 'label'">
+      <button type="button" class="btn-secondary" (click)="closeModal()">Cancelar</button>
+    </div>
+
+    <!-- Footer: processing (vacío para mantener layout) -->
+    <div class="footer" *ngIf="mode === 'processing'"></div>
+
+  </ng-container>
+
+  <!-- Toast de error -->
+  <div *ngIf="mensajeError"
+       style="position:fixed;bottom:20px;left:20px;background:red;color:white;padding:10px;border-radius:5px;z-index:99999">
     ❌ {{ mensajeError }}
-    <button type="button" (click)="mensajeError = ''" style="margin-left: 10px;">✖</button>
+    <button type="button" (click)="mensajeError = ''" style="margin-left:10px">✖</button>
   </div>
 </div>

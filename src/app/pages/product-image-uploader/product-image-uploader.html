@@ -1,82 +1,120 @@
 <div class="space-y-4">
-  <!-- Botón único para agregar imagen -->
+
+  <!-- Zona de carga -->
   <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors">
-    <input type="file" 
-           #fileInput 
+    <input type="file"
+           #fileInput
            accept="image/jpeg,image/png,image/jpg,image/webp"
-           (change)="onFileSelected($event)" 
+           capture="environment"
+           (change)="onFileSelected($event)"
            class="hidden">
-    <button type="button" 
-            (click)="fileInput.click()" 
+    <button type="button"
+            (click)="fileInput.click()"
             class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 mx-auto">
       <span class="text-xl">📷</span>
       Agregar imagen
     </button>
-    <p class="text-sm text-gray-500 mt-2">
-      Formatos: JPEG, PNG, JPG, WEBP (Max 5MB)
-    </p>  
+    <p class="text-sm text-gray-500 mt-2">Formatos: JPEG, PNG, JPG, WEBP (Max 5MB)</p>
   </div>
 
-  <!-- Lista de imágenes -->
-  <div *ngIf="images.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-    <div *ngFor="let image of images" class="border rounded-lg overflow-hidden shadow-sm relative group">
-      <div class="relative bg-gray-100">
-        <img [src]="image.url" class="w-full h-32 object-cover">
-        
-        <span *ngIf="image.cover" class="absolute top-2 left-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full">
-          ★ Principal
-        </span>
-        
-        <div *ngIf="image.status === 'uploading'" class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div class="text-white text-sm">Subiendo...</div>
-        </div>
-        
-        <div *ngIf="image.status === 'error'" class="absolute inset-0 bg-red-500 bg-opacity-75 flex items-center justify-center">
-          <button (click)="retryUpload(image)" class="text-white text-sm bg-red-700 px-3 py-1 rounded">
-            Reintentar
-          </button>
-        </div>
+  <!-- Grid de imágenes — solo imagen clickeable, sin botones -->
+  <div *ngIf="images.length > 0" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+    <div *ngFor="let image of images"
+         class="relative aspect-square rounded-lg overflow-hidden ring-2 transition-all"
+         [class.ring-yellow-400]="image.cover"
+         [class.ring-transparent]="!image.cover"
+         [class.cursor-pointer]="image.status === 'done'"
+         (click)="onImageClick(image)">
+
+      <img [src]="image.url" class="w-full h-full object-cover" />
+
+      <!-- Badge portada -->
+      <span *ngIf="image.cover"
+            class="absolute top-1 left-1 bg-yellow-400 text-white text-xs px-1.5 py-0.5 rounded-full leading-none">
+        ★
+      </span>
+
+      <!-- Subiendo -->
+      <div *ngIf="image.status === 'uploading'"
+           class="absolute inset-0 bg-black/50 flex items-center justify-center">
+        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
       </div>
-      
-      <div class="p-2 flex gap-1 justify-center flex-wrap">
-        <button *ngIf="!image.cover && image.id" 
-                (click)="setPrimary(image.id!)" 
-                class="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded hover:bg-yellow-200">
-          ★ Principal
-        </button>
-        <!-- ✅ Botón EDITAR - NUEVO -->
-        <button *ngIf="image.id && stockId && stockId !== 'temp'" 
-                type="button"
-                (click)="openEditor($event, image.id!)" 
-                class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200">
-          ✏️ Editar
-        </button>
-        <button *ngIf="image.id" 
-                (click)="deleteImage(image.id!)" 
-                class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200">
-          🗑 Eliminar
-        </button>
+
+      <!-- Error -->
+      <div *ngIf="image.status === 'error'"
+           class="absolute inset-0 bg-red-700/80 flex flex-col items-center justify-center gap-1"
+           (click)="$event.stopPropagation(); retryUpload(image)">
+        <span class="text-white text-xs font-semibold">Error</span>
+        <span class="text-white text-xs underline">Reintentar</span>
       </div>
     </div>
   </div>
-  
-  <!-- Mensaje cuando no hay imágenes -->
+
   <div *ngIf="images.length === 0" class="text-center py-4 text-gray-400 text-sm">
     No hay imágenes
   </div>
-  
-  <!-- Contador -->
+
   <div *ngIf="images.length > 0" class="text-sm text-gray-500 text-center">
-    Total: {{ images.length }} imagen(es)
+    {{ images.length }} imagen(es)
   </div>
 </div>
 
-<!-- ✅ Modal del editor de imágenes -->
+<!-- ══════════════════════════════════════════════════
+     MODAL RECORTE 1:1 — aparece antes de subir
+════════════════════════════════════════════════════ -->
+<div *ngIf="cropVisible"
+     class="fixed inset-x-0 bg-black z-50 flex flex-col" style="top: 79px; bottom: 90px;">
+
+  <div class="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-700">
+    <span class="text-white font-semibold">✂️ Recortar imagen</span>
+    <button type="button" (click)="cancelCrop()"
+            class="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
+  </div>
+
+  <div class="flex-1 overflow-hidden flex items-center justify-center bg-gray-950">
+    <image-cropper
+      [imageFile]="pendingFile!"
+      [maintainAspectRatio]="true"
+      [aspectRatio]="1"
+      [resizeToWidth]="1200"
+      [onlyScaleDown]="true"
+      [roundCropper]="false"
+      format="jpeg"
+      output="base64"
+      (imageCropped)="onImageCropped($event)"
+      (imageLoaded)="cropReady = true"
+      class="max-h-full"
+    />
+  </div>
+
+  <p class="text-center text-gray-400 text-xs py-2 bg-gray-900">
+    Solo se redimensiona desde las esquinas · Proporción fija 1:1
+  </p>
+
+  <div class="flex gap-3 px-4 py-3 bg-gray-900 border-t border-gray-700">
+    <button type="button" (click)="cancelCrop()"
+            class="flex-1 bg-gray-600 hover:bg-gray-500 text-white py-3 rounded-xl font-semibold">
+      Cancelar
+    </button>
+    <button type="button" (click)="confirmCrop()" [disabled]="!cropReady"
+            class="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white py-3 rounded-xl font-semibold">
+      Usar esta imagen
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     EDITOR — abre al hacer click en una imagen ya subida
+════════════════════════════════════════════════════ -->
 <app-product-image-editor
   *ngIf="editorVisible"
   [stockId]="stockId"
   [imageId]="selectedImageId"
   [imageUrl]="selectedImageUrl"
+  [isCover]="selectedImageIsCover"
+  [totalImages]="images.length"
   (close)="closeEditor()"
-  (imageSaved)="onImageSaved($event)">
+  (imageSaved)="onImageSaved($event)"
+  (imageDeleted)="onImageDeleted($event)"
+  (coverSet)="onCoverSet($event)">
 </app-product-image-editor>
