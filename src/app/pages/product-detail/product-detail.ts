@@ -23,6 +23,7 @@ export class ProductDetail implements OnInit {
   public quantity = signal<number>(1);
   public stockid = computed(() => this.managerState.currentProduct());
   public selectedLocation = signal<AvailableLocation | null>(null);
+  public selectedImage = signal<string | null>(null);
 
   public readonly availableLocations = computed(() => {
   const product = this.stockid();
@@ -36,10 +37,15 @@ export class ProductDetail implements OnInit {
   );
 });
 
+public selectImage(url: string): void {
+  this.selectedImage.set(url);
+}
+
   public readonly derivedLocations = computed(() => {
   const transferType = this.transferType();
   const defaultLoc = this.defaultLocation();
   const selectedLoc = this.selectedLocation();
+  
   
   if (transferType === 'ship') {
     // ENVÍO: desde mi ubicación hacia la seleccionada
@@ -102,13 +108,14 @@ export class ProductDetail implements OnInit {
   }
 
   ngOnInit(): void {
-    this.route.paramMap.subscribe(params => {
-      const stockid = params.get('id');
-      if (stockid) {
-        this.managerState.loadProductDetail(stockid);
-      }
-    });
-  }
+  this.route.paramMap.subscribe(params => {
+    const stockid = params.get('id');
+    if (stockid) {
+      this.selectedImage.set(null); // reset al cambiar producto
+      this.managerState.loadProductDetail(stockid);
+    }
+  });
+}
 
   // === MÉTODOS PÚBLICOS ===
   public closeModal(): void {

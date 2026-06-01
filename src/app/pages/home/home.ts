@@ -4,7 +4,6 @@ import { Component, inject, effect, PLATFORM_ID, signal, computed, input, output
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ManagerState } from '../../services/manager-state';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
-import { ProductOrder } from '../product-order/product-order';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Modelo, MarcaBackend, CategoriaBackend } from '../../models/transfer.model';
 
@@ -25,10 +24,6 @@ export class Home {
   public productSelected = output<any>();
   private queryParams = toSignal(this.route.queryParams);
 
-  public selectedProductId = computed(() => 
-  this.managerState.currentProductCard()?.stockid ?? null
-  );
-
   public onlyStock = computed(() => this.queryParams()?.['stock'] === 'true');
 
   public mostrarCopiado = signal(false);
@@ -41,14 +36,7 @@ export class Home {
     return;
   }
 
-  this.managerState.currentProductCard.set({
-    ...producto,
-    qty_in_order: producto.qty_in_order ?? 1,
-  });
-}
-
-  public closeProduct(): void {
-  this.managerState.closeProductDetail();
+  this.router.navigate(['/producto', producto.stockid, this.slugify(producto.description)]);
 }
 
   public filteredProducts = computed(() => {

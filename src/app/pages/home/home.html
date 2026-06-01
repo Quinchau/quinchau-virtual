@@ -283,7 +283,8 @@
           </h2>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             @for (product of managerState.featuredProducts(); track product.stockid) {
-              <div class="group bg-white rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300">
+              <a [routerLink]="['/producto', product.stockid, slugify(product.description)]"
+   class="group bg-white rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300 block">
                 <div class="aspect-square rounded-xl bg-zinc-50 overflow-hidden mb-4 relative">
                   <img [src]="product.cover_image || '/assets/placeholder-part.svg'"
                        [alt]="product.description"
@@ -292,7 +293,7 @@
                 <!--<p class="text-xs text-zinc-500 mb-1">{{ product.categoryid }}</p>-->
                 <h3 class="font-bold text-sm mb-2 text-zinc-800 line-clamp-2">{{ product.description }}</h3>
                 <p class="text-orange-600 font-black">${{ product.price }}</p>
-              </div>
+              </a>
             }
           </div>
         </section>

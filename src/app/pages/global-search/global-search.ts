@@ -3,38 +3,34 @@ import { CommonModule } from '@angular/common';
 import { SearchService } from '../../services/search.service';
 import { ManagerState } from '../../services/manager-state';
 import { ProductPicker } from '../../components/product-picker/product-picker';
-import { ProductOrder } from '../product-order/product-order';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-global-search',
   standalone: true,
-  imports: [CommonModule, ProductPicker, ProductOrder],
+  imports: [CommonModule, ProductPicker],
   templateUrl: './global-search.html',
 })
 export class GlobalSearchComponent {
   private searchService = inject(SearchService);
   public state = inject(ManagerState);
+  private router = inject(Router);
 
   isOpen = this.searchService.isSearchOpen;
 
-  selectedProductId = computed(() => 
-    this.state.currentProductCard()?.stockid ?? null
-  );
-
   onProductSelected(product: any) {
-    console.log('onProductSelected llamado', product.stockid);
-    this.state.currentProductCard.set({
-      ...product,
-      qty_in_order: product.qty_in_order ?? 1,
-    });
-  }
+  this.searchService.closeSearch();
+  this.router.navigate(['/producto', product.stockid, this.slugify(product.description)]);
+}
 
-  closeProductDetail() {
-    this.state.closeProductDetail();
-  }
+private slugify(text: string): string {
+  return text.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
 
   closeSearch() {
-    this.state.closeProductDetail();
     this.searchService.closeSearch();
   }
 }

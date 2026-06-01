@@ -1,4 +1,4 @@
-import { Component, inject, input, computed, signal, output } from '@angular/core';
+import { Component, inject, input, computed, signal, output, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -28,13 +28,21 @@ export class ProductOrder {
   protected readonly inWaitlist = this.state.currentProductInWaitlist;
   protected readonly notifySuccess = signal(false);
   private pendingAction = signal<PendingAction>(null);
+  protected readonly selectedImage = signal<string | null>(null);
 
   constructor() {
-  console.log('ProductOrder MONTADO');
+  effect(() => {
+    this.product();
+    this.selectedImage.set(null);
+  });
 }
 
 ngOnDestroy() {
   console.log('ProductOrder DESTRUIDO');
+}
+
+selectImage(url: string): void {
+  this.selectedImage.set(url);
 }
 
   get quantity(): number {

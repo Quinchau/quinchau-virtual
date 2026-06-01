@@ -100,6 +100,7 @@ export interface Product {
   latest_trandate: string;
   cover_image_id: string;
   cover_image: string | null;
+  images: string[] | null;
   all_image_ids: string | null;
   url: string;
   modelo_ids: number[];
@@ -131,8 +132,10 @@ export interface ProductDetailData {
   idmodelo: string | null;
   tags: string | null;
   latest_trandate: string | null;
-  cover_image_id: string | null;
-  all_image_ids: string[] | null;
+  cover_image_id: string | null;   // URL home_default (existente)
+  cover_image: string | null;      // ← agregar
+  all_image_ids: string | null;    // era string[], pero la API devuelve un string simple
+  images: string[] | null;         // ← agregar (array de URLs)
   available_locations: AvailableLocation[] | null;
 }
 export interface DashboardResponse {

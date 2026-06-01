@@ -28,15 +28,26 @@
 
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-1">
         <div class="col-span-2 lg:col-span-2 bg-white rounded-lg shadow-md p-4">
-          <img [src]="product.cover_image_id" alt="Imagen de portada" class="cover-image w-full h-auto object-cover rounded-lg" />
+          <img [src]="selectedImage() || product.cover_image" alt="Imagen de portada" class="cover-image w-full h-auto object-cover rounded-lg" />
 
-          @if (product.all_image_ids) {
-            <div class="flex flex-wrap gap-1 mt-0">
-              @for (image of product.all_image_ids; track image) {
-                <img [src]="image" alt="Imagen secundaria" class="w-6 h-6 object-cover rounded-md" />
-              }
-            </div>
+      @if (product.images && product.images.length > 0) {
+        <div class="flex flex-wrap gap-2 mt-2">
+          <img 
+            [src]="product.cover_image" 
+            alt="Imagen de portada"
+            (click)="product.cover_image && selectImage(product.cover_image)"
+            [class.ring-2]="(selectedImage() || product.cover_image) === product.cover_image"
+            class="w-16 h-16 object-cover rounded-md cursor-pointer ring-orange-400" />
+          @for (image of product.images; track image) {
+            <img 
+              [src]="image" 
+              alt="Imagen secundaria"
+              (click)="selectImage(image)"
+              [class.ring-2]="selectedImage() === image"
+              class="w-16 h-16 object-cover rounded-md cursor-pointer ring-orange-400" />
           }
+        </div>
+}
         </div>
 
         <div class="col-span-2 lg:col-span-2 bg-white rounded-lg shadow-md p-1">

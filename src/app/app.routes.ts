@@ -188,6 +188,16 @@ export const routes: Routes = [
       }
     ]
   },
+  {
+  path: 'producto/:stockid/:slug',
+  loadComponent: () =>
+    import('./pages/product-page/product-page').then(m => m.ProductPage)
+},
+{
+  path: 'producto/:stockid',
+  loadComponent: () =>
+    import('./pages/product-page/product-page').then(m => m.ProductPage)
+},
 
   // === RUTAS DINÁMICAS (DEBEN IR AL FINAL) ===
   { path: ':categoria', component: Home },

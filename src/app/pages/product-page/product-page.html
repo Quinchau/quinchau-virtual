@@ -1,0 +1,183 @@
+<div class="max-w-md mx-auto px-4 py-6 relative">
+
+  @if (loading()) {
+    <div class="flex justify-center items-center py-8">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="bg-red-50 text-red-600 p-4 rounded-lg mb-4">
+      Error al cargar el producto. Por favor intenta de nuevo.
+    </div>
+  }
+
+  @if (!loading() && product(); as p) {
+    
+    <div class="relative w-full mb-2">
+      <button (click)="copiarUrl()"
+        class="absolute top-4 right-4 z-10 p-2 rounded-full bg-slate-100/80 backdrop-blur-sm hover:bg-orange-50 hover:text-orange-500 transition-colors shadow-sm">
+        @if (copiado()) {
+          <span class="material-symbols-outlined text-green-500 text-xl">check</span>
+        } @else {
+          <span class="material-symbols-outlined text-slate-400 text-xl">share</span>
+        }
+      </button>
+
+      <img
+        [src]="selectedImage() || p.cover_image || p.cover_image_id"
+        [alt]="p.description"
+        class="w-full h-64 object-contain rounded-t-lg border-b border-slate-100">
+    </div>
+
+    @if (p.images && p.images.length > 0) {
+      <div class="flex gap-2 overflow-x-auto pb-2 mb-4">
+        <img
+          [src]="p.cover_image || p.cover_image_id"
+          [alt]="p.description"
+          (click)="p.cover_image && selectImage(p.cover_image)"
+          [class.ring-2]="(selectedImage() || p.cover_image) === (p.cover_image || p.cover_image_id)"
+          class="w-16 h-16 shrink-0 object-contain rounded-lg border cursor-pointer ring-orange-400 ring-offset-1" />
+        @for (img of p.images; track img) {
+          <img
+            [src]="img"
+            [alt]="p.description"
+            (click)="selectImage(img)"
+            [class.ring-2]="selectedImage() === img"
+            class="w-16 h-16 shrink-0 object-contain rounded-lg border cursor-pointer ring-orange-400 ring-offset-1" />
+        }
+      </div>
+    }
+
+    <div class="space-y-2 mb-4">
+      <h1 class="text-xl font-bold text-slate-800 leading-tight">{{ p.description }}</h1>
+      <div class="flex justify-between items-end">
+        <p class="text-sm text-slate-500">{{ p.units }}</p>
+        <p class="text-2xl font-black text-orange-600">${{ p.price_with_tax.toFixed(2) }}</p>
+      </div>
+    </div>
+
+    @if (p.modelos && p.modelos.length > 0) {
+      <div class="flex flex-wrap gap-2 mb-4">
+        @for (modelo of p.modelos; track $index) {
+          <span class="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-full">{{ modelo }}</span>
+        }
+      </div>
+    }
+
+    @if (p.qty_in_order > 1) {
+      <div class="mb-4 p-3 bg-blue-50 text-blue-700 text-sm rounded-lg flex items-center gap-2">
+        <span class="text-xl">🛒</span>
+        <span>Ya tenías <strong>{{ p.qty_in_order }}</strong> unidades en tu carrito</span>
+      </div>
+    }
+
+    @if (p.tags) {
+      <div class="mb-4 text-xs text-slate-500">
+        <span class="font-medium">Tags:</span> {{ p.tags }}
+      </div>
+    }
+
+    <div class="flex items-center justify-between mb-4">
+      <span class="text-sm font-medium text-slate-600">Cantidad:</span>
+      <div class="flex items-center gap-2">
+        <button (click)="decrement()" [disabled]="quantity <= 1"
+          class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed">
+          −
+        </button>
+        <input type="number"
+          [ngModel]="quantity"
+          (ngModelChange)="quantity = $event"
+          min="1" [max]="p.total_quantity"
+          [disabled]="p.total_quantity === 0"
+          class="w-20 text-center border border-slate-300 rounded-lg py-1 px-2 focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-slate-100 disabled:cursor-not-allowed">
+        <button (click)="increment()" [disabled]="quantity >= p.total_quantity"
+          class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed">
+          +
+        </button>
+      </div>
+    </div>
+
+    <div class="flex justify-between items-center mb-2">
+      <p class="text-xs"
+        [class.text-green-600]="p.total_quantity > 0"
+        [class.text-red-600]="p.total_quantity === 0">
+        {{ p.total_quantity > 0 ? p.total_quantity + ' unidades disponibles' : 'Sin stock disponible' }}
+      </p>
+      @if (p.total_quantity > 0 && p.total_quantity < 5) {
+        <span class="text-xs text-orange-600 font-medium">⚡ ¡Últimas unidades!</span>
+      }
+    </div>
+
+    <div class="flex justify-between text-lg font-bold mb-6">
+      <span>Total:</span>
+      <span class="text-orange-600">${{ (p.price_with_tax * quantity).toFixed(2) }}</span>
+    </div>
+
+    <div class="flex gap-3">
+      <button (click)="goBack()"
+        class="flex-1 py-3 rounded-lg bg-slate-200 text-slate-700 font-medium hover:bg-slate-300 transition-colors">
+        Volver
+      </button>
+      @if (p.total_quantity > 0) {
+        <button (click)="confirm()"
+          class="flex-1 py-3 rounded-lg bg-orange-500 text-white font-medium hover:bg-orange-600 transition-colors">
+          Añadir al carrito
+        </button>
+      } @else if (inWaitlist()) {
+        <button disabled
+          class="flex-1 py-3 rounded-lg bg-slate-100 text-slate-400 font-medium cursor-not-allowed">
+          ✓ Lo estás esperando
+        </button>
+      } @else {
+        <button (click)="notifyMe()"
+          class="flex-1 py-3 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600 transition-colors">
+          🔔 Notificarme al llegar
+        </button>
+      }
+    </div>
+  }
+</div>
+
+<div
+  [class.hidden]="!nav.isLayerPresent('checkout')"
+  class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+  <app-exe-order
+    (close)="nav.back()"
+    (registroCompleto)="onRegistroCompleto($event)" />
+</div>
+
+@if (notifySuccess()) {
+  <div class="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-xl shadow-lg p-8 max-w-sm w-full text-center space-y-4">
+      <div class="text-5xl">🔔</div>
+      <h3 class="text-lg font-bold text-slate-800">¡Listo!</h3>
+      <p class="text-slate-600">Te avisaremos cuando el producto llegue.</p>
+      <button (click)="notifySuccess.set(false)"
+        class="w-full py-3 rounded-lg bg-orange-500 text-white font-medium hover:bg-orange-600 transition-colors">
+        Entendido
+      </button>
+    </div>
+  </div>
+}
+
+@if (cartSuccess()) {
+  <div class="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-xl shadow-lg p-8 max-w-sm w-full text-center space-y-4">
+      <div class="text-5xl">🛒</div>
+      <h3 class="text-lg font-bold text-slate-800">¡Agregado al carrito!</h3>
+      <p class="text-slate-600">Tu producto se ha añadido correctamente.</p>
+      
+      <div class="flex flex-col gap-2 pt-2">
+        <button (click)="cartSuccess.set(false); router.navigate(['/checkout'])"
+          class="w-full py-3 rounded-lg bg-orange-500 text-white font-medium hover:bg-orange-600 transition-colors">
+          Ir al Carrito
+        </button>
+        <button (click)="cartSuccess.set(false); goBack()"
+          class="w-full py-3 rounded-lg bg-slate-100 text-slate-700 font-medium hover:bg-slate-200 transition-colors">
+          Seguir Comprando
+        </button>
+      </div>
+    </div>
+  </div>
+}

@@ -16,7 +16,6 @@
       </span>
     </nav>
 
-    <!-- H1 único por página — deuda SEO resuelta -->
     <h1 class="text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-white">
       Repuestos
       <span class="text-orange-500">
@@ -47,7 +46,6 @@
   <div class="px-4 max-w-7xl mx-auto">
 
     @if (managerState.productsResource.isLoading()) {
-      <!-- Skeleton loader -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         @for (i of [1,2,3,4,5,6,7,8]; track i) {
           <div class="bg-zinc-100 dark:bg-zinc-800 rounded-2xl aspect-[3/4] animate-pulse"></div>
@@ -62,11 +60,10 @@
     } @else {
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         @for (producto of filteredProducts(); track producto.stockid) {
-          <div
-            class="group bg-white dark:bg-zinc-900 rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer"
-            (click)="handleProductSelection(producto)"
+          
+            <a [routerLink]="['/producto', producto.stockid, slugify(producto.description)]"
+            class="group bg-white dark:bg-zinc-900 rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer block"
           >
-            <!-- Imagen -->
             <div class="aspect-square rounded-xl bg-zinc-50 dark:bg-zinc-800 overflow-hidden mb-3 relative">
               @if ($any(producto).cover_image) {
                 <img
@@ -81,7 +78,6 @@
                   <span class="material-symbols-outlined text-4xl text-zinc-300">image_not_supported</span>
                 </div>
               }
-              <!-- Badge stock -->
               @if (producto.total_quantity > 0) {
                 <span class="absolute top-2 right-2 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                   Stock
@@ -89,33 +85,22 @@
               }
             </div>
 
-            <!-- Nombre del producto — h3 para jerarquía SEO bajo el h1 -->
             <h3 class="font-bold text-sm mb-1 text-zinc-800 dark:text-zinc-100 line-clamp-2 leading-tight">
               {{ producto.description }}
             </h3>
 
-            <!-- Precio -->
             <p class="text-orange-600 font-black text-base">
               ${{ producto.price_with_tax | number:'1.2-2' }}
             </p>
 
-            <!-- Stock agotado -->
             @if (producto.total_quantity === 0) {
               <p class="text-xs text-zinc-400 mt-1">Agotado</p>
             }
-          </div>
+          </a>
         }
       </div>
     }
 
   </div>
-
-  @if (selectedProductId(); as stockid) {
-    <app-product-order
-      [productId]="stockid"
-      [embeddedMode]="true"
-      (closed)="closeProduct()"
-    />
-  }
 
 </main>

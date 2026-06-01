@@ -127,7 +127,7 @@ export class ManagerApis {
 
   public getProductBySlug(slug: string): Observable<Product> {
     return this.http.get<Product>(`${this.nodeBaseUrl}/products`, {
-      params: new HttpParams().set('slug', slug)
+      params: new HttpParams().set('stockid', slug)
     });
   }
 
