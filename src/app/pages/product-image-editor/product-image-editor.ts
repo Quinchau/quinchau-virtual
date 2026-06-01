@@ -216,6 +216,12 @@ export class ProductImageEditor implements OnInit, OnDestroy {
   currentPointB: Point | null = null;
   dimensions: Dimension[] = [];
   measureText = '';
+  dimensionColors = [
+    { value: '#000000' },  // negro
+    { value: '#ff0000' },  // rojo
+    { value: '#00ff00' },  // verde
+  ];
+  dimensionColor: string = '#000000';
 
   // ── Etiqueta ──────────────────────────────────────────
   labelText = '';
@@ -419,7 +425,7 @@ export class ProductImageEditor implements OnInit, OnDestroy {
       this.currentPointA = point;
       this.dimensionState = 'waiting_b';
       this.isPointSelectionActive = false; // Deactivate after marking
-      this.mensaje = '✅ Punto A marcado. Click en el bloqueador para activar Punto B';
+      this.mensaje = '';
       this.drawImage();
       this.cdr.detectChanges();
     } else if (this.dimensionState === 'waiting_b') {
@@ -471,28 +477,30 @@ export class ProductImageEditor implements OnInit, OnDestroy {
   removeDimension(index: number) { this.dimensions.splice(index, 1); this.drawImage(); }
 
   applyDimensions() {
-    if (this.dimensions.length === 0) { this.mensajeError = 'Agregue al menos una cota'; return; }
-    this.mode = 'processing'; this.mensaje = 'Aplicando cotas...'; this.cdr.detectChanges();
-    const payload = this.dimensions.map(d => ({
-      x1: d.pointA.x, y1: d.pointA.y, x2: d.pointB.x, y2: d.pointB.y, text: d.text
-    }));
-    this.managerApis.editProductImage(this.stockId, this.imageId, { operation: 'dimensions', dimensions: payload }).subscribe({
-      next: (res) => {
-        this.currentImageBase64 = res.image_base64;
-        this.image.onload = () => {
-          this.imageWidth = this.image.width; this.imageHeight = this.image.height;
-          this.initCanvas(); this.drawImage();
-          this.mode = 'preview'; this.mensaje = 'Cotas aplicadas. ¿Desea guardar?';
-          this.cdr.detectChanges();
-        };
-        this.image.src = `data:image/jpeg;base64,${res.image_base64}`;
-      },
-      error: (err) => setTimeout(() => {
-        this.mensajeError = err.error?.error || 'Error al aplicar cotas';
-        this.mode = 'dimensions'; this.cdr.detectChanges();
-      })
-    });
-  }
+  if (this.dimensions.length === 0) { this.mensajeError = 'Agregue al menos una cota'; return; }
+  this.mode = 'processing'; this.mensaje = 'Aplicando cotas...'; this.cdr.detectChanges();
+  const payload = this.dimensions.map(d => ({
+    x1: d.pointA.x, y1: d.pointA.y, x2: d.pointB.x, y2: d.pointB.y,
+    text: d.text,
+    color: this.dimensionColor
+  }));
+  this.managerApis.editProductImage(this.stockId, this.imageId, { operation: 'dimensions', dimensions: payload }).subscribe({
+    next: (res) => {
+      this.currentImageBase64 = res.image_base64;
+      this.image.onload = () => {
+        this.imageWidth = this.image.width; this.imageHeight = this.image.height;
+        this.initCanvas(); this.drawImage();
+        this.mode = 'preview'; this.mensaje = 'Cotas aplicadas. ¿Desea guardar?';
+        this.cdr.detectChanges();
+      };
+      this.image.src = `data:image/jpeg;base64,${res.image_base64}`;
+    },
+    error: (err) => setTimeout(() => {
+      this.mensajeError = err.error?.error || 'Error al aplicar cotas';
+      this.mode = 'dimensions'; this.cdr.detectChanges();
+    })
+  });
+}
 
   startCropOnly() {
      if (!this.currentImageBase64) {
@@ -568,7 +576,7 @@ export class ProductImageEditor implements OnInit, OnDestroy {
     this.currentPointB = null;
     this.dimensions = [];
     this.measureText = '';
-    this.mensaje = '📍 Click en el bloqueador flotante para activar la marca del PUNTO A';
+    this.mensaje = '';
   }
 
   // ── Etiqueta ──────────────────────────────────────────
@@ -581,16 +589,57 @@ export class ProductImageEditor implements OnInit, OnDestroy {
   }
 
   private drawLabelOnCanvas(text: string) {
-    if (!this.ctx) return;
-    const canvas = this.canvasRef.nativeElement;
-    this.ctx.clearRect(0, 0, canvas.width, canvas.height);
-    this.ctx.drawImage(this.image, 0, 0, canvas.width, canvas.height);
-    const bw = 180, bh = 40, x = canvas.width - bw - 10, y = 10;
-    this.ctx.fillStyle = 'rgba(0,0,0,0.7)'; this.ctx.fillRect(x, y, bw, bh);
-    this.ctx.fillStyle = 'white'; this.ctx.font = 'bold 14px Arial';
-    this.ctx.fillText(text, x + 10, y + 25);
-    this.currentImageBase64 = canvas.toDataURL('image/jpeg', 0.95).split(',')[1];
-  }
+  if (!this.ctx) return;
+  const canvas = this.canvasRef.nativeElement;
+  this.ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Dibujar en canvas de visualización
+  this.ctx.save();
+  this.ctx.translate(this.transform.offsetX, this.transform.offsetY);
+  this.ctx.scale(this.transform.scale, this.transform.scale);
+  this.ctx.drawImage(this.image, 0, 0, this.imageWidth, this.imageHeight);
+  this.ctx.restore();
+
+  // ── Offscreen (imagen final guardada) ──────────────────
+  const offscreen = document.createElement('canvas');
+  offscreen.width  = this.imageWidth;
+  offscreen.height = this.imageHeight;
+  const offCtx = offscreen.getContext('2d')!;
+  offCtx.drawImage(this.image, 0, 0, this.imageWidth, this.imageHeight);
+
+  const bh       = Math.round(this.imageHeight * 0.08);  // 8% alto imagen
+  const fontSize = Math.round(bh * 0.5);                 // fuente = 50% del alto
+  const padding  = Math.round(bh * 0.4);                 // padding horizontal
+  const margin   = Math.round(bh * 0.1);                 // margen al borde
+
+  offCtx.font = `bold ${fontSize}px Arial`;
+  const oBw = offCtx.measureText(text).width + padding * 2;
+  const oX  = this.imageWidth - oBw - margin;
+  const oY  = margin;
+
+  offCtx.fillStyle = 'rgba(0,0,0,0.7)';
+  offCtx.fillRect(oX, oY, oBw, bh);
+  offCtx.fillStyle = 'white';
+  offCtx.fillText(text, oX + padding, oY + fontSize + Math.round(bh * 0.15));
+
+  this.currentImageBase64 = offscreen.toDataURL('image/jpeg', 0.95).split(',')[1];
+
+  // ── Preview en canvas de visualización ─────────────────
+  const bhV      = Math.round(this.imageHeight * this.transform.scale * 0.08);
+  const fontSizeV = Math.round(bhV * 0.5);
+  const paddingV  = Math.round(bhV * 0.4);
+  const marginV   = Math.round(bhV * 0.1);
+
+  this.ctx.font = `bold ${fontSizeV}px Arial`;
+  const bwV      = this.ctx.measureText(text).width + paddingV * 2;
+  const imgRight = this.transform.offsetX + this.imageWidth * this.transform.scale;
+const imgTop   = this.transform.offsetY;
+
+  this.ctx.fillStyle = 'rgba(0,0,0,0.7)';
+  this.ctx.fillRect(imgRight - bwV - marginV, imgTop + marginV, bwV, bhV);
+  this.ctx.fillStyle = 'white';
+  this.ctx.fillText(text, imgRight - bwV - marginV + paddingV, imgTop + marginV + fontSizeV + Math.round(bhV * 0.15));
+}
 
   // ── Guardar ───────────────────────────────────────────
   saveImage() {

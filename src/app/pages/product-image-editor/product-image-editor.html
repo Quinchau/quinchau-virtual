@@ -96,10 +96,22 @@
     </div>
 
     <!-- Panel etiqueta -->
-    <div class="panel-config" *ngIf="mode === 'label'">
-      <input type="text" [(ngModel)]="labelText" placeholder="Texto de la etiqueta (ej: Foto referencial)" />
-      <button type="button" class="btn-primary" (click)="applyLabel()">Aplicar etiqueta</button>
-    </div>
+<div class="panel-config" *ngIf="mode === 'label'">
+  <input type="text" [(ngModel)]="labelText" placeholder="Texto de la etiqueta (ej: Foto referencial)" />
+  <button type="button" class="btn-primary" (click)="applyLabel()">Aplicar etiqueta</button>
+</div>
+
+<!-- Selector de color para cotas -->
+<div class="panel-config" *ngIf="mode === 'dimensions'">
+  <span style="color:#ccc">Color de cota:</span>
+  <button type="button"
+    *ngFor="let color of dimensionColors"
+    (click)="dimensionColor = color.value"
+    [style.background]="color.value"
+    [style.border]="dimensionColor === color.value ? '3px solid white' : '3px solid transparent'"
+    style="width:32px; height:32px; border-radius:50%; cursor:pointer;">
+  </button>
+</div>
 
     <!-- Lista de cotas -->
     <div class="dimensions-list" *ngIf="mode === 'dimensions' && dimensions.length > 0">
