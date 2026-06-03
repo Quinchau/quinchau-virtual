@@ -109,8 +109,7 @@ export class ProductImageUploaderComponent implements OnInit {
     const image = this.images.find(img => img.id === event.imageId);
     if (image) image.url = `${this.getImageUrl(event.imageId)}?t=${Date.now()}`;
     this.closeEditor();
-    this.imagesChanged.emit(this.images);
-  }
+    }
 
   // Emitido por el editor al eliminar desde adentro
   async onImageDeleted(imageId: number) {

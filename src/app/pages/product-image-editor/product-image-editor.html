@@ -1,161 +1,288 @@
-<div class="modal-fullscreen">
-  <button type="button" class="close-btn" (click)="closeModal()">&times;</button>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+.shell{background:#F2F0EB;width:100%;max-width:380px;margin:0 auto;border-radius:24px;overflow:hidden;border:0.5px solid #ddd;font-family:'DM Sans',sans-serif;}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:#1C1C1C;}
+.hdr-l{display:flex;align-items:center;gap:9px;}
+.back{width:30px;height:30px;border:none;background:rgba(255,255,255,0.1);border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:white;font-size:15px;}
+.hdr-title{color:rgba(255,255,255,0.75);font-size:12px;font-weight:600;letter-spacing:0.8px;}
+.save-btn{background:#E87A2D;color:white;border:none;padding:6px 16px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.tabs{display:flex;background:white;border-bottom:0.5px solid #E8E4DE;}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.18s;color:#BBB;font-size:10px;font-weight:600;letter-spacing:0.3px;}
+.tab i{font-size:19px;}
+.tab.on{color:#E87A2D;border-bottom-color:#E87A2D;}
 
-  <!-- ══ MODO CROP ══ -->
-  <ng-container *ngIf="cropMode">
-    <div class="cropper-wrapper">
-      <image-cropper
-        [imageBase64]="cropImageBase64"
-        [maintainAspectRatio]="true"
-        [aspectRatio]="1"
-        format="jpeg"
-        output="base64"
-        (imageCropped)="onImageCropped($event)"
-        (imageLoaded)="cropLoaded = true"
-      />
+.img-zone{background:#111;cursor:crosshair;position:relative;overflow:hidden;min-height:300px;}
+.lens{width:100%;height:300px;display:flex;align-items:center;justify-content:center;position:relative;background:#1a1a1a;}
+canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
+.pt-marker{position:absolute;width:13px;height:13px;border-radius:50%;border:2.5px solid white;display:none;pointer-events:none;transform:translate(-50%,-50%);z-index:10;}
+.tap-hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.5);color:rgba(255,255,255,0.8);font-size:11px;font-weight:500;padding:4px 13px;border-radius:16px;white-space:nowrap;display:flex;align-items:center;gap:5px;transition:opacity 0.3s;z-index:15;}
+.tap-hint.hide{opacity:0;pointer-events:none;}
+
+.status{padding:7px 14px;background:#FAFAF8;border-top:0.5px solid #E8E4DE;font-size:11px;color:#AAA;display:flex;align-items:center;gap:6px;min-height:32px;}
+.sdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+
+.panel{background:white;overflow:hidden;max-height:0;transition:max-height 0.38s cubic-bezier(0.4,0,0.2,1);}
+.panel.open{max-height:700px;}
+.sub{display:none;padding:14px 14px 8px;}
+.sub.on{display:block;}
+.sec-lbl{font-size:10px;font-weight:700;color:#BBB;letter-spacing:0.8px;margin-bottom:9px;}
+
+.point-row{display:flex;gap:8px;margin-bottom:13px;}
+.pc{flex:1;border:1.5px solid #E8E4DE;border-radius:13px;padding:10px 10px 8px;background:#FAFAF8;transition:all 0.2s;}
+.pc.a-active{border-color:#E87A2D;background:#FFF7F0;}
+.pc.a-done{border-color:#E87A2D;background:#FFF7F0;}
+.pc.b-active{border-color:#4CAF50;background:#F2FBF4;}
+.pc.b-done{border-color:#4CAF50;background:#F2FBF4;}
+.pc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.pc-name{font-size:12px;font-weight:700;}
+.pc-name.a{color:#C05E18;}
+.pc-name.b{color:#2E7D32;}
+.pc-name.idle{color:#BBB;}
+.badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;}
+.b-idle{background:#F1EFE8;color:#BBB;}
+.b-wait{background:#FFF0E0;color:#C05E18;}
+.b-done-a{background:#FFF0E0;color:#C05E18;}
+.b-done-b{background:#E8F5E9;color:#2E7D32;}
+.b-wait-b{background:#E8F5E9;color:#2E7D32;}
+
+.joypad{display:grid;grid-template-columns:repeat(3,30px);grid-template-rows:repeat(3,30px);gap:3px;margin:0 auto 8px;width:fit-content;}
+.jbtn{width:30px;height:30px;border:1.5px solid #E8E4DE;background:#F5F3EE;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;color:#CCC;transition:all 0.12s;user-select:none;}
+.jbtn:not(.disabled):hover{background:#EEE;color:#666;}
+.jbtn:not(.disabled):active{transform:scale(0.86);}
+.jbtn.center-cell{background:#F1EFE8;border-color:#E8E4DE;cursor:default;}
+.jbtn.corner-cell{visibility:hidden;pointer-events:none;}
+.jbtn.disabled{opacity:0.28;cursor:not-allowed;pointer-events:none;}
+.jbtn.ja:not(.disabled){border-color:#E87A2D40;background:#FFF7F0;color:#E87A2D;}
+.jbtn.jb:not(.disabled){border-color:#4CAF5040;background:#F2FBF4;color:#4CAF50;}
+
+.mark-btn{width:100%;padding:7px 0;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:4px;transition:all 0.18s;}
+.mark-a{background:#E87A2D;color:white;}
+.mark-b{background:#4CAF50;color:white;}
+.mark-idle{background:#F1EFE8;color:#BBB;cursor:not-allowed;}
+
+.dim-block{border:1.5px solid #E8E4DE;border-radius:13px;padding:11px;background:#FAFAF8;margin-bottom:10px;}
+.dim-block.ready{background:white;border-color:#CCC;}
+.dim-row{display:flex;gap:8px;align-items:center;}
+.dim-row input{flex:1;border:1.5px solid #E8E4DE;border-radius:9px;padding:8px 11px;font-size:13px;font-family:'DM Sans',sans-serif;background:white;outline:none;color:#1C1C1C;transition:border-color 0.18s;}
+.dim-row input:focus{border-color:#E87A2D;}
+.dim-row input:disabled{background:#F5F3EE;color:#CCC;cursor:not-allowed;}
+.add-btn{color:white;border:none;padding:8px 14px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;transition:background 0.2s;}
+.add-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.dim-hint{font-size:11px;color:#BBB;margin-top:5px;}
+.dim-hint.ok{color:#888;}
+
+.clr-row{display:flex;align-items:center;gap:8px;margin-bottom:11px;}
+.clr-lbl{font-size:11px;color:#AAA;font-weight:500;}
+.sw{width:24px;height:24px;border-radius:50%;border:2.5px solid transparent;cursor:pointer;transition:transform 0.15s;flex-shrink:0;}
+.sw:hover{transform:scale(1.18);}
+.sw.on{outline:2.5px solid #555;outline-offset:2px;}
+
+.dim-list{display:flex;flex-direction:column;gap:5px;margin-bottom:9px;}
+.di{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:#FAFAF8;border:0.5px solid #E8E4DE;border-radius:9px;font-size:12px;color:#444;}
+.ddel{width:22px;height:22px;border:none;background:#FEE2E2;color:#C05E5E;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.apply-btn{width:100%;padding:10px;background:#1C1C1C;color:white;border:none;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:6px;transition:background 0.2s;}
+
+.footer{display:flex;gap:8px;padding:10px 14px 14px;background:white;border-top:0.5px solid #E8E4DE;}
+.fsec{flex:1;padding:10px;border:1.5px solid #E8E4DE;background:transparent;color:#666;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.fpri{flex:2;padding:10px;background:#1C1C1C;color:white;border:none;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;}
+</style>
+
+
+<div class="shell">
+  <div class="hdr">
+    <div class="hdr-l">
+      <button type="button" class="back" (click)="closeModal()"><i class="ti ti-arrow-left"></i></button>
+      <span class="hdr-title">PRECISION EDITOR</span>
+    </div>
+    <button type="button" class="save-btn" (click)="saveImage()" [disabled]="mode === 'processing'">GUARDAR</button>
+  </div>
+
+  <div class="tabs">
+    <div class="tab" [class.on]="activeTab === 'cotas'" (click)="setActiveTab('cotas')"><i class="ti ti-ruler-measure"></i>Cotas</div>
+    <div class="tab" [class.on]="activeTab === 'removebg'" (click)="setActiveTab('removebg')"><i class="ti ti-wand"></i>Remove BG</div>
+    <div class="tab" [class.on]="activeTab === 'etiqueta'" (click)="setActiveTab('etiqueta')"><i class="ti ti-tag"></i>Etiqueta</div>
+    <div class="tab" [class.on]="activeTab === 'recorte'" (click)="startCrop()"><i class="ti ti-crop"></i>Recorte</div>
+  </div>
+
+  <div class="img-zone">
+  <div class="lens" id="lens">
+    <canvas #imageCanvas (click)="onCanvasClick($event)"></canvas>
+    <div class="pt-marker" id="markerA" style="background: #E87A2D;"></div>
+    <div class="pt-marker" id="markerB" style="background: #4CAF50;"></div>
+
+    <!-- Loading -->
+    <div *ngIf="mode === 'processing'"
+         style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+                background:rgba(0,0,0,0.7);color:white;font-size:14px;font-weight:600;
+                padding:16px 24px;border-radius:12px;z-index:20;white-space:nowrap;
+                display:flex;align-items:center;gap:10px;">
+      <div style="width:16px;height:16px;border:2.5px solid rgba(255,255,255,0.3);
+                  border-top-color:white;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+      {{ statusMessage }}
     </div>
 
-    <!-- Hint -->
-    <p class="text-center text-gray-400 text-xs py-2 bg-gray-900">
-      Redimensioná desde las esquinas · Proporción 1:1
-    </p>
-
-    <div class="crop-actions">
-      <button type="button" class="btn-secondary" (click)="cancelCrop()">Cancelar</button>
-      <button type="button" class="btn-primary"
-              [disabled]="!cropLoaded"
-              (click)="applyCrop()">
-        ✂️ Aplicar recorte
-      </button>
-    </div>
-  </ng-container>
-
-  <!-- ══ MODO NORMAL ══ -->
-  <ng-container *ngIf="!cropMode">
-
-    <div class="toolbar">
-      <button type="button" class="btn-primary"  (click)="startRemoveBg()"   [disabled]="mode === 'processing'">🖌️ Remove BG</button>
-      <button type="button" class="btn-success"  (click)="startDimensions()" [disabled]="mode === 'processing'">📏 Cotas</button>
-      <button type="button" class="btn-warning"  (click)="startLabel()"      [disabled]="mode === 'processing'">🏷️ Etiqueta</button>
-    </div>
-
-    <div class="canvas-container">
-      <canvas #canvas
-             [class.point-selection-active]="isPointSelectionActive"></canvas>
-
-      <!-- Floating blocker button for dimensions -->
-      <div class="dimension-blocker" 
-           *ngIf="mode === 'dimensions' && dimensionState !== 'completed'"
-           [class.waiting-a]="dimensionState === 'waiting_a'"
-           [class.waiting-b]="dimensionState === 'waiting_b'"
-           [class.disabled]="isPointSelectionActive"
-           (click)="onBlockerClick()">
-        <span class="status-icon" *ngIf="dimensionState === 'waiting_a' && !isPointSelectionActive">🔴</span>
-        <span class="status-icon" *ngIf="dimensionState === 'waiting_a' && isPointSelectionActive">⏺</span>
-        <span class="status-icon" *ngIf="dimensionState === 'waiting_b' && !isPointSelectionActive">🟢</span>
-        <span class="status-icon" *ngIf="dimensionState === 'waiting_b' && isPointSelectionActive">⏺</span>
-        <span class="status-text">
-          <ng-container *ngIf="dimensionState === 'waiting_a'">
-            {{ isPointSelectionActive ? '🔴 MARCA PUNTO A' : 'ACTIVAR PUNTO A' }}
-          </ng-container>
-          <ng-container *ngIf="dimensionState === 'waiting_b'">
-            {{ isPointSelectionActive ? '🟢 MARCA PUNTO B' : 'ACTIVAR PUNTO B' }}
-          </ng-container>
-        </span>
+    <!-- Crop overlay -->
+    <div *ngIf="cropMode"
+         style="position:absolute;inset:0;background:#000;z-index:30;display:flex;flex-direction:column;">
+      <div style="flex:1;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+        <image-cropper
+          [imageBase64]="cropImageBase64"
+          [maintainAspectRatio]="true"
+          [aspectRatio]="1"
+          format="jpeg"
+          output="base64"
+          (imageCropped)="onImageCropped($event)"
+          (imageLoaded)="cropLoaded = true"
+          style="max-height:100%;"
+        />
       </div>
-
-      <div class="floating-crop-icon"
-           *ngIf="mode === 'idle' || mode === 'preview'"
-           (click)="startCropOnly()"
-           title="Recortar imagen">
-        ✂️
+      <p style="text-align:center;color:#aaa;font-size:11px;padding:6px;background:#111;">
+        Proporción fija 1:1
+      </p>
+      <div style="display:flex;gap:8px;padding:10px;background:#1a1a1a;border-top:1px solid #333;">
+        <button type="button" (click)="cancelCrop()"
+                style="flex:1;padding:10px;background:#444;color:white;border:none;border-radius:10px;font-weight:600;cursor:pointer;">
+          Cancelar
+        </button>
+        <button type="button" (click)="applyCrop()" [disabled]="!cropLoaded"
+                style="flex:2;padding:10px;background:#E87A2D;color:white;border:none;border-radius:10px;font-weight:600;cursor:pointer;">
+          ✂️ Aplicar recorte
+        </button>
       </div>
-
-      <div class="spinner" *ngIf="mode === 'processing'">
-        ⏳ {{ mensaje }}
-      </div>
     </div>
+  </div>
 
-    <!-- Panel dimensiones -->
-    <div class="panel-config" *ngIf="mode === 'dimensions' && currentPointA && currentPointB">
-      <span>📏 {{ mensaje }}</span>
-      <input
-        type="text"
-        [(ngModel)]="measureText"
-        placeholder="Ej: 125 mm"
-        (keyup.enter)="$event.preventDefault(); addDimension()"
-      />
-      <button type="button" class="btn-primary" (click)="addDimension()">
-        + Agregar cota
-      </button>
-    </div>
-
-    <!-- Panel dimensiones (sin puntos marcados) -->
-    <div class="panel-config" *ngIf="mode === 'dimensions' && (!currentPointA || !currentPointB)">
-      <span>ℹ️ {{ mensaje }}</span>
-    </div>
-
-    <!-- Panel etiqueta -->
-<div class="panel-config" *ngIf="mode === 'label'">
-  <input type="text" [(ngModel)]="labelText" placeholder="Texto de la etiqueta (ej: Foto referencial)" />
-  <button type="button" class="btn-primary" (click)="applyLabel()">Aplicar etiqueta</button>
+  <div class="tap-hint" [class.hide]="isPanelOpen">
+    <i class="ti ti-hand-finger" style="font-size:13px;"></i>
+    Toca para editar
+  </div>
 </div>
 
-<!-- Selector de color para cotas -->
-<div class="panel-config" *ngIf="mode === 'dimensions'">
-  <span style="color:#ccc">Color de cota:</span>
-  <button type="button"
-    *ngFor="let color of dimensionColors"
-    (click)="dimensionColor = color.value"
-    [style.background]="color.value"
-    [style.border]="dimensionColor === color.value ? '3px solid white' : '3px solid transparent'"
-    style="width:32px; height:32px; border-radius:50%; cursor:pointer;">
+<div class="status" id="statusBar">
+  <div class="sdot" [style.background]="statusColor"></div>
+  <span>{{ statusMessage }}</span>
+</div>
+
+<div class="panel" [class.open]="isPanelOpen && mode !== 'processing'">
+  <div class="sub" [class.on]="activeTab === 'cotas'">
+    <div class="sec-lbl">Puntos de medición</div>
+    <div class="point-row">
+      <div class="pc" [class.a-active]="dimensionState === 'waiting_a'" [class.a-done]="currentPointA && dimensionState !== 'waiting_a'">
+        <div class="pc-top">
+          <span class="pc-name" [class.a]="currentPointA || dimensionState === 'waiting_a'" [class.idle]="!currentPointA && dimensionState !== 'waiting_a'">Punto A</span>
+          <span class="badge" [class.b-wait]="dimensionState === 'waiting_a'" [class.b-done-a]="currentPointA" [class.b-idle]="!currentPointA && dimensionState !== 'waiting_a'">
+            {{ currentPointA ? 'Marcado' : (dimensionState === 'waiting_a' ? 'Esperando...' : 'Sin marcar') }}
+          </span>
+        </div>
+        <div class="joypad">
+          <div class="jbtn corner-cell"></div>
+          <button type="button" class="jbtn" [class.disabled]="!currentPointA" [class.ja]="currentPointA" (click)="nudgePoint('A', 'up')"><i class="ti ti-arrow-up"></i></button>
+          <div class="jbtn corner-cell"></div>
+          <button type="button" class="jbtn" [class.disabled]="!currentPointA" [class.ja]="currentPointA" (click)="nudgePoint('A', 'left')"><i class="ti ti-arrow-left"></i></button>
+          <div class="jbtn center-cell"><i class="ti ti-focus-2" style="font-size:13px;color:#CCC;"></i></div>
+          <button type="button" class="jbtn" [class.disabled]="!currentPointA" [class.ja]="currentPointA" (click)="nudgePoint('A', 'right')"><i class="ti ti-arrow-right"></i></button>
+          <div class="jbtn corner-cell"></div>
+          <button type="button" class="jbtn" [class.disabled]="!currentPointA" [class.ja]="currentPointA" (click)="nudgePoint('A', 'down')"><i class="ti ti-arrow-down"></i></button>
+          <div class="jbtn corner-cell"></div>
+        </div>
+        <button type="button" class="mark-btn mark-a" (click)="startPointSelection('A')">
+          <i class="ti ti-map-pin" style="font-size:12px;"></i>{{ currentPointA ? 'REUBICAR A' : 'MARCAR A' }}
+        </button>
+      </div>
+
+        <div class="pc" [class.b-active]="dimensionState === 'waiting_b'" [class.b-done]="currentPointB && dimensionState !== 'waiting_b'">
+          <div class="pc-top">
+            <span class="pc-name" [class.b]="currentPointB || dimensionState === 'waiting_b'" [class.idle]="!currentPointB && dimensionState !== 'waiting_b'">Punto B</span>
+            <span class="badge" [class.b-wait-b]="dimensionState === 'waiting_b'" [class.b-done-b]="currentPointB" [class.b-idle]="!currentPointB && dimensionState !== 'waiting_b'">
+              {{ currentPointB ? 'Marcado' : (dimensionState === 'waiting_b' ? 'Esperando...' : 'Sin marcar') }}
+            </span>
+          </div>
+          <div class="joypad">
+            <div class="jbtn corner-cell"></div>
+            <button type="button" class="jbtn" [class.disabled]="!currentPointB" [class.jb]="currentPointB" (click)="nudgePoint('B', 'up')"><i class="ti ti-arrow-up"></i></button>
+            <div class="jbtn corner-cell"></div>
+            <button type="button" class="jbtn" [class.disabled]="!currentPointB" [class.jb]="currentPointB" (click)="nudgePoint('B', 'left')"><i class="ti ti-arrow-left"></i></button>
+            <div class="jbtn center-cell"><i class="ti ti-focus-2" style="font-size:13px;color:#CCC;"></i></div>
+            <button type="button" class="jbtn" [class.disabled]="!currentPointB" [class.jb]="currentPointB" (click)="nudgePoint('B', 'right')"><i class="ti ti-arrow-right"></i></button>
+            <div class="jbtn corner-cell"></div>
+            <button type="button" class="jbtn" [class.disabled]="!currentPointB" [class.jb]="currentPointB" (click)="nudgePoint('B', 'down')"><i class="ti ti-arrow-down"></i></button>
+            <div class="jbtn corner-cell"></div>
+          </div>
+          <button type="button" class="mark-btn mark-b" (click)="startPointSelection('B')" [disabled]="!currentPointA">
+            <i class="ti ti-map-pin" style="font-size:12px;"></i>{{ currentPointB ? 'REUBICAR B' : 'MARCAR B' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="sec-lbl">Dimensión</div>
+      <div class="dim-block" [class.ready]="currentPointA && currentPointB">
+        <div class="dim-row">
+          <input type="text" [(ngModel)]="measureText" placeholder="Ej: 540 mm" [disabled]="!currentPointA || !currentPointB" (keyup.enter)="addDimension()" />
+          <button type="button" class="add-btn" (click)="addDimension()" [disabled]="!currentPointA || !currentPointB || !measureText" style="background:#E87A2D;">+ Añadir</button>
+        </div>
+        <div class="dim-hint" [class.ok]="currentPointA && currentPointB">
+          {{ currentPointA && currentPointB ? 'El preview se actualiza mientras escribís' : 'Marcá ambos puntos en la imagen primero' }}
+        </div>
+      </div>
+
+      <div class="clr-row">
+        <span class="clr-lbl">Color:</span>
+        <div class="sw" [class.on]="dimensionColor === '#1C1C1C'" style="background:#1C1C1C;" (click)="setDimensionColor('#1C1C1C')"></div>
+        <div class="sw" [class.on]="dimensionColor === '#E87A2D'" style="background:#E87A2D;" (click)="dimensionColor = '#E87A2D'"></div>
+        <div class="sw" [class.on]="dimensionColor === '#4CAF50'" style="background:#4CAF50;" (click)="dimensionColor = '#4CAF50'"></div>
+        <div class="sw" [class.on]="dimensionColor === '#2196F3'" style="background:#2196F3;" (click)="dimensionColor = '#2196F3'"></div>
+        <div class="sw" [class.on]="dimensionColor === '#9C27B0'" style="background:#9C27B0;" (click)="dimensionColor = '#9C27B0'"></div>
+        <div class="sw" [class.on]="dimensionColor === '#F44336'" style="background:#F44336;" (click)="dimensionColor = '#F44336'"></div>
+      </div>
+
+      <div class="dim-list" id="dimList">
+        <div class="di" *ngFor="let dim of dimensions; let i = index">
+          <span style="display:flex;align-items:center;gap:6px;">
+            <span style="width:9px;height:9px;border-radius:50%;" [style.background]="dimensionColor"></span>
+            <span>{{ dim.text }}</span>
+          </span>
+          <button type="button" class="ddel" (click)="removeDimension(i)"><i class="ti ti-x" style="font-size:12px;"></i></button>
+        </div>
+      </div>
+      <button type="button" class="apply-btn" *ngIf="dimensions.length > 0" (click)="applyDimensions()">
+        <i class="ti ti-check" style="font-size:14px;vertical-align:-2px;margin-right:5px;"></i>Aplicar todas las cotas al canvas
+      </button>
+    </div>
+
+    <div class="sub" [class.on]="activeTab === 'removebg'" style="padding:14px;">
+      <p style="font-size:12px;color:#888;margin-bottom:12px;line-height:1.6;">Elimina el fondo automáticamente con IA. El resultado se aplica directamente al lienzo.</p>
+      <button type="button" 
+              style="width:100%;padding:11px;border:none;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;background:#1C1C1C;color:white;display:flex;align-items:center;justify-content:center;gap:8px;"
+              (click)="startRemoveBg()"
+              [disabled]="mode === 'processing'">
+        <i class="ti ti-wand" style="font-size:16px;"></i>Aplicar Remove BG
+      </button>
+    </div>
+
+    <div class="sub" [class.on]="activeTab === 'etiqueta'" style="padding:14px;">
+      <div class="sec-lbl">Texto de etiqueta</div>
+      <input type="text" [(ngModel)]="labelText" placeholder="Ej: Foto referencial" style="width:100%;border:1.5px solid #E8E4DE;border-radius:10px;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;background:#FAFAF8;outline:none;color:#1C1C1C;margin-bottom:9px;" />
+      <button type="button" style="width:100%;padding:11px;border:none;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;background:#E87A2D;color:white;" (click)="applyLabel()">Aplicar etiqueta</button>
+    </div>
+
+    
+  </div>
+
+  <div class="footer">
+  <button type="button" 
+          class="fsec" 
+          (click)="requestDelete()" 
+          [disabled]="totalImages <= 1"
+          style="color:#C05E5E;border-color:#FEE2E2;"
+          [title]="totalImages <= 1 ? 'No se puede eliminar la única imagen' : 'Eliminar imagen'">
+    <i class="ti ti-trash" style="font-size:14px;vertical-align:-2px;"></i>
+  </button>  
+  <button type="button" class="fsec" (click)="undoChanges()">
+    <i class="ti ti-arrow-back-up" style="font-size:14px;vertical-align:-2px;margin-right:3px;"></i>Deshacer
+  </button>
+  
+  <button type="button" class="fpri" (click)="saveImage()">
+    <i class="ti ti-device-floppy" style="font-size:15px;"></i>Guardar imagen
   </button>
 </div>
-
-    <!-- Lista de cotas -->
-    <div class="dimensions-list" *ngIf="mode === 'dimensions' && dimensions.length > 0">
-      <div *ngFor="let dim of dimensions; let i = index" class="dimension-item">
-        <span>{{ dim.text }}</span>
-        <button type="button" class="btn-danger" (click)="removeDimension(i)">Eliminar</button>
-      </div>
-      <button type="button" class="btn-success" (click)="applyDimensions()">✅ Aplicar todas las cotas</button>
-    </div>
-
-    <!-- Footer: modo preview -->
-    <div class="footer" *ngIf="mode === 'preview'">
-      <button type="button" class="btn-secondary" (click)="undo()">↩️ Deshacer</button>
-      <button type="button" class="btn-success"   (click)="saveImage()">💾 Guardar imagen</button>
-    </div>
-
-    <!-- Footer: modo idle — portada + eliminar -->
-    <div class="footer footer-idle" *ngIf="mode === 'idle'">
-      <button type="button" class="btn-cover" (click)="requestSetCover()" *ngIf="!isCover">
-        ★ Establecer portada
-      </button>
-      <span class="cover-badge" *ngIf="isCover">★ Portada</span>
-      <button type="button" class="btn-danger"
-              (click)="requestDelete()"
-              [disabled]="totalImages <= 1"
-              [title]="totalImages <= 1 ? 'No se puede eliminar la única imagen' : 'Eliminar imagen'">
-        🗑️ Eliminar
-      </button>
-    </div>
-
-    <!-- Footer: dimensions / label -->
-    <div class="footer" *ngIf="mode === 'dimensions' || mode === 'label'">
-      <button type="button" class="btn-secondary" (click)="undo()">Cancelar</button>
-    </div>
-
-    <!-- Footer: processing (vacío para mantener layout) -->
-    <div class="footer" *ngIf="mode === 'processing'"></div>
-
-  </ng-container>
-
-  <!-- Toast de error -->
-  <div *ngIf="mensajeError"
-       style="position:fixed;bottom:20px;left:20px;background:red;color:white;padding:10px;border-radius:5px;z-index:99999">
-    ❌ {{ mensajeError }}
-    <button type="button" (click)="mensajeError = ''" style="margin-left:10px">✖</button>
-  </div>
 </div>
