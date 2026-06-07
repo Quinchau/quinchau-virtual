@@ -28,6 +28,20 @@ export class ProductEditPage implements OnInit {
   taxCategories: any[] = [];
   images: ImageItem[] = [];
 
+  sections: Record<string, boolean> = {
+  descripcion: true,
+  clasificacion: true,
+  precios: false,
+  logistica: false,
+  flags: false,
+  fabricante: false,
+  imagenes: false
+};
+
+toggleSection(key: string) {
+  this.sections[key] = !this.sections[key];
+}
+
   constructor() {
     this.productForm = this.fb.group({
       description: ['', [Validators.required, Validators.maxLength(50)]],

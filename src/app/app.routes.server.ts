@@ -17,6 +17,7 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'success/:id', renderMode: RenderMode.Server },
   { path: 'producto/:stockid/:slug', renderMode: RenderMode.Server },
   { path: 'producto/:stockid', renderMode: RenderMode.Server },
+  { path: 'terminos', renderMode: RenderMode.Client },
   { path: '**', renderMode: RenderMode.Prerender },
    {
     path: 'customers/:debtorNo/branches/new',

@@ -1,0 +1,292 @@
+<!-- src/app/pages/terminos/terminos.component.html -->
+<div class="fixed inset-x-0 overflow-y-auto" style="top: 79px; bottom: 90px;">
+  <main class="px-4 max-w-2xl mx-auto py-4">
+    
+    <!-- Header Section -->
+    <section class="mb-8 mt-4">
+      <div class="flex justify-between items-end mb-6">
+        <div>
+          <p class="text-primary font-bold tracking-widest text-[10px] uppercase mb-1">Gestión de Datos</p>
+          <h2 class="text-3xl font-extrabold font-headline tracking-tight">Términos Semánticos</h2>
+        </div>
+        <button 
+          (click)="showCreateModal.set(true)" 
+          class="bg-primary-container text-on-primary-container p-3 rounded-xl shadow-sm hover:scale-95 transition-transform">
+          <span class="material-symbols-outlined">add</span>
+        </button>
+      </div>
+
+      <!-- Search -->
+      <div class="relative mb-3">
+        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+        <input 
+          type="text"
+          [(ngModel)]="searchTerm"
+          placeholder="Buscar términos o alias..."
+          class="w-full bg-surface-container-highest border-none rounded-2xl py-4 pl-12 pr-12 text-sm focus:ring-2 focus:ring-primary/20 transition-all"
+        />
+        @if (searchTerm()) {
+          <button (click)="clearSearch()" class="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-error transition-colors">
+            <span class="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        }
+      </div>
+
+      <!-- Filter -->
+      <div class="flex justify-end">
+        <button 
+          (click)="toggleFilter()"
+          class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+          [class.bg-primary-container]="soloActivos()"
+          [class.text-on-primary-container]="soloActivos()"
+          [class.bg-surface-container-high]="!soloActivos()"
+          [class.text-outline]="!soloActivos()">
+          <span class="material-symbols-outlined text-[16px]">filter_alt</span>
+          {{ soloActivos() ? 'Solo activos' : 'Todos' }}
+        </button>
+      </div>
+    </section>
+
+    <!-- Loading -->
+    @if (loading()) {
+      <div class="flex justify-center py-20">
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
+      </div>
+    }
+
+    <!-- Error -->
+    @if (error() && !loading()) {
+      <div class="bg-error-container text-on-error-container p-4 rounded-2xl mb-6">
+        <p class="text-sm font-medium">{{ error() }}</p>
+        <button (click)="loadTerminos()" class="mt-2 text-sm font-bold underline">Reintentar</button>
+      </div>
+    }
+
+    <!-- Empty -->
+    @if (!loading() && terminosFiltrados().length === 0) {
+      <div class="text-center py-20">
+        <div class="text-6xl mb-4">🔍</div>
+        <h3 class="text-xl font-bold text-on-surface mb-2">
+          {{ searchTerm() ? 'Sin resultados' : 'No hay términos' }}
+        </h3>
+        <p class="text-outline text-sm">
+          {{ searchTerm() ? 'No encontramos coincidencias' : 'Crea tu primer término semántico' }}
+        </p>
+        @if (searchTerm()) {
+          <button (click)="clearSearch()" class="mt-4 px-6 py-2 bg-primary text-on-primary rounded-full font-bold hover:bg-primary/90 transition-colors">
+            Limpiar búsqueda
+          </button>
+        }
+      </div>
+    }
+
+    <!-- Terms List -->
+    <div class="space-y-3">
+      @for (termino of terminosFiltrados(); track termino.id) {
+        <div 
+          [attr.data-termino-id]="termino.id"
+          class="bg-surface-container-low rounded-2xl overflow-hidden transition-all duration-300 border border-transparent hover:border-outline-variant"
+          [class.ring-2]="openAccordionId() === termino.id"
+          [class.ring-primary/30]="openAccordionId() === termino.id">
+          
+          <!-- Header -->
+          <div 
+            (click)="toggleAccordion(termino.id)"
+            class="p-5 flex items-center justify-between cursor-pointer hover:bg-surface-container transition-colors">
+            
+            <div class="flex-1">
+              @if (editingTermino()?.id === termino.id) {
+                <div class="flex gap-2" (click)="$event.stopPropagation()">
+                  <input 
+                    [(ngModel)]="editingTermino()!.termino"
+                    (keyup.enter)="saveTerminoEdit()"
+                    (keyup.escape)="cancelEditTermino()"
+                    class="flex-1 bg-white border border-primary rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    autofocus
+                  />
+                  <button (click)="saveTerminoEdit()" class="p-2 text-success hover:bg-success/10 rounded-lg transition-colors">
+                    <span class="material-symbols-outlined text-[20px]">check</span>
+                  </button>
+                  <button (click)="cancelEditTermino()" class="p-2 text-error hover:bg-error/10 rounded-lg transition-colors">
+                    <span class="material-symbols-outlined text-[20px]">close</span>
+                  </button>
+                </div>
+              } @else {
+                <span class="text-base font-bold font-headline text-on-background">{{ termino.termino }}</span>
+              }
+            </div>
+            
+            <div class="flex items-center gap-4" (click)="$event.stopPropagation()">
+              <!-- Toggle -->
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox"
+                  class="sr-only peer"
+                  [checked]="termino.activo === 1"
+                  (change)="toggleActivo(termino, $event)"
+                />
+                <div class="w-9 h-5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-secondary"></div>
+              </label>
+              
+              <!-- Edit button -->
+              @if (editingTermino()?.id !== termino.id) {
+                <button (click)="startEditTermino(termino, $event)" class="p-1 text-outline hover:text-primary transition-colors">
+                  <span class="material-symbols-outlined text-[20px]">edit</span>
+                </button>
+              }
+              
+              <!-- Expand icon -->
+              <span class="material-symbols-outlined text-outline transition-transform" [class.rotate-180]="openAccordionId() === termino.id">
+                expand_more
+              </span>
+            </div>
+          </div>
+          
+          <!-- Accordion Content -->
+          @if (openAccordionId() === termino.id) {
+            <div class="p-5 pt-2 space-y-3 border-t border-surface-container-high">
+              
+              <!-- Aliases list -->
+              <div class="space-y-2">
+                @for (alias of termino.alias; track alias.id) {
+                  @let edit = editingAlias();
+                  <div class="flex items-center justify-between p-3 bg-surface-container-lowest rounded-xl border border-surface-variant/30">
+                    @if (edit && edit.alias.id === alias.id && edit.terminoId === termino.id) {
+                      <div class="flex-1 flex gap-2">
+                        <input 
+                          [ngModel]="edit.alias.alias"
+                          (ngModelChange)="updateEditingAliasText($event)"
+                          (keyup.enter)="saveAliasEdit()"
+                          (keyup.escape)="cancelEditAlias()"
+                          class="flex-1 bg-white border border-primary rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                          autofocus
+                        />
+                        <button (click)="saveAliasEdit()" class="p-1 text-success hover:bg-success/10 rounded">
+                          <span class="material-symbols-outlined text-[18px]">check</span>
+                        </button>
+                        <button (click)="cancelEditAlias()" class="p-1 text-error hover:bg-error/10 rounded">
+                          <span class="material-symbols-outlined text-[18px]">close</span>
+                        </button>
+                      </div>
+                    } @else {
+                      <span class="text-sm font-medium text-on-surface">{{ alias.alias }}</span>
+                      <div class="flex gap-1">
+                        <button (click)="startEditAlias(termino.id, alias, $event)" class="p-1.5 text-outline hover:text-primary transition-colors">
+                          <span class="material-symbols-outlined text-[20px]">edit</span>
+                        </button>
+                        <button (click)="deleteAlias(termino, alias, $event)" class="p-1.5 text-outline hover:text-error transition-colors">
+                          <span class="material-symbols-outlined text-[20px]">delete</span>
+                        </button>
+                      </div>
+                    }
+                  </div>
+                } @empty {
+                  <p class="text-sm text-outline italic text-center py-3">Sin alias definidos</p>
+                }
+              </div>
+              
+              <!-- Add alias input -->
+              <div class="flex gap-2 mt-4">
+                <input 
+                  #aliasInput
+                  type="text"
+                  placeholder="Añadir nuevo alias..."
+                  class="flex-1 bg-white border border-outline-variant rounded-xl py-2.5 px-4 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                  (keyup.enter)="addAlias(termino.id, aliasInput)"
+                />
+                <button 
+                  (click)="addAlias(termino.id, aliasInput)"
+                  class="bg-primary text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-sm active:scale-95 transition-transform">
+                  <span class="material-symbols-outlined">add</span>
+                </button>
+              </div>
+              
+              <!-- Delete termino button -->
+              <div class="flex justify-end pt-4">
+                <button 
+                  (click)="deleteTermino(termino, $event)"
+                  class="flex items-center gap-1.5 text-[11px] font-bold text-error uppercase tracking-wider hover:opacity-70 transition-opacity">
+                  <span class="material-symbols-outlined text-sm">delete_forever</span>
+                  Eliminar Término
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </main>
+
+  <!-- Create Modal -->
+  @if (showCreateModal()) {
+    <div class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" (click)="showCreateModal.set(false)">
+      <div class="bg-surface rounded-2xl w-full max-w-md shadow-2xl mx-auto" (click)="$event.stopPropagation()">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-bold font-headline text-on-surface">Nuevo Término</h3>
+            <button (click)="showCreateModal.set(false)" class="p-1 text-outline hover:text-error transition-colors">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+          
+          <!-- Nombre -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-on-surface mb-2">Término *</label>
+            <input 
+              type="text"
+              [(ngModel)]="newTerminoName"
+              placeholder="Ej: Motor de Combustión"
+              class="w-full bg-white border border-outline-variant rounded-xl py-2.5 px-4 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+              autofocus
+            />
+          </div>
+          
+          <!-- Aliases iniciales -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-on-surface mb-2">Alias (opcional)</label>
+            <div class="flex gap-2">
+              <input 
+                type="text"
+                [(ngModel)]="tempAliasInput"
+                placeholder="Ej: Motor Térmico"
+                class="flex-1 bg-white border border-outline-variant rounded-xl py-2.5 px-4 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                (keyup.enter)="addTempAlias()"
+              />
+              <button 
+                (click)="addTempAlias()"
+                class="bg-primary-container text-on-primary-container px-4 rounded-xl hover:bg-primary-container/80 transition-colors">
+                <span class="material-symbols-outlined">add</span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Lista de aliases temporales -->
+          @if (newTerminoAliases().length > 0) {
+            <div class="flex flex-wrap gap-2 mb-6">
+              @for (alias of newTerminoAliases(); track alias) {
+                <span class="bg-surface-container-high px-3 py-1.5 rounded-full text-sm flex items-center gap-2">
+                  {{ alias }}
+                  <button (click)="removeTempAlias(alias)" class="text-error hover:text-error/70 transition-colors text-lg leading-none">&times;</button>
+                </span>
+              }
+            </div>
+          }
+          
+          <!-- Actions -->
+          <div class="flex gap-3 mt-6">
+            <button 
+              (click)="showCreateModal.set(false)"
+              class="flex-1 py-2.5 rounded-xl border border-outline-variant text-on-surface font-medium hover:bg-surface-container transition-colors">
+              Cancelar
+            </button>
+            <button 
+              (click)="createTermino()"
+              class="flex-1 py-2.5 rounded-xl bg-primary text-on-primary font-bold hover:bg-primary/90 transition-colors">
+              Crear
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

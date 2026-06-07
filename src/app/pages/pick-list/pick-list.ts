@@ -93,7 +93,7 @@ export class PickList implements OnInit {
         this.product.update((p: any) => ({ ...p, picking_status: 1 }));
         this.successMessage.set('✅ Producto recogido');
         setTimeout(() => {
-          this.router.navigate(['/order-detail', this.orderno()]);
+          this.router.navigate(['/order-list', this.orderno()]);
         }, 1500);
       },
       error: (err: any) => {

@@ -157,6 +157,12 @@
             <span class="text-sm font-bold uppercase tracking-wide">Productos</span>
           </a>
 
+          <a [routerLink]="['/terminos']" (click)="toggleMenu()"
+            class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
+            <span class="material-symbols-outlined text-xl">tag</span>
+            <span class="text-sm font-bold uppercase tracking-wide">Términos</span>
+          </a>
+
           <!-- Chat Desk -->
           <a [routerLink]="['/desk']" (click)="toggleMenu(); chatBridge.resetUnread()"
             class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">

@@ -16,6 +16,7 @@ import { AddLinePayload, AddLineResponse, CreateOrderPayload, CreateOrderRespons
 import { BranchCatalogsResponse, CreateBranchPayload, CustomerDetailResult, CustomerSearchResult } from '../models/customer.model';
 import { OnDemandListResponse } from '../models/on-demand-model';
 import { StockAvailabilityResponse, WarehouseOption } from '../models/orders.models';
+import { AliasItem, Termino } from '../models/terminos.model';
 
 @Injectable({
   providedIn: 'root',
@@ -572,7 +573,6 @@ getUnits() {
   });
 }
 
-// Obtener categorías de impuestos
 getTaxCategories() {
   return this.http.get(`${this.nodeBaseUrl}/products/tax-categories`, {
     withCredentials: true
@@ -588,6 +588,75 @@ editProductImage(stockId: string, imageId: number, payload: {
   return this.http.post<any>(
     `${this.nodeBaseUrl}/products/${stockId}/images/${imageId}/edit`,
     payload,
+    { withCredentials: true }
+  );
+}
+
+getTerminos(soloActivos: boolean = false): Observable<{ terminos: Termino[]; conteo: number }> {
+  const params = soloActivos ? new HttpParams().set('activos', '1') : undefined;
+  return this.http.get<{ terminos: Termino[]; conteo: number }>(
+    `${this.nodeBaseUrl}/terminos`,
+    { params, withCredentials: true }
+  );
+}
+
+getTerminoById(id: number): Observable<Termino> {
+  return this.http.get<Termino>(
+    `${this.nodeBaseUrl}/terminos/${id}`,
+    { withCredentials: true }
+  );
+}
+
+createTermino(data: { termino: string; alias?: string[] }): Observable<{ success: boolean; termino: Termino }> {
+  return this.http.post<{ success: boolean; termino: Termino }>(
+    `${this.nodeBaseUrl}/terminos`,
+    data,
+    { withCredentials: true }
+  );
+}
+
+updateTermino(id: number, data: { termino?: string; activo?: number }): Observable<{ success: boolean; termino: Termino }> {
+  return this.http.put<{ success: boolean; termino: Termino }>(
+    `${this.nodeBaseUrl}/terminos/${id}`,
+    data,
+    { withCredentials: true }
+  );
+}
+
+deleteTermino(id: number): Observable<{ success: boolean }> {
+  return this.http.delete<{ success: boolean }>(
+    `${this.nodeBaseUrl}/terminos/${id}`,
+    { withCredentials: true }
+  );
+}
+
+toggleTerminoActivo(id: number): Observable<{ success: boolean; termino: Termino }> {
+  return this.http.patch<{ success: boolean; termino: Termino }>(
+    `${this.nodeBaseUrl}/terminos/${id}/toggle`,
+    {},
+    { withCredentials: true }
+  );
+}
+
+addTerminoAlias(terminoId: number, alias: string): Observable<{ success: boolean; alias: AliasItem }> {
+  return this.http.post<{ success: boolean; alias: AliasItem }>(
+    `${this.nodeBaseUrl}/terminos/${terminoId}/alias`,
+    { alias },
+    { withCredentials: true }
+  );
+}
+
+updateTerminoAlias(terminoId: number, aliasId: number, alias: string): Observable<{ success: boolean; alias: AliasItem }> {
+  return this.http.put<{ success: boolean; alias: AliasItem }>(
+    `${this.nodeBaseUrl}/terminos/${terminoId}/alias/${aliasId}`,
+    { alias },
+    { withCredentials: true }
+  );
+}
+
+deleteTerminoAlias(terminoId: number, aliasId: number): Observable<{ success: boolean }> {
+  return this.http.delete<{ success: boolean }>(
+    `${this.nodeBaseUrl}/terminos/${terminoId}/alias/${aliasId}`,
     { withCredentials: true }
   );
 }

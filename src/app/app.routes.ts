@@ -52,6 +52,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/product-edit/product-edit').then(m => m.ProductEditPage),
     canActivate: [adminGuard]
   },
+  {
+  path: 'terminos',
+  loadComponent: () => import('./pages/terminos/terminos.component').then(m => m.TerminosComponent),
+  canActivate: [adminGuard]
+},
 
   // === RUTAS CON PARÁMETROS FIJOS ===
   {
