@@ -99,26 +99,28 @@ export class ManagerApis {
   }
 
   public getProducts(
-    searchTerm: string = '', 
-    includeStock: boolean = false, 
-    idmodelo: string = ''
-  ): Observable<{productos: Product[], identidad?: any}> {
-    let params = new HttpParams();
-    if (searchTerm) params = params.set('search', searchTerm);
-    if (includeStock) params = params.set('stock', '1');
-    if (idmodelo) params = params.set('idmodelo', idmodelo);
+  searchTerm: string = '', 
+  includeStock: boolean = false, 
+  idmodelo: string = '',
+  offers: string = ''
+): Observable<{productos: Product[], identidad?: any}> {
+  let params = new HttpParams();
+  if (searchTerm) params = params.set('search', searchTerm);
+  if (includeStock) params = params.set('stock', '1');
+  if (idmodelo) params = params.set('idmodelo', idmodelo);
+  if (offers) params = params.set('offers', offers);
 
-    return this.http.get<ProductListResponse>(`${this.nodeBaseUrl}/products`, { params }).pipe(
-      map(res => ({
-        productos: res?.productos ?? [],
-        identidad: res?.identidad
-      })),
-      catchError(error => {
-        console.error('Error recuperando productos:', error);
-        return of({ productos: [], identidad: null });
-      })
-    );
-  }
+  return this.http.get<ProductListResponse>(`${this.nodeBaseUrl}/products`, { params }).pipe(
+    map(res => ({
+      productos: res?.productos ?? [],
+      identidad: res?.identidad
+    })),
+    catchError(error => {
+      console.error('Error recuperando productos:', error);
+      return of({ productos: [], identidad: null });
+    })
+  );
+}
 
   public getProductDetail(stockid: string): Observable<ProductDetailData> {
     return this.http.get<ProductDetailData>(`${this.nodeBaseUrl}/products/detail`, {

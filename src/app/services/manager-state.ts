@@ -30,20 +30,24 @@ public readonly productIncludeStock = toSignal(
   this.route.queryParams.pipe(map(params => params['stock'] === 'true')),
   { initialValue: false }
 );
-
+public readonly productOffersFilter = signal<string>('');
+public setOffersOnly(value: boolean): void {
+  this.productOffersFilter.set(value ? '1' : '');
+}
 public readonly productModelFilter = signal<string>('');
 public readonly productsResource = rxResource({
   params: () => ({
     query: this.productSearchTerm(),
     stock: this.productIncludeStock(),
-    idmodelo: this.productModelFilter()
+    idmodelo: this.productModelFilter(),
+    offers: this.productOffersFilter()
   }),
   stream: ({ params }) => {
-    if (!params.query && !params.idmodelo) {
+    if (!params.query && !params.idmodelo && !params.offers) {
       return of([]);
     }
 
-    return this.managerApis.getProducts(params.query, params.stock, params.idmodelo).pipe(
+    return this.managerApis.getProducts(params.query, params.stock, params.idmodelo, params.offers).pipe(
       map(response => response.productos),
       catchError(err => {
         console.error('Error en el recurso:', err);

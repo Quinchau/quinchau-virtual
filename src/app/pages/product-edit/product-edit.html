@@ -108,31 +108,86 @@
       </div>
 
       <!-- Precios -->
-      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <button type="button" (click)="toggleSection('precios')"
-          class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
-          <div class="flex items-center gap-2 text-sm font-medium text-gray-700">
-            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            Precios y costos
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">2 campos</span>
-            <svg class="w-4 h-4 text-gray-400 transition-transform" [class.rotate-180]="sections['precios']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-          </div>
-        </button>
-        <div *ngIf="sections['precios']" class="px-4 pb-4 pt-1 border-t border-gray-100">
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-medium text-gray-500 mb-1">Costo *</label>
-              <input type="number" formControlName="costo" step="0.01" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-gray-500 mb-1">Precio *</label>
-              <input type="number" formControlName="price" step="0.01" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
-            </div>
-          </div>
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+  <button type="button" (click)="toggleSection('precios')"
+    class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
+    <div class="flex items-center gap-2 text-sm font-medium text-gray-700">
+      <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      Precios y costos
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">4 campos</span>
+      <svg class="w-4 h-4 text-gray-400 transition-transform" [class.rotate-180]="sections['precios']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </div>
+  </button>
+  <div *ngIf="sections['precios']" class="px-4 pb-4 pt-1 border-t border-gray-100 space-y-3">
+    <!-- Costo -->
+    <div>
+      <label class="block text-xs font-medium text-gray-500 mb-1">Costo *</label>
+      <input type="number" formControlName="costo" step="0.01" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+    </div>
+    
+    <!-- Precio 01 -->
+    <div class="flex items-center gap-3">
+      <div class="flex-1">
+        <label class="block text-xs font-medium text-gray-500 mb-1">
+          Precio 01 * 
+          <span class="text-gray-400 text-xs">(Regular)</span>
+        </label>
+        <div class="relative">
+          <input type="number" formControlName="price01" step="0.01" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm pr-16">
+          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">+IVA</span>
         </div>
       </div>
+      <div class="w-24 text-right">
+        <div class="text-xs text-gray-500 mb-1">Margen</div>
+        <div class="text-sm font-semibold" [class.text-green-600]="calcularMargen01() >= 0" [class.text-red-500]="calcularMargen01() < 0">
+          {{ calcularMargen01() | number:'1.0-0' }}%
+        </div>
+      </div>
+    </div>
+
+    <!-- Precio 02 -->
+    <div class="flex items-center gap-3">
+      <div class="flex-1">
+        <label class="block text-xs font-medium text-gray-500 mb-1">
+          Precio 02 * 
+          <span class="text-gray-400 text-xs">(Mayorista)</span>
+        </label>
+        <div class="relative">
+          <input type="number" formControlName="price02" step="0.01" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm pr-16">
+          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">+IVA</span>
+        </div>
+      </div>
+      <div class="w-24 text-right">
+        <div class="text-xs text-gray-500 mb-1">Margen</div>
+        <div class="text-sm font-semibold" [class.text-green-600]="calcularMargen02() >= 0" [class.text-red-500]="calcularMargen02() < 0">
+          {{ calcularMargen02() | number:'1.0-0' }}%
+        </div>
+      </div>
+    </div>
+
+    <!-- Precio 03 -->
+    <div class="flex items-center gap-3">
+      <div class="flex-1">
+        <label class="block text-xs font-medium text-gray-500 mb-1">
+          Precio 03 * 
+          <span class="text-gray-400 text-xs">(Promoción)</span>
+        </label>
+        <div class="relative">
+          <input type="number" formControlName="price03" step="0.01" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm pr-16">
+          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">+IVA</span>
+        </div>
+      </div>
+      <div class="w-24 text-right">
+        <div class="text-xs text-gray-500 mb-1">Margen</div>
+        <div class="text-sm font-semibold" [class.text-green-600]="calcularMargen03() >= 0" [class.text-red-500]="calcularMargen03() < 0">
+          {{ calcularMargen03() | number:'1.0-0' }}%
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
       <!-- Logística -->
       <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -188,7 +243,7 @@
             Estado y control
           </div>
           <div class="flex items-center gap-2">
-            <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">4 flags</span>
+            <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">5 flags</span>
             <svg class="w-4 h-4 text-gray-400 transition-transform" [class.rotate-180]="sections['flags']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
           </div>
         </button>
@@ -209,6 +264,10 @@
             <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
               <input type="checkbox" formControlName="perishable" class="rounded">
               Perecedero
+            </label>
+                  <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+              <input type="checkbox" formControlName="offers" class="rounded">
+              En Oferta
             </label>
           </div>
         </div>

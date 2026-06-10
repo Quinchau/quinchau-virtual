@@ -203,6 +203,12 @@ export const routes: Routes = [
   loadComponent: () =>
     import('./pages/product-page/product-page').then(m => m.ProductPage)
 },
+{
+  path: 'ofertas',
+  loadComponent: () =>
+    import('./pages/modelpage/modelpage').then(m => m.Modelpage),
+  data: { offersOnly: true }
+},
 
   // === RUTAS DINÁMICAS (DEBEN IR AL FINAL) ===
   { path: ':categoria', component: Home },

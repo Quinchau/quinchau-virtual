@@ -9,7 +9,7 @@ import { environment } from '../../../environments/environment';
 @Component({
   selector: 'app-product-edit',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, ProductImageUploaderComponent],  // ✅ Importado aquí
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, ProductImageUploaderComponent],
   templateUrl: './product-edit.html'
 })
 export class ProductEditPage implements OnInit {
@@ -29,18 +29,18 @@ export class ProductEditPage implements OnInit {
   images: ImageItem[] = [];
 
   sections: Record<string, boolean> = {
-  descripcion: true,
-  clasificacion: true,
-  precios: false,
-  logistica: false,
-  flags: false,
-  fabricante: false,
-  imagenes: false
-};
+    descripcion: true,
+    clasificacion: true,
+    precios: false,
+    logistica: false,
+    flags: false,
+    fabricante: false,
+    imagenes: false
+  };
 
-toggleSection(key: string) {
-  this.sections[key] = !this.sections[key];
-}
+  toggleSection(key: string) {
+    this.sections[key] = !this.sections[key];
+  }
 
   constructor() {
     this.productForm = this.fb.group({
@@ -53,7 +53,9 @@ toggleSection(key: string) {
       units: ['', Validators.required],
       taxcatid: ['1', Validators.required],
       costo: [0, [Validators.required, Validators.min(0)]],
-      price: [0, [Validators.required, Validators.min(0)]],
+      price01: [0, [Validators.required, Validators.min(0)]],
+      price02: [0, [Validators.required, Validators.min(0)]],
+      price03: [0, [Validators.required, Validators.min(0)]],
       eoq: [0, [Validators.min(0)]],
       volume: [0, [Validators.min(0)]],
       kgs: [0, [Validators.min(0)]],
@@ -64,6 +66,7 @@ toggleSection(key: string) {
       controlled: [false],
       serialised: [false],
       perishable: [false],
+      offers: [false],
       fabricante_url: this.fb.array([])
     });
   }
@@ -80,6 +83,28 @@ toggleSection(key: string) {
     this.fabricante_urlArray.removeAt(index);
   }
 
+  // Métodos para calcular márgenes
+  calcularMargen01(): number {
+    const precio = this.productForm?.get('price01')?.value || 0;
+    const costo = this.productForm?.get('costo')?.value || 0;
+    if (precio <= 0 || costo <= 0) return 0;
+    return ((precio - costo) / precio) * 100;
+  }
+
+  calcularMargen02(): number {
+    const precio = this.productForm?.get('price02')?.value || 0;
+    const costo = this.productForm?.get('costo')?.value || 0;
+    if (precio <= 0 || costo <= 0) return 0;
+    return ((precio - costo) / precio) * 100;
+  }
+
+  calcularMargen03(): number {
+    const precio = this.productForm?.get('price03')?.value || 0;
+    const costo = this.productForm?.get('costo')?.value || 0;
+    if (precio <= 0 || costo <= 0) return 0;
+    return ((precio - costo) / precio) * 100;
+  }
+
   ngOnInit() {
     this.stockId = this.route.snapshot.params['stockId'];
     this.loadCategories();
@@ -89,34 +114,34 @@ toggleSection(key: string) {
   }
 
   loadCategories() {
-  this.apis.getProductCategories().subscribe({
-    next: (res: any) => {
-      this.categories = res;
-      this.cdr.detectChanges();
-    },
-    error: (err: any) => console.error('Error al cargar categorías:', err)
-  });
-}
+    this.apis.getProductCategories().subscribe({
+      next: (res: any) => {
+        this.categories = res;
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => console.error('Error al cargar categorías:', err)
+    });
+  }
 
-loadUnits() {
-  this.apis.getUnits().subscribe({
-    next: (res: any) => {
-      this.units = res;
-      this.cdr.detectChanges();
-    },
-    error: (err: any) => console.error('Error al cargar unidades:', err)
-  });
-}
+  loadUnits() {
+    this.apis.getUnits().subscribe({
+      next: (res: any) => {
+        this.units = res;
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => console.error('Error al cargar unidades:', err)
+    });
+  }
 
-loadTaxCategories() {
-  this.apis.getTaxCategories().subscribe({
-    next: (res: any) => {
-      this.taxCategories = res;
-      this.cdr.detectChanges();
-    },
-    error: (err: any) => console.error('Error al cargar impuestos:', err)
-  });
-}
+  loadTaxCategories() {
+    this.apis.getTaxCategories().subscribe({
+      next: (res: any) => {
+        this.taxCategories = res;
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => console.error('Error al cargar impuestos:', err)
+    });
+  }
 
   loadProduct() {
     this.loadingProduct.set(true);
@@ -124,14 +149,30 @@ loadTaxCategories() {
     this.apis.getProductAdmin(this.stockId).subscribe({
       next: (res: any) => {
         const formValue = {
-          ...res,
+          description: res.description || '',
+          longdescription: res.longdescription || '',
+          descriptionUS: res.descriptionUS || '',
+          longdescriptionUS: res.longdescriptionUS || '',
+          categoryid: res.categoryid || '',
+          mbflag: res.mbflag || 'B',
+          units: res.units || 'u',
+          taxcatid: res.taxcatid || '1',
+          costo: parseFloat(res.costo) || 0,
+          price01: parseFloat(res.price01) || 0,
+          price02: parseFloat(res.price02) || 0,
+          price03: parseFloat(res.price03) || 0,
+          eoq: res.eoq || 0,
+          volume: res.volume || 0,
+          kgs: res.kgs || 0,
+          barcode: res.barcode || '',
+          location: res.location || '',
+          minimo: res.minimo || 3,
           discontinued: res.discontinued === 1 || res.discontinued === '1',
           controlled: res.controlled === 1 || res.controlled === '1',
           serialised: res.serialised === 1 || res.serialised === '1',
           perishable: res.perishable === 1 || res.perishable === '1',
-          costo: parseFloat(res.actualcost) || 0,
-          price: parseFloat(res.price01) || 0
-        };
+          offers: res.offers === 1 || res.offers === '1',
+          };
         
         this.productForm.patchValue(formValue);
         
@@ -148,12 +189,12 @@ loadTaxCategories() {
         }
         
         this.images = res.images.map((img: any) => ({
-  id: img.id_image,
-  url: `${environment.imgProductsUrl}/${img.id_image.toString().split('').join('/')}/${img.id_image}-home_default.jpg`,
-  cover: img.cover === 1,
-  status: 'done',
-  retries: 0
-}));
+          id: img.id_image,
+          url: `${environment.imgProductsUrl}/${img.id_image.toString().split('').join('/')}/${img.id_image}-home_default.jpg`,
+          cover: img.cover === 1,
+          status: 'done',
+          retries: 0
+        }));
         
         this.loadingProduct.set(false);
       },
@@ -167,9 +208,9 @@ loadTaxCategories() {
   }
 
   onImagesChanged(images: ImageItem[]) {
-  this.images = [...images];
-  this.cdr.detectChanges();
-}
+    this.images = [...images];
+    this.cdr.detectChanges();
+  }
 
   onSubmit() {
     if (this.productForm.invalid) {
@@ -187,6 +228,7 @@ loadTaxCategories() {
       controlled: this.productForm.value.controlled ? '1' : '0',
       serialised: this.productForm.value.serialised ? '1' : '0',
       perishable: this.productForm.value.perishable ? '1' : '0',
+      offers: this.productForm.value.offers ? '1' : '0',
       fabricante_url: this.fabricante_urlArray.value.filter((u: string) => u && u.trim() !== '')
     };
 

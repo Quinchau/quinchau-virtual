@@ -94,6 +94,9 @@ export interface Product {
   longdescription: string;
   units: string;
   price_with_tax: number;
+  price01?: number;             // Precio tipo 01 (regular)
+  price02?: number;             // Precio tipo 02 (mayorista)
+  price03?: number;  
   total_quantity: number;
   idmodelo: number;
   tags: string | null;

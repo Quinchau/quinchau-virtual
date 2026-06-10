@@ -1,6 +1,6 @@
 <!-- src/app/components/header/header.html -->
 
-<header class="fixed top-0 w-full z-50 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md shadow-[0_20px_50px_rgba(148,74,0,0.08)]">
+<header class="fixed top-0 w-full z-50 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md shadow-[0_4px_20px_rgba(148,74,0,0.08)]">
 
   <div class="flex items-center justify-between px-4 py-4 w-full max-w-7xl mx-auto gap-4">
 
@@ -128,6 +128,14 @@
           <span class="material-symbols-outlined text-xl">grid_view</span>
           <span class="text-sm font-bold uppercase tracking-wide">Categorías</span>
         </a>
+
+        <!-- OFERTAS -->
+        <a [routerLink]="['/ofertas']" (click)="toggleMenu()"
+          class="flex items-center gap-3 px-4 py-3 rounded-xl text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-zinc-800 transition-all font-medium">
+          <span class="material-symbols-outlined text-xl">local_offer</span>
+          <span class="text-sm font-bold uppercase tracking-wide">Ofertas</span>
+          <span class="ml-auto bg-orange-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">NEW</span>
+        </a>      
 
         <a [routerLink]="['/checkout']" (click)="toggleMenu()"
           class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">

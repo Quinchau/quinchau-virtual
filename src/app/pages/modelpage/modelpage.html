@@ -1,9 +1,28 @@
 <!-- src/app/pages/modelpage/modelpage.html -->
 
-<main class="pt-[75px] pb-24 min-h-screen">
+<div class="pt-3 pb-24 min-h-screen">
 
   <!-- Breadcrumb + H1 — SEO crítico -->
-  <div class="px-4 pt-4 pb-2 max-w-7xl mx-auto">
+<div class="px-4 pb-2 max-w-7xl mx-auto">
+
+  @if (isOffersPage) {
+    <!-- Cabecera Ofertas -->
+    <nav class="text-xs text-zinc-400 mb-2 flex items-center gap-1">
+      <a routerLink="/home" class="hover:text-orange-500 transition">Inicio</a>
+      <span>›</span>
+      <span class="text-zinc-600 font-medium">Ofertas</span>
+    </nav>
+
+    <div class="rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-5 flex items-center gap-4 shadow-lg mb-2">
+      <span class="material-symbols-outlined text-4xl text-white">local_offer</span>
+      <div>
+        <h1 class="text-2xl font-extrabold tracking-tight text-white">Ofertas especiales</h1>
+        <p class="text-orange-100 text-sm mt-0.5">Repuestos con precios rebajados · Tiempo limitado</p>
+      </div>
+    </div>
+
+  } @else {
+    <!-- Cabecera Modelo (original) -->
     <nav class="text-xs text-zinc-400 mb-2 flex items-center gap-1">
       <a routerLink="/home" class="hover:text-orange-500 transition">Inicio</a>
       <span>›</span>
@@ -23,7 +42,9 @@
         {{ managerState.currentModel()?.modeldescrip || '' }}
       </span>
     </h1>
-  </div>
+  }
+
+</div>
 
   <!-- Barra de filtros -->
   <div class="px-4 py-3 max-w-7xl mx-auto flex items-center gap-3">
@@ -103,4 +124,4 @@
 
   </div>
 
-</main>
+</div>
