@@ -34,6 +34,7 @@ export class OrderDetail implements OnInit {
     readonly uploadingVoucher     = signal(false);
     readonly uploadingShippingDoc = signal(false);
 
+
     readonly header   = signal<any>(null);
     readonly lines    = signal<any[]>([]);
     readonly orderno  = signal<number | null>(null);
@@ -79,8 +80,8 @@ export class OrderDetail implements OnInit {
     );
 
     readonly canInvoice = computed(() =>
-        this.isseller() && this.header()?.delivered === 1
-    );
+    this.isseller() && this.header()?.delivered === 1 && !this.header()?.invoiced
+);
 
     readonly canEdit = computed(() =>
         this.isseller() && !this.header()?.delivered
@@ -507,8 +508,11 @@ export class OrderDetail implements OnInit {
     }
 
     goBack(): void {
-        this.router.navigate(['/order-list']);
-    }
+    const from = this.route.snapshot.queryParamMap.get('from');
+    this.router.navigate(['/order-list'], {
+        queryParams: from === 'history' ? { tab: 'history' } : {}
+    });
+}
 
     goToInvoice(): void {
         const orderno = this.orderno();

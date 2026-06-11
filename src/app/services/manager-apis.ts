@@ -679,5 +679,11 @@ deleteOrderExtraImage(orderno: number, imageId: number): Observable<{ exito: boo
     );
 }
 
+listOrdersHistory(): Observable<{ exito: boolean; data: any[] }> {
+    return this.http.get<{ exito: boolean; data: any[] }>(
+        `${this.nodeBaseUrl}/orders-sales/history`
+    );
+}
+
 
 }

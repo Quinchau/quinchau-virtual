@@ -2,7 +2,7 @@
 
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ManagerApis } from '../../services/manager-apis';
 import { ManagerState } from '../../services/manager-state';
 import { WarehouseOption } from '../../models/orders.models';
@@ -18,6 +18,7 @@ export class OrderList implements OnInit {
     private apis = inject(ManagerApis);
     private router = inject(Router);
     public state = inject(ManagerState);
+    private route = inject(ActivatedRoute);
 
     public readonly userLocation = this.state.userLocation;
 
@@ -26,11 +27,24 @@ export class OrderList implements OnInit {
     readonly orders = signal<any[]>([]);
     readonly locMap = signal<Record<string, string>>({});
 
+    
+    // Historial de Ordenes
+    readonly loadingHistory = signal(false);
+    readonly errorHistory   = signal('');
+    readonly historyOrders  = signal<any[]>([]);
+    readonly activeTab      = signal<'active' | 'history'>('active');
+
     // ── Lifecycle ─────────────────────────────────────────────────
 
     ngOnInit(): void {
-        this.loadWarehouses();
-        this.loadOrders();
+    this.loadWarehouses();
+    this.loadOrders();
+
+    const tab = this.route.snapshot.queryParamMap.get('tab');
+    if (tab === 'history') {
+        this.activeTab.set('history');
+        this.loadHistory();
+    }
     }
 
     // ── Methods ───────────────────────────────────────────────────
@@ -66,9 +80,35 @@ export class OrderList implements OnInit {
         });
     }
 
-    goToDetail(orderno: number): void {
-        this.router.navigate(['/order-list', orderno]);
+selectTab(tab: 'active' | 'history'): void {
+    this.activeTab.set(tab);
+    this.router.navigate([], { queryParams: { tab }, replaceUrl: true });
+    if (tab === 'history' && this.historyOrders().length === 0) {
+        this.loadHistory();
     }
+}
+
+loadHistory(): void {
+    this.loadingHistory.set(true);
+    this.errorHistory.set('');
+    this.apis.listOrdersHistory().subscribe({
+        next: (res) => {
+            this.loadingHistory.set(false);
+            if (!res.exito) { this.errorHistory.set('Error al cargar historial'); return; }
+            this.historyOrders.set(res.data);
+        },
+        error: () => {
+            this.loadingHistory.set(false);
+            this.errorHistory.set('Error al conectar con el servidor');
+        }
+    });
+}
+
+    goToDetail(orderno: number): void {
+    this.router.navigate(['/order-list', orderno], {
+        queryParams: { from: this.activeTab() }
+    });
+}
 
     goToNewOrder(): void {
         this.router.navigate(['/orders']);
