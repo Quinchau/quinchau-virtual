@@ -15,6 +15,8 @@ interface Product {
   units: string;
   cover_image_id: number | null;
   cover_image_url?: string;
+  offers?: number;
+
 }
 
 interface Category {
@@ -74,7 +76,8 @@ export class ProductAdminPage implements OnInit {
           cover_image_url: p.cover_image_id 
             ? `https://quinchau.com/weberp/img/p/${p.cover_image_id.toString().split('').join('/')}/${p.cover_image_id}-home_default.jpg`
             : null
-        }));
+          }));
+        
         this.products.set(products);
         this.total = res.pagination.total;
         this.totalPages = res.pagination.totalPages;
