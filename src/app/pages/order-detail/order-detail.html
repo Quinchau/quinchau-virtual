@@ -131,7 +131,7 @@
             </button>
 
             <div class="transition-all duration-300 ease-in-out overflow-hidden"
-                 [style.max-height]="docsOpen() ? '300px' : '0px'"
+                 [style.max-height]="docsOpen() ? '9999px' : '0px'"
                  [style.opacity]="docsOpen() ? '1' : '0'">
                 <div class="px-5 pb-4 space-y-3">
                     <div class="grid grid-cols-2 gap-3">
@@ -143,9 +143,9 @@
                                 <a [href]="header().voucher_url" target="_blank" class="block">
                                     @if (isImage(header().voucher_url)) {
                                         <img [src]="header().voucher_url" alt="Comprobante"
-                                             class="w-full h-24 object-cover rounded-lg border border-slate-200 hover:opacity-80 transition-opacity" />
+                                            class="w-full h-24 object-cover rounded-lg border border-slate-200 hover:opacity-80 transition-opacity" />
                                     } @else {
-                                        <div class="w-full h-24 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors flex flex-col items-center justify-center gap-1">
+                                        <div class="w-full h-24 rounded-lg border border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-1">
                                             <span class="text-3xl">📄</span>
                                             <p class="text-[9px] font-bold text-slate-400 uppercase">PDF</p>
                                         </div>
@@ -176,9 +176,9 @@
                                 <a [href]="header().shipping_doc_url" target="_blank" class="block">
                                     @if (isImage(header().shipping_doc_url)) {
                                         <img [src]="header().shipping_doc_url" alt="Guía de despacho"
-                                             class="w-full h-24 object-cover rounded-lg border border-slate-200 hover:opacity-80 transition-opacity" />
+                                            class="w-full h-24 object-cover rounded-lg border border-slate-200 hover:opacity-80 transition-opacity" />
                                     } @else {
-                                        <div class="w-full h-24 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors flex flex-col items-center justify-center gap-1">
+                                        <div class="w-full h-24 rounded-lg border border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-1">
                                             <span class="text-3xl">📄</span>
                                             <p class="text-[9px] font-bold text-slate-400 uppercase">PDF</p>
                                         </div>
@@ -201,6 +201,42 @@
                                 </button>
                             }
                         </div>
+
+                        <!-- ── IMÁGENES ADICIONALES (mismo grid, mismas clases) ── -->
+                        @if (extraImages().length > 0 || !header().delivered) {
+                            <div class="col-span-2 border-t border-slate-100 pt-2">
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Imágenes adicionales</p>
+                            </div>
+
+                            @for (img of extraImages(); track img.id) {
+                                <div class="space-y-1.5">
+                                    <a [href]="img.url" target="_blank" class="block">
+                                        <img [src]="img.url" alt="Imagen adicional"
+                                            class="w-full h-24 object-cover rounded-lg border border-slate-200 hover:opacity-80 transition-opacity" />
+                                    </a>
+                                    @if (!header().delivered) {
+                                        <button (click)="deleteExtraImage(img.id)"
+                                            class="w-full py-1.5 text-[10px] font-bold text-red-500 border border-dashed border-red-200 rounded-lg hover:bg-red-50 transition-colors flex items-center justify-center gap-1">
+                                            <span class="material-symbols-outlined text-xs">delete</span>
+                                            Eliminar
+                                        </button>
+                                    }
+                                </div>
+                            }
+
+                            @if (!header().delivered) {
+                                <div class="space-y-1.5">
+                                    <button (click)="triggerExtraImageUpload()" [disabled]="uploadingExtra()"
+                                        class="w-full h-24 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-orange-50 hover:border-[#dbc1b2] transition-colors flex items-center justify-center disabled:opacity-50">
+                                        @if (uploadingExtra()) {
+                                            <span class="material-symbols-outlined text-slate-300 animate-spin text-2xl">refresh</span>
+                                        } @else {
+                                            <span class="material-symbols-outlined text-slate-300 text-3xl">add</span>
+                                        }
+                                    </button>
+                                </div>
+                            }
+                        }
 
                     </div>
                 </div>

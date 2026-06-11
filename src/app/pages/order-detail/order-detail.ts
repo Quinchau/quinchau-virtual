@@ -38,6 +38,8 @@ export class OrderDetail implements OnInit {
     readonly lines    = signal<any[]>([]);
     readonly orderno  = signal<number | null>(null);
     readonly docsOpen = signal(false);
+    readonly extraImages       = signal<{ id: number; url: string }[]>([]);
+    readonly uploadingExtra    = signal(false);
 
     // Menú 3 puntos
     readonly openMenuLineno = signal<number | null>(null);
@@ -127,6 +129,7 @@ export class OrderDetail implements OnInit {
                 }
                 this.header.set(res.data.header);
                 this.lines.set(res.data.lines);
+                this.extraImages.set(res.data.header.extra_images ?? []);
             },
             error: () => {
                 this.loading.set(false);
@@ -532,4 +535,57 @@ export class OrderDetail implements OnInit {
     fileName(url: string): string {
         return url.split('/').pop()?.split('?')[0] ?? url;
     }
+
+    // ── Imágenes adicionales ──────────────────────────────────────────
+
+    triggerExtraImageUpload(): void {
+    const orderno = this.orderno();
+    if (!orderno) return;
+
+    const input         = document.createElement('input');
+    input.type          = 'file';
+    input.accept        = 'image/*,application/pdf';
+    input.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+
+    document.body.appendChild(input);
+
+    input.onchange = (e: any) => {
+        const file = e.target.files[0];
+        document.body.removeChild(input);
+        if (!file) return;
+
+        this.uploadingExtra.set(true);
+        this.apis.uploadOrderExtraImage(orderno, file).subscribe({
+            next: (res) => {
+                this.uploadingExtra.set(false);
+                this.extraImages.update(imgs => [...imgs, res.data]);
+                this.showSuccess('Imagen agregada correctamente');
+            },
+            error: (err) => {
+                this.uploadingExtra.set(false);
+                this.actionError.set(err?.error?.mensaje || 'Error al subir imagen');
+            }
+        });
+    };
+
+    input.oncancel = () => { document.body.removeChild(input); };
+    input.click();
+}
+
+    deleteExtraImage(imageId: number): void {
+        const orderno = this.orderno();
+        if (!orderno) return;
+        if (!confirm('¿Eliminar esta imagen?')) return;
+
+        this.apis.deleteOrderExtraImage(orderno, imageId).subscribe({
+            next: () => {
+                this.extraImages.update(imgs => imgs.filter(i => i.id !== imageId));
+                this.showSuccess('Imagen eliminada');
+            },
+            error: (err) => {
+                this.actionError.set(err?.error?.mensaje || 'Error al eliminar imagen');
+            }
+        });
+    }
+
 }

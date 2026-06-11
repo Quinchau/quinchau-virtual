@@ -663,5 +663,21 @@ deleteTerminoAlias(terminoId: number, aliasId: number): Observable<{ success: bo
   );
 }
 
+uploadOrderExtraImage(orderno: number, file: File): Observable<{ exito: boolean; data: { url: string; id: number } }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<any>(
+        `${this.nodeBaseUrl}/orders-sales/${orderno}/extra-images`,
+        formData
+    );
+}
+
+// Eliminar imagen adicional de un pedido
+deleteOrderExtraImage(orderno: number, imageId: number): Observable<{ exito: boolean }> {
+    return this.http.delete<{ exito: boolean }>(
+        `${this.nodeBaseUrl}/orders-sales/${orderno}/extra-images/${imageId}`
+    );
+}
+
 
 }
