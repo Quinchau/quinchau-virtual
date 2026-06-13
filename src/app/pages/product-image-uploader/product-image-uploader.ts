@@ -185,4 +185,33 @@ export class ProductImageUploaderComponent implements OnInit {
     for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
     return new File([arr], filename, { type: mime });
   }
+
+  async duplicateImage(image: ImageItem) {
+  if (!image.id || typeof window === 'undefined') return;
+  try {
+    const response = await fetch(image.url);
+    const blob     = await response.blob();
+    const file     = new File([blob], `copy_${image.id}.jpg`, { type: blob.type });
+
+    const newItem: ImageItem = {
+      file,
+      url:     URL.createObjectURL(file),
+      cover:   false,
+      status:  'pending',
+      retries: 0
+    };
+
+    this.images.push(newItem);
+    this.imagesChanged.emit(this.images);
+    await this.uploadImage(this.images.length - 1);
+  } catch(e) {
+    alert('Error al duplicar imagen');
+  }
+}
+
+  onImageDuplicated(imageId: number) {
+    const image = this.images.find(img => img.id === imageId);
+    if (image) this.duplicateImage(image);
+  }
+
 }
