@@ -42,6 +42,11 @@
         {{ managerState.currentModel()?.modeldescrip || '' }}
       </span>
     </h1>
+
+       <app-faqs
+     [modelId]="managerState.currentModel()?.idmodelo ?? ''"
+     [modelName]="(managerState.currentModel()?.marcadescrip || '') + ' ' + (managerState.currentModel()?.modeldescrip || '')"
+   />
   }
 
 </div>

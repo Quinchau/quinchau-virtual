@@ -1,0 +1,241 @@
+<!-- src/app/pages/faqs/faqscomponent.html -->
+
+<!-- Trigger: enlace en la página del modelo -->
+<button
+  (click)="open()"
+  class="inline-flex items-center gap-1.5 text-xs font-semibold text-orange-500 hover:text-orange-600 transition-colors mt-2"
+  aria-label="Ver preguntas frecuentes de este modelo"
+>
+  <span class="material-symbols-outlined text-base leading-none">help</span>
+  Preguntas frecuentes
+</button>
+
+@if (isOpen()) {
+
+  <!-- Backdrop -->
+  <div
+    class="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity duration-200"
+    (click)="close()"
+  ></div>
+
+  <!-- Bottom Sheet -->
+  <div
+    class="fixed bottom-0 inset-x-0 z-50 flex flex-col bg-white dark:bg-zinc-900 rounded-t-3xl shadow-2xl max-h-[75dvh] h-[75dvh]
+           translate-y-0 transition-transform duration-300 ease-out"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="'Preguntas frecuentes: ' + modelName()"
+  >
+    <!-- Handle + Header -->
+    <div class="flex-none px-5 pt-4 pb-3 border-b border-zinc-100 dark:border-zinc-800">
+      <div class="mx-auto w-10 h-1 rounded-full bg-zinc-200 dark:bg-zinc-700 mb-4"></div>
+
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-orange-500 mb-0.5">FAQ</p>
+          <h2 class="text-lg font-extrabold text-zinc-900 dark:text-white leading-tight">
+            {{ modelName() || 'Este modelo' }}
+          </h2>
+        </div>
+
+        <div class="flex items-center gap-2">
+          @if (canEdit()) {
+            <button
+              (click)="startAdd()"
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-colors"
+            >
+              <span class="material-symbols-outlined text-sm leading-none">add</span>
+              Nueva
+            </button>
+          }
+          <button
+            (click)="close()"
+            class="p-1.5 rounded-xl text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            aria-label="Cerrar"
+          >
+            <span class="material-symbols-outlined text-xl leading-none">close</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Body scrollable -->
+    <div 
+      class="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-4 space-y-3 pb-24"
+      style="height: 0; min-height: 0;"
+    >
+
+      <!-- Loading -->
+      @if (isLoading()) {
+        @for (i of [1,2,3]; track i) {
+          <div class="rounded-2xl bg-zinc-100 dark:bg-zinc-800 h-16 animate-pulse"></div>
+        }
+      }
+
+      <!-- Error -->
+      @else if (error()) {
+        <div class="rounded-2xl bg-red-50 dark:bg-red-950/30 p-4 text-center">
+          <span class="material-symbols-outlined text-3xl text-red-500">error</span>
+          <p class="text-sm text-red-600 dark:text-red-400 mt-1">
+            {{ error() }}
+          </p>
+          <button
+            (click)="retryLoad()"
+            class="mt-2 px-4 py-1.5 rounded-xl text-xs font-bold bg-red-500 hover:bg-red-600 text-white transition-colors"
+          >
+            Reintentar
+          </button>
+        </div>
+      }
+
+      <!-- Vacío -->
+      @else if (faqs().length === 0 && !showForm()) {
+        <div class="flex flex-col items-center justify-center py-14 text-zinc-400">
+          <span class="material-symbols-outlined text-5xl mb-3">quiz</span>
+          <p class="font-bold text-sm">Sin preguntas todavía</p>
+          @if (canEdit()) {
+            <p class="text-xs mt-1">Usá el botón <strong>Nueva</strong> para agregar una.</p>
+          }
+          @if (!canEdit()) {
+            <p class="text-xs mt-1">No hay preguntas frecuentes disponibles.</p>
+          }
+        </div>
+      }
+
+      <!-- Formulario Agregar / Editar -->
+      @if (showForm()) {
+        <div class="rounded-2xl border-2 border-orange-400 bg-orange-50 dark:bg-orange-950/30 p-4 space-y-3">
+          <p class="text-xs font-bold uppercase tracking-widest text-orange-500">
+            {{ editingId() ? 'Editar pregunta' : 'Nueva pregunta' }}
+          </p>
+          <textarea
+            [(ngModel)]="formQuestion"
+            placeholder="Pregunta…"
+            rows="2"
+            class="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 resize-none focus:outline-none focus:ring-2 focus:ring-orange-400"
+          ></textarea>
+          <textarea
+            [(ngModel)]="formAnswer"
+            placeholder="Respuesta…"
+            rows="3"
+            class="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 resize-none focus:outline-none focus:ring-2 focus:ring-orange-400"
+          ></textarea>
+          <div class="flex gap-2 justify-end">
+            <button
+              (click)="cancelForm()"
+              class="px-4 py-1.5 rounded-xl text-xs font-bold text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              (click)="saveItem()"
+              [disabled]="isSaving()"
+              class="px-4 py-1.5 rounded-xl text-xs font-bold bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white transition-colors"
+            >
+              {{ isSaving() ? 'Guardando…' : 'Guardar' }}
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Lista de FAQs -->
+      @for (faq of faqs(); track faq.id) {
+        <div 
+          class="rounded-2xl bg-zinc-50 dark:bg-zinc-800/60 overflow-hidden"
+          [id]="'faq-' + faq.id"
+        >
+
+          <!-- Pregunta (accordion toggle) -->
+          <button
+            class="w-full flex items-start justify-between gap-3 px-4 py-3 text-left"
+            (click)="toggleItem(faq.id)"
+            [attr.aria-expanded]="openItemId() === faq.id"
+          >
+            <span class="text-sm font-bold text-zinc-800 dark:text-zinc-100 flex-1 leading-snug">
+              {{ faq.question }}
+            </span>
+            <span
+              class="material-symbols-outlined text-base text-zinc-400 mt-0.5 transition-transform duration-200"
+              [class.rotate-180]="openItemId() === faq.id"
+            >
+              expand_more
+            </span>
+          </button>
+
+          <!-- Respuesta expandible -->
+          @if (openItemId() === faq.id) {
+            <div class="px-4 pb-3 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed border-t border-zinc-100 dark:border-zinc-700 pt-2">
+              {{ faq.answer }}
+
+              <!-- Acciones: Editar/Eliminar/Compartir -->
+              <div class="flex items-center justify-between mt-3 pt-2 border-t border-zinc-100 dark:border-zinc-700">
+                <div class="flex gap-2">
+                  @if (canEdit()) {
+                    <button
+                      (click)="startEdit(faq)"
+                      class="flex items-center gap-1 text-[11px] font-bold text-zinc-500 hover:text-orange-500 transition-colors"
+                    >
+                      <span class="material-symbols-outlined text-sm leading-none">edit</span>
+                      Editar
+                    </button>
+                    <button
+                      (click)="deleteItem(faq.id)"
+                      class="flex items-center gap-1 text-[11px] font-bold text-zinc-500 hover:text-red-500 transition-colors"
+                    >
+                      <span class="material-symbols-outlined text-sm leading-none">delete</span>
+                      Eliminar
+                    </button>
+                  }
+                </div>
+                
+                <!-- Botón para compartir/copiar enlace -->
+                <button
+                  (click)="shareFaq(faq)"
+                  class="flex items-center gap-1 text-[11px] font-bold text-zinc-400 hover:text-orange-500 transition-colors"
+                  title="Compartir esta pregunta"
+                >
+                  <span class="material-symbols-outlined text-sm leading-none">share</span>
+                  Compartir
+                </button>
+              </div>
+            </div>
+          }
+
+        </div>
+      }
+
+    </div>
+    <!-- Fin Body scrollable -->
+     
+    <!-- Safe-area bottom -->
+    <div class="flex-none pb-6"></div>
+  </div>
+
+}
+
+<!-- Toast / Notificación -->
+@if (toastMessage()) {
+  <div 
+    class="fixed bottom-24 left-1/2 -translate-x-1/2 z-[60] px-4 py-3 rounded-2xl shadow-lg max-w-[90vw] text-sm font-bold transition-all duration-300"
+    [class]="{
+      'bg-green-500 text-white': toastType() === 'success',
+      'bg-red-500 text-white': toastType() === 'error',
+      'bg-zinc-800 dark:bg-zinc-700 text-white': toastType() === 'info'
+    }"
+    role="alert"
+  >
+    <div class="flex items-center gap-3">
+      <span class="material-symbols-outlined text-lg">
+        {{ toastType() === 'success' ? 'check_circle' : toastType() === 'error' ? 'error' : 'info' }}
+      </span>
+      <span>{{ toastMessage() }}</span>
+      <button
+        (click)="closeToast()"
+        class="ml-2 text-white/70 hover:text-white transition-colors"
+        aria-label="Cerrar notificación"
+      >
+        <span class="material-symbols-outlined text-sm">close</span>
+      </button>
+    </div>
+  </div>
+}

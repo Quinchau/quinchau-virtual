@@ -32,6 +32,16 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/privacy-policy/privacy-policy').then(m => m.PrivacyPolicy) 
   },
 
+  // === RUTAS DE FAQS ===
+  {
+    path: 'faqs/:modelId/:modelName',
+    loadComponent: () => import('./pages/faqs/faqs').then(m => m.FaqsComponent)
+  },
+  {
+    path: 'faqs/:modelId/:modelName/:faqId',
+    loadComponent: () => import('./pages/faqs/faqs').then(m => m.FaqsComponent)
+  },
+
   {
   path: 'desk',
   loadComponent: () => import('./pages/desk/desk').then(m => m.Desk),

@@ -17,6 +17,7 @@ import { BranchCatalogsResponse, CreateBranchPayload, CustomerDetailResult, Cust
 import { OnDemandListResponse } from '../models/on-demand-model';
 import { StockAvailabilityResponse, WarehouseOption } from '../models/orders.models';
 import { AliasItem, Termino } from '../models/terminos.model';
+import { CreateFaqDto, FaqDeleteResponse, FaqListResponse, FaqSingleResponse, UpdateFaqDto } from '../models/faqs.models';
 
 @Injectable({
   providedIn: 'root',
@@ -684,6 +685,40 @@ listOrdersHistory(): Observable<{ exito: boolean; data: any[] }> {
         `${this.nodeBaseUrl}/orders-sales/history`
     );
 }
+
+  public getFaqs(modelId: number | string): Observable<FaqListResponse> {
+    return this.http.get<FaqListResponse>(
+      `${this.nodeBaseUrl}/faqs/model/${modelId}`
+    );
+  }
+
+
+  public createFaq(data: CreateFaqDto): Observable<FaqSingleResponse> {
+    return this.http.post<FaqSingleResponse>(
+      `${this.nodeBaseUrl}/faqs`,
+      data,
+      { withCredentials: true }
+    );
+  }
+
+ 
+  public updateFaq(
+    id: number, 
+    data: UpdateFaqDto
+  ): Observable<FaqSingleResponse> {
+    return this.http.put<FaqSingleResponse>(
+      `${this.nodeBaseUrl}/faqs/${id}`,
+      data,
+      { withCredentials: true }
+    );
+  }
+
+  public deleteFaq(id: number): Observable<FaqDeleteResponse> {
+    return this.http.delete<FaqDeleteResponse>(
+      `${this.nodeBaseUrl}/faqs/${id}`,
+      { withCredentials: true }
+    );
+  }
 
 
 }

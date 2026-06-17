@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ManagerState } from '../../services/manager-state';
 import { Title, Meta } from '@angular/platform-browser';
+import { FaqsComponent } from '../faqs/faqs';
 
 interface ModeloData {
   modeldescrip?: string;
@@ -18,7 +19,7 @@ interface ModeloData {
 @Component({
   selector: 'app-modelpage',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FaqsComponent],
   templateUrl: './modelpage.html',
 })
 export class Modelpage implements OnDestroy {
