@@ -2,10 +2,11 @@
 
 import { Component, inject, signal, computed, OnDestroy, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { ManagerState } from '../../services/manager-state';
 import { Title, Meta } from '@angular/platform-browser';
 import { FaqsComponent } from '../faqs/faqs';
+import { FormsModule } from '@angular/forms';
 
 interface ModeloData {
   modeldescrip?: string;
@@ -19,7 +20,7 @@ interface ModeloData {
 @Component({
   selector: 'app-modelpage',
   standalone: true,
-  imports: [CommonModule, RouterLink, FaqsComponent],
+  imports: [CommonModule, FormsModule, RouterLink, RouterOutlet],
   templateUrl: './modelpage.html',
 })
 export class Modelpage implements OnDestroy {
@@ -80,6 +81,9 @@ export class Modelpage implements OnDestroy {
   }
 
   private updateMetaTags(): void {
+  const childRoute = this.route.firstChild?.snapshot.routeConfig?.path;
+  const isFaqRoute = childRoute === 'faq' || childRoute === 'faq/:faqId';
+
   if (this.isOffersPage) {
     const pageTitle   = 'Ofertas en Repuestos de Motos | Quinchau';
     const pageDesc    = 'Descubre las mejores ofertas en repuestos para motos. Carburadores, pistones, frenos y más. Envíos a todo el país.';
@@ -113,9 +117,13 @@ export class Modelpage implements OnDestroy {
 
   const modelo = this.managerState.currentModel() as ModeloData | null;
 
-  let imagenUrl = modelo?.img_url;
-  let modeloEncontrado = modelo;
+  let imagenUrl: string;
+let modeloEncontrado = modelo;
 
+if (isFaqRoute) {
+  imagenUrl = 'https://quinchau.com/weberp/img/m/faq-preview.png';
+} else {
+  imagenUrl = modelo?.img_url ?? '';
   if (!imagenUrl) {
     const destacados = this.managerState.modelosDestacados?.() || [];
     const encontrado = destacados.find((m: any) =>
@@ -126,10 +134,10 @@ export class Modelpage implements OnDestroy {
       modeloEncontrado = encontrado;
     }
   }
-
   if (!imagenUrl) {
     imagenUrl = 'https://quinchau.com/weberp/img/m/image-model7.jpg';
   }
+}
 
   const nombreSlug = this.slugCompleto
     .replace(/-\d+$/, '')
@@ -140,9 +148,20 @@ export class Modelpage implements OnDestroy {
   const nombreMarca  = modeloEncontrado?.marcadescrip ?? this.marcaSlug.replace(/-/g, ' ').toUpperCase();
   const seoNote      = modeloEncontrado?.seo_note ?? `Encuentra repuestos originales y genéricos para ${nombreMarca} ${nombreModelo}. Carburadores, pistones, frenos, transmisión y más. Envíos a todo el país.`;
 
-  const pageTitle   = `Repuestos ${nombreMarca} ${nombreModelo} | Quinchau`;
-  const pageDesc    = seoNote;
-  const urlCompleta = `https://quinchau.com/repuestos-motos/${this.marcaSlug}/${this.slugCompleto}`;
+  // ✅ Títulos, descripciones y URL según si es ruta FAQ o modelo
+  const pageTitle = isFaqRoute
+    ? `Preguntas frecuentes · ${nombreMarca} ${nombreModelo} | Quinchau`
+    : `Repuestos ${nombreMarca} ${nombreModelo} | Quinchau`;
+
+  const pageDesc = isFaqRoute
+    ? `Preguntas frecuentes sobre ${nombreMarca} ${nombreModelo}. Resolvé tus dudas antes de comprarlo.`
+    : seoNote;
+
+  const urlCompleta = isFaqRoute
+    ? `https://quinchau.com/repuestos-motos/${this.marcaSlug}/${this.slugCompleto}/faq`
+    : `https://quinchau.com/repuestos-motos/${this.marcaSlug}/${this.slugCompleto}`;
+
+  const ogType = isFaqRoute ? 'website' : 'product.group';
 
   this.title.setTitle(pageTitle);
   this.meta.updateTag({ name: 'description',              content: pageDesc });
@@ -155,7 +174,7 @@ export class Modelpage implements OnDestroy {
   this.meta.updateTag({ property: 'og:image:height',      content: '630' });
   this.meta.updateTag({ property: 'og:image:alt',         content: `${nombreMarca} ${nombreModelo}` });
   this.meta.updateTag({ property: 'og:url',               content: urlCompleta });
-  this.meta.updateTag({ property: 'og:type',              content: 'product.group' });
+  this.meta.updateTag({ property: 'og:type',              content: ogType });
   this.meta.updateTag({ property: 'og:site_name',         content: 'Quinchau' });
   this.meta.updateTag({ property: 'og:locale',            content: 'es_ES' });
   this.meta.updateTag({ name: 'twitter:card',             content: 'summary_large_image' });

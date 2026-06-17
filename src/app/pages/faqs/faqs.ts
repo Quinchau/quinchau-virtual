@@ -1,9 +1,10 @@
 // src/app/pages/faqs/faqs.ts
 
 import {
-  Component, inject, input, signal, computed, OnChanges, effect
+  Component, inject, signal, computed, OnInit, OnDestroy, PLATFORM_ID
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { Meta, Title } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { ManagerState } from '../../services/manager-state';
 import { ManagerApis } from '../../services/manager-apis';
@@ -13,8 +14,8 @@ import {
   CreateFaqDto,
   UpdateFaqDto
 } from '../../models/faqs.models';
-import { firstValueFrom } from 'rxjs';
-import { RouterLink } from '@angular/router';
+import { firstValueFrom, Subject, takeUntil } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common';
 
 @Component({
@@ -23,25 +24,34 @@ import { Location } from '@angular/common';
   imports: [CommonModule, FormsModule],
   templateUrl: './faqscomponent.html',
 })
-export class FaqsComponent implements OnChanges {
-
-  // ── Inputs ────────────────────────────────────────────────────────────────
-  modelId   = input.required<number | string>();
-  modelName = input<string>('');
-  modelSlug = input<string>(''); // Para construir URLs amigables
+export class FaqsComponent implements OnInit, OnDestroy {
 
   // ── Dependencias ──────────────────────────────────────────────────────────
   private managerState = inject(ManagerState);
   private managerApis = inject(ManagerApis);
   private location = inject(Location);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private platformId = inject(PLATFORM_ID);
+  private destroy$ = new Subject<void>();
+  private meta = inject(Meta);
+  private titleService = inject(Title);
 
-  // ── Estado del panel ──────────────────────────────────────────────────────
-  isOpen     = signal(false);
-  isLoading  = signal(false);
-  isSaving   = signal(false);
+  // ── Estado ────────────────────────────────────────────────────────────────
+  isSaving = signal(false);
   openItemId = signal<number | null>(null);
   toastMessage = signal<string | null>(null);
   toastType = signal<'success' | 'error' | 'info'>('info');
+
+  // ── Datos del modelo ──────────────────────────────────────────────────────
+  modelName = signal<string>('');
+
+  // ── Loading / Error desde resource ───────────────────────────────────────
+  isLoading = computed(() => this.managerState.faqsResource.isLoading());
+  error = computed(() => this.managerState.faqsResource.error() 
+    ? 'No se pudieron cargar las preguntas frecuentes' 
+    : null
+  );
 
   // ── Acceso ────────────────────────────────────────────────────────────────
   canEdit = computed(() => {
@@ -49,68 +59,97 @@ export class FaqsComponent implements OnChanges {
     return canEditFaqs(fa);
   });
 
-  // ── Datos ─────────────────────────────────────────────────────────────────
-  faqs = signal<FaqItem[]>([]);
-  error = signal<string | null>(null);
+  // ── FAQs: resource como base + signal local para mutaciones CRUD ──────────
+  private faqsBase = computed(() => this.managerState.faqsResource.value() ?? []);
+  private localFaqs = signal<FaqItem[] | null>(null);
+  faqs = computed(() => this.localFaqs() ?? this.faqsBase());
 
   // ── Formulario ────────────────────────────────────────────────────────────
-  showForm     = signal(false);
-  editingId    = signal<number | null>(null);
+  showForm = signal(false);
+  editingId = signal<number | null>(null);
   formQuestion = '';
-  formAnswer   = '';
+  formAnswer = '';
 
   // ── Ciclo de vida ─────────────────────────────────────────────────────────
-  ngOnChanges(): void {
-    this.faqs.set([]);
-    this.isOpen.set(false);
-    this.cancelForm();
-    this.openItemId.set(null);
-    this.error.set(null);
-    this.toastMessage.set(null);
-  }
+  ngOnInit(): void {
+    const currentModel = this.managerState.currentModel();
 
-  // ── Panel ─────────────────────────────────────────────────────────────────
-  open(): void {
-    this.isOpen.set(true);
-    if (this.faqs().length === 0) {
-      this.loadFaqs();
+    if (currentModel?.idmodelo) {
+      const marca = currentModel.marcadescrip || '';
+      const modelo = currentModel.modeldescrip || '';
+      this.modelName.set(`${marca} ${modelo}`.trim());
+      this.setFaqMeta();
+    }
+
+    this.route.parent?.params.pipe(takeUntil(this.destroy$)).subscribe(() => {
+      const model = this.managerState.currentModel();
+      if (model?.idmodelo) {
+        const marca = model.marcadescrip || '';
+        const modelo = model.modeldescrip || '';
+        this.modelName.set(`${marca} ${modelo}`.trim());
+        this.setFaqMeta();
+        this.localFaqs.set(null); // ✅ resetear overrides locales al cambiar modelo
+      }
+    });
+
+    if (isPlatformBrowser(this.platformId)) {
+      this.route.params.pipe(takeUntil(this.destroy$)).subscribe(params => {
+        const faqId = params['faqId'];
+        if (faqId) {
+          setTimeout(() => {
+            this.openItemId.set(Number(faqId));
+            const element = document.getElementById(`faq-${faqId}`);
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 500);
+        }
+      });
     }
   }
 
+  private setFaqMeta(): void {
+    const model = this.modelName();
+    const description = `Preguntas frecuentes sobre ${model}. Resolvé tus dudas antes de comprarlo.`;
+
+    this.titleService.setTitle(`FAQ · ${model}`);
+    this.meta.updateTag({ name: 'description', content: description });
+    this.meta.updateTag({ property: 'og:title', content: `Preguntas frecuentes · ${model}` });
+    this.meta.updateTag({ property: 'og:description', content: description });
+    this.meta.updateTag({ property: 'og:type', content: 'website' });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  // ── Panel ─────────────────────────────────────────────────────────────────
   close(): void {
-    this.isOpen.set(false);
-    this.cancelForm();
-    this.openItemId.set(null);
-    this.toastMessage.set(null);
+    this.router.navigate(['../'], { relativeTo: this.route });
+  }
+
+  goToCatalog(): void {
+    this.router.navigate(['../'], { relativeTo: this.route });
   }
 
   // ── Acordeón ──────────────────────────────────────────────────────────────
   toggleItem(id: number): void {
-    this.openItemId.update(cur => cur === id ? null : id);
-  }
+    const isOpen = this.openItemId() === id;
+    this.openItemId.set(isOpen ? null : id);
 
-  // ── CRUD ──────────────────────────────────────────────────────────────────
-  private async loadFaqs(): Promise<void> {
-    this.isLoading.set(true);
-    this.error.set(null);
-    
-    try {
-      const response = await firstValueFrom(
-        this.managerApis.getFaqs(this.modelId())
-      );
-      this.faqs.set(response.data ?? []);
-    } catch (err) {
-      console.error('[faqs] Error al cargar FAQs:', err);
-      this.error.set('No se pudieron cargar las preguntas frecuentes');
-    } finally {
-      this.isLoading.set(false);
+    if (!isOpen) {
+      this.router.navigate([id], { relativeTo: this.route });
+    } else {
+      this.router.navigate(['../'], { relativeTo: this.route });
     }
   }
 
+  // ── CRUD ──────────────────────────────────────────────────────────────────
   startAdd(): void {
     this.editingId.set(null);
     this.formQuestion = '';
-    this.formAnswer   = '';
+    this.formAnswer = '';
     this.showForm.set(true);
     this.openItemId.set(null);
   }
@@ -118,7 +157,7 @@ export class FaqsComponent implements OnChanges {
   startEdit(faq: FaqItem): void {
     this.editingId.set(faq.id);
     this.formQuestion = faq.question;
-    this.formAnswer   = faq.answer;
+    this.formAnswer = faq.answer;
     this.showForm.set(true);
   }
 
@@ -126,7 +165,7 @@ export class FaqsComponent implements OnChanges {
     this.showForm.set(false);
     this.editingId.set(null);
     this.formQuestion = '';
-    this.formAnswer   = '';
+    this.formAnswer = '';
   }
 
   async saveItem(): Promise<void> {
@@ -136,11 +175,11 @@ export class FaqsComponent implements OnChanges {
     }
 
     this.isSaving.set(true);
-
     const isEdit = this.editingId() !== null;
 
     try {
       let saved: FaqItem;
+      const current = this.faqs();
 
       if (isEdit) {
         const updateData: UpdateFaqDto = {
@@ -151,11 +190,12 @@ export class FaqsComponent implements OnChanges {
           this.managerApis.updateFaq(this.editingId()!, updateData)
         );
         saved = response.data;
-        this.faqs.update(list => list.map(f => f.id === saved.id ? saved : f));
+        this.localFaqs.set(current.map((f: FaqItem) => f.id === saved.id ? saved : f));
         this.showToast('Pregunta actualizada correctamente', 'success');
       } else {
+        const modelId = this.managerState.currentModel()?.idmodelo;
         const createData: CreateFaqDto = {
-          modelId: this.modelId(),
+          modelId: modelId!,
           question: this.formQuestion.trim(),
           answer: this.formAnswer.trim(),
         };
@@ -163,7 +203,7 @@ export class FaqsComponent implements OnChanges {
           this.managerApis.createFaq(createData)
         );
         saved = response.data;
-        this.faqs.update(list => [...list, saved]);
+        this.localFaqs.set([...current, saved]);
         this.showToast('Pregunta creada correctamente', 'success');
       }
 
@@ -178,11 +218,14 @@ export class FaqsComponent implements OnChanges {
 
   async deleteItem(id: number): Promise<void> {
     if (!confirm('¿Eliminar esta pregunta?')) return;
-    
+
     try {
       await firstValueFrom(this.managerApis.deleteFaq(id));
-      this.faqs.update(list => list.filter(f => f.id !== id));
-      if (this.openItemId() === id) this.openItemId.set(null);
+      this.localFaqs.set(this.faqs().filter((f: FaqItem) => f.id !== id));
+      if (this.openItemId() === id) {
+        this.openItemId.set(null);
+        this.router.navigate(['../'], { relativeTo: this.route });
+      }
       this.showToast('Pregunta eliminada correctamente', 'success');
     } catch (err) {
       console.error('[faqs] Error al eliminar FAQ:', err);
@@ -190,100 +233,91 @@ export class FaqsComponent implements OnChanges {
     }
   }
 
-  // ── Compartir / Copiar enlace ────────────────────────────────────────────
-  
-  /**
-   * Copia el enlace a una FAQ específica
-   */
+  // ── Compartir ─────────────────────────────────────────────────────────────
   copyFaqLink(faqId: number): void {
-    const baseUrl = window.location.origin;
-    const currentPath = this.location.path();
-    const faqUrl = `${baseUrl}${currentPath}?faq=${faqId}`;
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    const faqUrl = `${window.location.origin}${this.location.path()}`;
 
     if (navigator.clipboard) {
       navigator.clipboard.writeText(faqUrl).then(() => {
         this.showToast('Enlace copiado al portapapeles', 'success');
-      }).catch(() => {
-        this.fallbackCopy(faqUrl);
-      });
+      }).catch(() => this.fallbackCopy(faqUrl));
     } else {
       this.fallbackCopy(faqUrl);
     }
   }
 
-  /**
-   * Fallback para copiar enlace (cuando clipboard no está disponible)
-   */
   private fallbackCopy(text: string): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+
     const textarea = document.createElement('textarea');
     textarea.value = text;
     textarea.style.position = 'fixed';
     textarea.style.opacity = '0';
     document.body.appendChild(textarea);
     textarea.select();
-    
+
     try {
       document.execCommand('copy');
       this.showToast('Enlace copiado al portapapeles', 'success');
-    } catch (err) {
+    } catch {
       this.showToast(`Enlace: ${text}`, 'info');
     } finally {
       document.body.removeChild(textarea);
     }
   }
 
-  /**
-   * Compartir con Web Share API (móviles)
-   */
   shareFaq(faq: FaqItem): void {
-    const baseUrl = window.location.origin;
-    const currentPath = this.location.path();
-    const faqUrl = `${baseUrl}${currentPath}?faq=${faq.id}`;
-    
-    const shareData = {
-      title: `Pregunta sobre ${this.modelName()}`,
-      text: `${faq.question}\n\n${faq.answer}`,
-      url: faqUrl
-    };
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    const faqUrl = `${window.location.origin}${this.location.path()}`;
 
     if (navigator.share) {
-      navigator.share(shareData).catch(() => {
-        // Si el usuario cancela, no hacer nada
-      });
+      navigator.share({
+        title: `Pregunta sobre ${this.modelName()}`,
+        url: faqUrl
+      }).catch(() => {});
     } else {
       this.copyFaqLink(faq.id);
     }
   }
 
-  /**
-   * Obtiene la URL de la página de FAQs completa
-   */
-  getFaqsPageUrl(): string {
-    const slug = this.modelSlug() || this.modelName().replace(/\s+/g, '-').toLowerCase();
-    return `/faqs/${this.modelId()}/${slug}`;
+  shareFaqsPage(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    const baseUrl = window.location.origin;
+    const currentPath = this.location.path();
+    const pathWithoutQuery = currentPath.split('?')[0];
+    const sharePath = pathWithoutQuery.endsWith('/faq') ? pathWithoutQuery : `${pathWithoutQuery}/faq`;
+    const fullUrl = `${baseUrl}${sharePath}`;
+
+    if (navigator.share) {
+      navigator.share({
+        title: `Preguntas frecuentes: ${this.modelName()}`,
+        url: fullUrl
+      }).catch(() => {});
+    } else if (navigator.clipboard) {
+      navigator.clipboard.writeText(fullUrl).then(() => {
+        this.showToast('Enlace copiado al portapapeles', 'success');
+      }).catch(() => this.fallbackCopy(fullUrl));
+    } else {
+      this.fallbackCopy(fullUrl);
+    }
   }
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
+  // ── Helpers ───────────────────────────────────────────────────────────────
   retryLoad(): void {
-    this.loadFaqs();
+    this.localFaqs.set(null);
+    this.managerState.faqsResource.reload();
   }
 
-  /**
-   * Muestra un toast/notificación
-   */
   private showToast(message: string, type: 'success' | 'error' | 'info' = 'info'): void {
     this.toastMessage.set(message);
     this.toastType.set(type);
-    
-    // Auto-cerrar después de 3 segundos
-    setTimeout(() => {
-      this.toastMessage.set(null);
-    }, 3000);
+    setTimeout(() => this.toastMessage.set(null), 3000);
   }
 
-  /**
-   * Cierra el toast manualmente
-   */
   closeToast(): void {
     this.toastMessage.set(null);
   }

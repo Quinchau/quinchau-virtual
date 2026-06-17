@@ -42,11 +42,14 @@
         {{ managerState.currentModel()?.modeldescrip || '' }}
       </span>
     </h1>
+    <a
+        [routerLink]="['faq']"
+        class="inline-flex items-center gap-1.5 text-xs font-semibold text-orange-500 hover:text-orange-600 transition-colors mt-2"
+      >
+        <span class="material-symbols-outlined text-base leading-none">help</span>
+        Preguntas frecuentes
+      </a>
 
-       <app-faqs
-     [modelId]="managerState.currentModel()?.idmodelo ?? ''"
-     [modelName]="(managerState.currentModel()?.marcadescrip || '') + ' ' + (managerState.currentModel()?.modeldescrip || '')"
-   />
   }
 
 </div>
@@ -128,5 +131,7 @@
     }
 
   </div>
+
+  <router-outlet></router-outlet>
 
 </div>

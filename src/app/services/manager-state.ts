@@ -9,6 +9,7 @@ import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { CartResponse } from '../models/cart-checkout.models';
 import { RegisterRequest, RegisterResponse } from '../models/register-models';
+import { FaqItem } from '../models/faqs.models';
 
 
 type ActionStatus = 'idle' | 'loading' | 'success' | 'error';
@@ -200,6 +201,19 @@ public readonly currentModel = computed(() => {
   }
   
   return null;
+});
+
+public readonly faqsResource = rxResource<FaqItem[], number | string | null>({
+  params: () => this.currentModel()?.idmodelo ?? null,
+  stream: (params) => {
+    const id = params.params;
+    if (!id) return of([]);
+    return this.managerApis.getFaqs(id).pipe(
+      map((response: any) => response.data ?? []),
+      catchError(() => of([]))
+    );
+  },
+  defaultValue: []
 });
 
  // --- GUEST USER ----

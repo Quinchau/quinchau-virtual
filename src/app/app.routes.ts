@@ -1,3 +1,5 @@
+// src/app/app.routes.ts
+
 import { Routes } from '@angular/router';
 import { LoginComponent } from './pages/login/login';
 import { Dashboard } from './pages/dashboard/dashboard';
@@ -16,6 +18,8 @@ import { Invoice } from './pages/invoice/invoice';
 import { Branch } from './pages/branch/branch';
 import { Orders } from './pages/orders/orders';
 import { OrderInvoice } from './pages/order-invoice/order-invoice';
+import { Modelpage } from './pages/modelpage/modelpage';
+import { FaqsComponent } from './pages/faqs/faqs';
 
 export const routes: Routes = [
   // === RUTAS PÚBLICAS ===
@@ -32,22 +36,13 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/privacy-policy/privacy-policy').then(m => m.PrivacyPolicy) 
   },
 
-  // === RUTAS DE FAQS ===
+  // === RUTAS ADMINISTRATIVAS ===
   {
-    path: 'faqs/:modelId/:modelName',
-    loadComponent: () => import('./pages/faqs/faqs').then(m => m.FaqsComponent)
+    path: 'desk',
+    loadComponent: () => import('./pages/desk/desk').then(m => m.Desk),
+    canActivate: [adminGuard]
   },
   {
-    path: 'faqs/:modelId/:modelName/:faqId',
-    loadComponent: () => import('./pages/faqs/faqs').then(m => m.FaqsComponent)
-  },
-
-  {
-  path: 'desk',
-  loadComponent: () => import('./pages/desk/desk').then(m => m.Desk),
-  canActivate: [adminGuard]
-  },
-   {
     path: 'product-admin',
     loadComponent: () => import('./pages/product-admin/product-admin').then(m => m.ProductAdminPage),
     canActivate: [adminGuard]
@@ -63,10 +58,10 @@ export const routes: Routes = [
     canActivate: [adminGuard]
   },
   {
-  path: 'terminos',
-  loadComponent: () => import('./pages/terminos/terminos.component').then(m => m.TerminosComponent),
-  canActivate: [adminGuard]
-},
+    path: 'terminos',
+    loadComponent: () => import('./pages/terminos/terminos.component').then(m => m.TerminosComponent),
+    canActivate: [adminGuard]
+  },
 
   // === RUTAS CON PARÁMETROS FIJOS ===
   {
@@ -103,8 +98,8 @@ export const routes: Routes = [
     canActivate: [adminGuard]
   },
   {
-  path: 'customers',
-  component: Customer,
+    path: 'customers',
+    component: Customer,
   },
   {
     path: 'customers/:debtorNo',
@@ -118,45 +113,41 @@ export const routes: Routes = [
     path: 'customers/:debtorNo/branches/:branchCode/edit',
     component: Branch,
   },
-
   {
     path: 'orders',
     component: Orders,
     canActivate: [adminGuard]
   },
-
   {
     path: 'order-list',
     loadComponent: () =>
-        import('./pages/order-list/order-list').then(m => m.OrderList),
+      import('./pages/order-list/order-list').then(m => m.OrderList),
     canActivate: [adminGuard]
-},
-{
+  },
+  {
     path: 'order-list/:orderno',
     loadComponent: () =>
-        import('./pages/order-detail/order-detail').then(m => m.OrderDetail),
+      import('./pages/order-detail/order-detail').then(m => m.OrderDetail),
     canActivate: [adminGuard]
-},
-
-{
+  },
+  {
     path: 'pick-list/:orderno',
     loadComponent: () =>
       import('./pages/pick-list/pick-list').then(m => m.PickList),
     canActivate: [adminGuard]
   },
-
   {
     path: 'order/:orderno/invoice',
     component: OrderInvoice,
     canActivate: [adminGuard]
-},
+  },
 
   // === RUTAS PROTEGIDAS POR AUTENTICACIÓN ===
   {
-  path: 'transfer-group/:groupId',
-  loadComponent: () =>
-    import('./pages/transfer-group-detail/transfer-group-detail').then(m => m.TransferGroupDetailComponent)
-},
+    path: 'transfer-group/:groupId',
+    loadComponent: () =>
+      import('./pages/transfer-group-detail/transfer-group-detail').then(m => m.TransferGroupDetailComponent)
+  },
   {
     path: 'new-transfer',
     component: NewTransferComponent,
@@ -204,29 +195,41 @@ export const routes: Routes = [
     ]
   },
   {
-  path: 'producto/:stockid/:slug',
-  loadComponent: () =>
-    import('./pages/product-page/product-page').then(m => m.ProductPage)
-},
-{
-  path: 'producto/:stockid',
-  loadComponent: () =>
-    import('./pages/product-page/product-page').then(m => m.ProductPage)
-},
-{
-  path: 'ofertas',
-  loadComponent: () =>
-    import('./pages/modelpage/modelpage').then(m => m.Modelpage),
-  data: { offersOnly: true }
-},
+    path: 'producto/:stockid/:slug',
+    loadComponent: () =>
+      import('./pages/product-page/product-page').then(m => m.ProductPage)
+  },
+  {
+    path: 'producto/:stockid',
+    loadComponent: () =>
+      import('./pages/product-page/product-page').then(m => m.ProductPage)
+  },
+  {
+    path: 'ofertas',
+    loadComponent: () =>
+      import('./pages/modelpage/modelpage').then(m => m.Modelpage),
+    data: { offersOnly: true }
+  },
 
-  // === RUTAS DINÁMICAS (DEBEN IR AL FINAL) ===
+  // ✅ RUTA DEL MODELO CON HIJOS (FAQs) - UN SOLO definition
+  {
+    path: ':categoria/:marca/:modelo',
+    component: Modelpage,
+    children: [
+      {
+        path: 'faq',
+        component: FaqsComponent
+      },
+      {
+        path: 'faq/:faqId',
+        component: FaqsComponent
+      }
+    ]
+  },
+
+  // === RUTAS DINÁMICAS SIMPLES (DEBEN IR AL FINAL) ===
   { path: ':categoria', component: Home },
   { path: ':categoria/:marca', component: Home },
-  {path: ':categoria/:marca/:modelo',
-    loadComponent: () =>
-      import('./pages/modelpage/modelpage').then(m => m.Modelpage)
-  },
 
   // === REDIRECCIÓN POR DEFECTO ===
   { path: '', redirectTo: '/home', pathMatch: 'full' },
