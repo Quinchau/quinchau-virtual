@@ -46,7 +46,7 @@ export const appConfig: ApplicationConfig = {
 
     importProvidersFrom(ReactiveFormsModule),
 
-    provideServiceWorker('ngsw-worker.js', {
+    provideServiceWorker('sw.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',
     }),

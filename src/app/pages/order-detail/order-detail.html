@@ -110,6 +110,7 @@
             </div>
         </section>
 
+        
         <!-- ── DOCUMENTOS ─────────────────────────────────────────────── -->
         <section class="bg-white rounded-xl border border-[#dbc1b2]/30 overflow-hidden">
             <button (click)="toggleDocs()"
@@ -117,127 +118,219 @@
                 <span class="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
                     <span class="material-symbols-outlined text-sm text-[#944a00]">attach_file</span>
                     Documentos
-                    @if (header().voucher_url) {
+                    @if (voucherDoc()?.status === 'done') {
                         <span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
                     }
-                    @if (header().shipping_doc_url) {
+                    @if (voucherDoc()?.status === 'queued') {
+                        <span class="w-2 h-2 rounded-full bg-blue-400 inline-block"></span>
+                    }
+                    @if (shippingDoc()?.status === 'done') {
                         <span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
+                    }
+                    @if (shippingDoc()?.status === 'queued') {
+                        <span class="w-2 h-2 rounded-full bg-blue-400 inline-block"></span>
                     }
                 </span>
                 <span class="material-symbols-outlined text-slate-400 text-sm transition-transform duration-300"
-                      [style.transform]="docsOpen() ? 'rotate(180deg)' : 'rotate(0deg)'">
+                    [style.transform]="docsOpen() ? 'rotate(180deg)' : 'rotate(0deg)'">
                     expand_more
                 </span>
             </button>
 
             <div class="transition-all duration-300 ease-in-out overflow-hidden"
-                 [style.max-height]="docsOpen() ? '9999px' : '0px'"
-                 [style.opacity]="docsOpen() ? '1' : '0'">
+                [style.max-height]="docsOpen() ? '9999px' : '0px'"
+                [style.opacity]="docsOpen() ? '1' : '0'">
                 <div class="px-5 pb-4 space-y-3">
                     <div class="grid grid-cols-2 gap-3">
 
-                        <!-- Voucher -->
+                        <!-- ── Voucher ── -->
                         <div class="space-y-1.5">
                             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Comprobante</p>
-                            @if (header().voucher_url) {
-                                <a [href]="header().voucher_url" target="_blank" class="block">
-                                    @if (isImage(header().voucher_url)) {
-                                        <img [src]="header().voucher_url" alt="Comprobante"
-                                            class="w-full h-24 object-cover rounded-lg border border-slate-200 hover:opacity-80 transition-opacity" />
+
+                            @if (voucherDoc(); as doc) {
+                                <div class="relative">
+                                    <!-- Imagen con blur si está encolada/subiendo -->
+                                    @if (isImage(doc.url)) {
+                                        <img [src]="doc.url" alt="Comprobante"
+                                            class="w-full h-24 object-cover rounded-lg border border-slate-200 transition-all"
+                                            [class.blur-sm]="doc.status === 'queued' || doc.status === 'uploading'"
+                                            [class.opacity-60]="doc.status === 'queued' || doc.status === 'uploading'" />
                                     } @else {
-                                        <div class="w-full h-24 rounded-lg border border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-1">
+                                        <div class="w-full h-24 rounded-lg border border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-1"
+                                            [class.opacity-60]="doc.status === 'queued' || doc.status === 'uploading'">
                                             <span class="text-3xl">📄</span>
                                             <p class="text-[9px] font-bold text-slate-400 uppercase">PDF</p>
                                         </div>
                                     }
-                                </a>
+
+                                    <!-- Badge de estado superpuesto -->
+                                    @if (doc.status === 'queued') {
+                                        <div class="absolute inset-0 rounded-lg bg-blue-700/60 flex flex-col items-center justify-center gap-1">
+                                            <span class="text-white text-xs font-bold">⏳ Pendiente</span>
+                                            <span class="text-white text-[9px] text-center px-2 opacity-90">
+                                                Subirá al recuperar señal
+                                            </span>
+                                        </div>
+                                    }
+                                    @if (doc.status === 'uploading') {
+                                        <div class="absolute inset-0 rounded-lg bg-black/40 flex items-center justify-center">
+                                            <div class="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        </div>
+                                    }
+                                    @if (doc.status === 'error') {
+                                        <div class="absolute inset-0 rounded-lg bg-red-700/60 flex flex-col items-center justify-center gap-1">
+                                            <span class="text-white text-xs font-bold">Error</span>
+                                        </div>
+                                    }
+                                    <!-- Link solo si está subida -->
+                                    @if (doc.status === 'done') {
+                                        <a [href]="doc.url" target="_blank"
+                                        class="absolute inset-0 rounded-lg"></a>
+                                    }
+                                </div>
                             } @else {
                                 <div class="w-full h-24 rounded-lg border border-dashed border-slate-200 bg-slate-50 flex items-center justify-center">
                                     <span class="material-symbols-outlined text-slate-300 text-2xl">image</span>
                                 </div>
                             }
+
                             @if (!header().delivered) {
-                                <button (click)="triggerFileUpload('voucher')" [disabled]="uploadingVoucher()"
+                                <button (click)="triggerFileUpload('voucher')"
+                                    [disabled]="voucherDoc()?.status === 'uploading' || voucherDoc()?.status === 'queued'"
                                     class="w-full py-1.5 text-[10px] font-bold text-[#944a00] border border-dashed border-[#dbc1b2] rounded-lg hover:bg-orange-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-1">
-                                    @if (uploadingVoucher()) {
+                                    @if (voucherDoc()?.status === 'uploading') {
                                         <span class="material-symbols-outlined text-xs animate-spin">refresh</span>
+                                    } @else if (voucherDoc()?.status === 'queued') {
+                                        <span class="material-symbols-outlined text-xs">schedule</span>
+                                        Encolado
                                     } @else {
                                         <span class="material-symbols-outlined text-xs">upload</span>
-                                        {{ header().voucher_url ? 'Reemplazar' : 'Subir' }}
+                                        {{ voucherDoc() ? 'Reemplazar' : 'Subir' }}
                                     }
                                 </button>
                             }
                         </div>
 
-                        <!-- Guía de despacho -->
+                        <!-- ── Guía de despacho ── -->
                         <div class="space-y-1.5">
                             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Guía despacho</p>
-                            @if (header().shipping_doc_url) {
-                                <a [href]="header().shipping_doc_url" target="_blank" class="block">
-                                    @if (isImage(header().shipping_doc_url)) {
-                                        <img [src]="header().shipping_doc_url" alt="Guía de despacho"
-                                            class="w-full h-24 object-cover rounded-lg border border-slate-200 hover:opacity-80 transition-opacity" />
+
+                            @if (shippingDoc(); as doc) {
+                                <div class="relative">
+                                    @if (isImage(doc.url)) {
+                                        <img [src]="doc.url" alt="Guía de despacho"
+                                            class="w-full h-24 object-cover rounded-lg border border-slate-200 transition-all"
+                                            [class.blur-sm]="doc.status === 'queued' || doc.status === 'uploading'"
+                                            [class.opacity-60]="doc.status === 'queued' || doc.status === 'uploading'" />
                                     } @else {
-                                        <div class="w-full h-24 rounded-lg border border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-1">
+                                        <div class="w-full h-24 rounded-lg border border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-1"
+                                            [class.opacity-60]="doc.status === 'queued' || doc.status === 'uploading'">
                                             <span class="text-3xl">📄</span>
                                             <p class="text-[9px] font-bold text-slate-400 uppercase">PDF</p>
                                         </div>
                                     }
-                                </a>
+
+                                    @if (doc.status === 'queued') {
+                                        <div class="absolute inset-0 rounded-lg bg-blue-700/60 flex flex-col items-center justify-center gap-1">
+                                            <span class="text-white text-xs font-bold">⏳ Pendiente</span>
+                                            <span class="text-white text-[9px] text-center px-2 opacity-90">
+                                                Subirá al recuperar señal
+                                            </span>
+                                        </div>
+                                    }
+                                    @if (doc.status === 'uploading') {
+                                        <div class="absolute inset-0 rounded-lg bg-black/40 flex items-center justify-center">
+                                            <div class="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        </div>
+                                    }
+                                    @if (doc.status === 'error') {
+                                        <div class="absolute inset-0 rounded-lg bg-red-700/60 flex flex-col items-center justify-center gap-1">
+                                            <span class="text-white text-xs font-bold">Error</span>
+                                        </div>
+                                    }
+                                    @if (doc.status === 'done') {
+                                        <a [href]="doc.url" target="_blank"
+                                        class="absolute inset-0 rounded-lg"></a>
+                                    }
+                                </div>
                             } @else {
                                 <div class="w-full h-24 rounded-lg border border-dashed border-slate-200 bg-slate-50 flex items-center justify-center">
                                     <span class="material-symbols-outlined text-slate-300 text-2xl">description</span>
                                 </div>
                             }
+
                             @if (!header().delivered) {
-                                <button (click)="triggerFileUpload('shipping-doc')" [disabled]="uploadingShippingDoc()"
+                                <button (click)="triggerFileUpload('shipping-doc')"
+                                    [disabled]="shippingDoc()?.status === 'uploading' || shippingDoc()?.status === 'queued'"
                                     class="w-full py-1.5 text-[10px] font-bold text-[#944a00] border border-dashed border-[#dbc1b2] rounded-lg hover:bg-orange-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-1">
-                                    @if (uploadingShippingDoc()) {
+                                    @if (shippingDoc()?.status === 'uploading') {
                                         <span class="material-symbols-outlined text-xs animate-spin">refresh</span>
+                                    } @else if (shippingDoc()?.status === 'queued') {
+                                        <span class="material-symbols-outlined text-xs">schedule</span>
+                                        Encolado
                                     } @else {
                                         <span class="material-symbols-outlined text-xs">upload</span>
-                                        {{ header().shipping_doc_url ? 'Reemplazar' : 'Subir' }}
+                                        {{ shippingDoc() ? 'Reemplazar' : 'Subir' }}
                                     }
                                 </button>
                             }
                         </div>
 
-                        <!-- ── IMÁGENES ADICIONALES (mismo grid, mismas clases) ── -->
+                        <!-- ── Imágenes adicionales ── -->
                         @if (extraImages().length > 0 || !header().delivered) {
                             <div class="col-span-2 border-t border-slate-100 pt-2">
                                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Imágenes adicionales</p>
                             </div>
 
-                            @for (img of extraImages(); track img.id) {
+                            @for (img of extraImages(); track img.id ?? img.url) {
                                 <div class="space-y-1.5">
-                                    <a [href]="img.url" target="_blank" class="block">
+                                    <div class="relative">
                                         <img [src]="img.url" alt="Imagen adicional"
-                                            class="w-full h-24 object-cover rounded-lg border border-slate-200 hover:opacity-80 transition-opacity" />
-                                    </a>
-                                    @if (!header().delivered) {
-                                        <button (click)="deleteExtraImage(img.id)"
+                                            class="w-full h-24 object-cover rounded-lg border border-slate-200 transition-all"
+                                            [class.blur-sm]="img.status === 'queued' || img.status === 'uploading'"
+                                            [class.opacity-60]="img.status === 'queued' || img.status === 'uploading'" />
+
+                                        @if (img.status === 'queued') {
+                                            <div class="absolute inset-0 rounded-lg bg-blue-700/60 flex flex-col items-center justify-center gap-1">
+                                                <span class="text-white text-xs font-bold">⏳ Pendiente</span>
+                                                <span class="text-white text-[9px] text-center px-2 opacity-90">
+                                                    Subirá al recuperar señal
+                                                </span>
+                                            </div>
+                                        }
+                                        @if (img.status === 'uploading') {
+                                            <div class="absolute inset-0 rounded-lg bg-black/40 flex items-center justify-center">
+                                                <div class="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            </div>
+                                        }
+                                        @if (img.status === 'done') {
+                                            <a [href]="img.url" target="_blank"
+                                            class="absolute inset-0 rounded-lg"></a>
+                                        }
+                                    </div>
+
+                                    @if (!header().delivered && img.status === 'done') {
+                                        <button (click)="deleteExtraImage(img.id!)"
                                             class="w-full py-1.5 text-[10px] font-bold text-red-500 border border-dashed border-red-200 rounded-lg hover:bg-red-50 transition-colors flex items-center justify-center gap-1">
                                             <span class="material-symbols-outlined text-xs">delete</span>
                                             Eliminar
                                         </button>
+                                    }
+                                    @if (img.status === 'queued') {
+                                        <p class="text-[9px] text-center text-blue-500 font-bold">⏳ En cola</p>
                                     }
                                 </div>
                             }
 
                             @if (!header().delivered) {
                                 <div class="space-y-1.5">
-                                    <button (click)="triggerExtraImageUpload()" [disabled]="uploadingExtra()"
-                                        class="w-full h-24 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-orange-50 hover:border-[#dbc1b2] transition-colors flex items-center justify-center disabled:opacity-50">
-                                        @if (uploadingExtra()) {
-                                            <span class="material-symbols-outlined text-slate-300 animate-spin text-2xl">refresh</span>
-                                        } @else {
-                                            <span class="material-symbols-outlined text-slate-300 text-3xl">add</span>
-                                        }
+                                    <button (click)="triggerExtraImageUpload()"
+                                        class="w-full h-24 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-orange-50 hover:border-[#dbc1b2] transition-colors flex items-center justify-center">
+                                        <span class="material-symbols-outlined text-slate-300 text-3xl">add</span>
                                     </button>
                                 </div>
                             }
                         }
-
                     </div>
                 </div>
             </div>

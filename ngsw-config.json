@@ -1,6 +1,6 @@
 {
   "index": "/index.csr.html",
-  "navigationRequestStrategy": "freshness",
+  "navigationRequestStrategy": "performance",
   "assetGroups": [
     {
       "name": "app",
@@ -9,6 +9,7 @@
         "files": [
           "/favicon.ico",
           "/manifest.webmanifest",
+          "/index.csr.html",
           "/*.css",
           "/*.js",
           "/chunk-*.js",
@@ -32,14 +33,84 @@
   "dataGroups": [
     {
       "name": "product-images",
+      "urls": ["/weberp/img/**", "/uploads/**"],
+      "cacheConfig": {
+        "strategy": "performance",
+        "maxSize": 150,
+        "maxAge": "3d",
+        "timeout": "5s"
+      }
+    },
+    {
+      "name": "api-home",
       "urls": [
-        "/weberp/img/**"
+        "/api/home/data",
+        "/api/config",
+        "/api/config/catalogs",
+        "/api/config/warehouses",
+        "/api/config/branch-catalogs"
+      ],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "maxSize": 10,
+        "maxAge": "2h",
+        "timeout": "3s"
+      }
+    },
+    {
+      "name": "api-products",
+      "urls": [
+        "/api/products",
+        "/api/products/**"
       ],
       "cacheConfig": {
         "strategy": "performance",
-        "maxSize": 100,
-        "maxAge": "1d",
+        "maxSize": 80,
+        "maxAge": "30m",
         "timeout": "5s"
+      }
+    },
+    {
+      "name": "api-catalog-content",
+      "urls": [
+        "/api/faqs/**",
+        "/api/terminos",
+        "/api/terminos/**"
+      ],
+      "cacheConfig": {
+        "strategy": "performance",
+        "maxSize": 30,
+        "maxAge": "1h",
+        "timeout": "3s"
+      }
+    },
+    {
+      "name": "api-orders-dispatch",
+      "urls": [
+        "/api/orders-sales",
+        "/api/orders-sales/**",
+        "/api/orders-sales/history",
+        "/api/orders-sales/pending-for-dispatch",
+        "/api/orders-sales/pending-for-invoice"
+      ],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "maxSize": 100,
+        "maxAge": "8h",
+        "timeout": "3s"
+      }
+    },
+    {
+      "name": "api-transfers",
+      "urls": [
+        "/api/transfers",
+        "/api/transfers/**"
+      ],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "maxSize": 50,
+        "maxAge": "4h",
+        "timeout": "3s"
       }
     }
   ]

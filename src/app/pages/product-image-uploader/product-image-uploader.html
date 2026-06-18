@@ -40,6 +40,15 @@
         <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
       </div>
 
+      <!-- Encolada (offline) -->
+      <div *ngIf="image.status === 'queued'"
+           class="absolute inset-0 bg-blue-700/80 flex flex-col items-center justify-center gap-1">
+        <span class="text-white text-xs font-semibold">⏳ Encolada</span>
+        <span class="text-white text-[10px] opacity-90 text-center px-2">
+          Se subirá al recuperar<br>la conexión
+        </span>
+      </div>
+
       <!-- Error -->
       <div *ngIf="image.status === 'error'"
            class="absolute inset-0 bg-red-700/80 flex flex-col items-center justify-center gap-1"

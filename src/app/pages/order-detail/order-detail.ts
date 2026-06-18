@@ -1,6 +1,4 @@
-// src/app/pages/order-detail/order-detail.ts
-
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -8,6 +6,23 @@ import { ManagerApis } from '../../services/manager-apis';
 import { ManagerState } from '../../services/manager-state';
 import { ProductPicker } from '../../components/product-picker/product-picker';
 import { AddLinePayload, OrderLine, StockLocation } from '../../models/orders.models';
+import { UploadQueueService } from '../../services/upload-queue.service';
+
+// ── Tipos para imágenes con estado offline ────────────────
+export type DocUploadStatus = 'done' | 'uploading' | 'queued' | 'error';
+
+export interface OrderDoc {
+  url:      string;       // objectURL (offline) o URL real (online)
+  status:   DocUploadStatus;
+  queueId?: string;       // ID en IndexedDB mientras está encolado
+}
+
+export interface ExtraImage {
+  id?:      number;
+  url:      string;
+  status:   DocUploadStatus;
+  queueId?: string;
+}
 
 @Component({
     selector: 'app-order-detail',
@@ -15,12 +30,13 @@ import { AddLinePayload, OrderLine, StockLocation } from '../../models/orders.mo
     imports: [CommonModule, FormsModule, ProductPicker],
     templateUrl: './order-detail.html',
 })
-export class OrderDetail implements OnInit {
+export class OrderDetail implements OnInit, OnDestroy {
 
-    private apis   = inject(ManagerApis);
-    private router = inject(Router);
-    private route  = inject(ActivatedRoute);
-    public state   = inject(ManagerState);
+    private apis         = inject(ManagerApis);
+    private router       = inject(Router);
+    private route        = inject(ActivatedRoute);
+    private uploadQueue  = inject(UploadQueueService);
+    public  state        = inject(ManagerState);
 
     public readonly userLocation = this.state.userLocation;
 
@@ -30,17 +46,15 @@ export class OrderDetail implements OnInit {
     readonly actionError    = signal('');
     readonly successMessage = signal('');
 
-    // Uploads
-    readonly uploadingVoucher     = signal(false);
-    readonly uploadingShippingDoc = signal(false);
-
-
-    readonly header   = signal<any>(null);
-    readonly lines    = signal<any[]>([]);
-    readonly orderno  = signal<number | null>(null);
+    readonly header  = signal<any>(null);
+    readonly lines   = signal<any[]>([]);
+    readonly orderno = signal<number | null>(null);
     readonly docsOpen = signal(false);
-    readonly extraImages       = signal<{ id: number; url: string }[]>([]);
-    readonly uploadingExtra    = signal(false);
+
+    // ── Documentos con estado ─────────────────────────────
+    readonly voucherDoc     = signal<OrderDoc | null>(null);
+    readonly shippingDoc    = signal<OrderDoc | null>(null);
+    readonly extraImages    = signal<ExtraImage[]>([]);
 
     // Menú 3 puntos
     readonly openMenuLineno = signal<number | null>(null);
@@ -49,7 +63,7 @@ export class OrderDetail implements OnInit {
     readonly editingLine = signal<any | null>(null);
     readonly editQty     = signal<number>(1);
 
-    // ── Agregar producto ──────────────────────────────────────────
+    // ── Agregar producto ──────────────────────────────────
     readonly showProductPicker    = signal(false);
     readonly loadingAddLine       = signal(false);
     readonly addLineError         = signal('');
@@ -60,7 +74,10 @@ export class OrderDetail implements OnInit {
     readonly pendingProductCode   = signal('');
     readonly pendingProductQty    = signal(1);
 
-    // ── Computed ──────────────────────────────────────────────────
+    // ── SW message listener ───────────────────────────────
+    private swMessageListener?: (event: MessageEvent) => void;
+
+    // ── Computed ──────────────────────────────────────────
 
     readonly isseller = computed(() =>
         this.header()?.fromstkloc === this.userLocation()
@@ -80,8 +97,8 @@ export class OrderDetail implements OnInit {
     );
 
     readonly canInvoice = computed(() =>
-    this.isseller() && this.header()?.delivered === 1 && !this.header()?.invoiced
-);
+        this.isseller() && this.header()?.delivered === 1 && !this.header()?.invoiced
+    );
 
     readonly canEdit = computed(() =>
         this.isseller() && !this.header()?.delivered
@@ -100,22 +117,67 @@ export class OrderDetail implements OnInit {
     );
 
     readonly grandTotal = computed(() => {
-    const h = this.header();
-    if (!h) return 0;
-    // line_total ya incluye IVA — solo sumar flete
-    return this.lines().reduce((acc, line) => acc + (Number(line.line_total) || 0), 0)
-           + (Number(h.freightcost) || 0);
-});
+        const h = this.header();
+        if (!h) return 0;
+        return this.lines().reduce((acc, line) => acc + (Number(line.line_total) || 0), 0)
+               + (Number(h.freightcost) || 0);
+    });
 
-    // ── Lifecycle ─────────────────────────────────────────────────
+    // ── Lifecycle ─────────────────────────────────────────
 
     ngOnInit(): void {
         const orderno = parseInt(this.route.snapshot.paramMap.get('orderno') ?? '0', 10);
         this.orderno.set(orderno);
         this.loadDetail(orderno);
+        this.listenSwMessages();
     }
 
-    // ── Carga ─────────────────────────────────────────────────────
+    ngOnDestroy(): void {
+        if (this.swMessageListener && 'serviceWorker' in navigator) {
+            navigator.serviceWorker.removeEventListener('message', this.swMessageListener);
+        }
+    }
+
+    // ── Escuchar mensajes del SW ──────────────────────────
+
+    private listenSwMessages(): void {
+        if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+
+        this.swMessageListener = (event: MessageEvent) => {
+            const msg = event.data;
+            if (msg?.type !== 'ORDER_UPLOAD_SUCCESS') return;
+            if (msg.orderno !== this.orderno()) return;
+
+            switch (msg.uploadType) {
+                case 'order-voucher':
+                    this.voucherDoc.set({ url: msg.url, status: 'done' });
+                    this.header.update(h => ({ ...h, voucher_url: msg.url }));
+                    this.showSuccess('✅ Comprobante subido correctamente');
+                    break;
+
+                case 'order-shipping-doc':
+                    this.shippingDoc.set({ url: msg.url, status: 'done' });
+                    this.header.update(h => ({ ...h, shipping_doc_url: msg.url }));
+                    this.showSuccess('✅ Guía de despacho subida correctamente');
+                    break;
+
+                case 'order-extra-image':
+                    this.extraImages.update(imgs =>
+                        imgs.map(img =>
+                            img.queueId === msg.queueId
+                                ? { id: msg.imageId, url: msg.url, status: 'done' }
+                                : img
+                        )
+                    );
+                    this.showSuccess('✅ Imagen subida correctamente');
+                    break;
+            }
+        };
+
+        navigator.serviceWorker.addEventListener('message', this.swMessageListener);
+    }
+
+    // ── Carga ─────────────────────────────────────────────
 
     loadDetail(orderno: number): void {
         this.loading.set(true);
@@ -130,7 +192,23 @@ export class OrderDetail implements OnInit {
                 }
                 this.header.set(res.data.header);
                 this.lines.set(res.data.lines);
-                this.extraImages.set(res.data.header.extra_images ?? []);
+
+                // Inicializar docs con estado 'done'
+                if (res.data.header.voucher_url) {
+                    this.voucherDoc.set({ url: res.data.header.voucher_url, status: 'done' });
+                }
+                if (res.data.header.shipping_doc_url) {
+                    this.shippingDoc.set({ url: res.data.header.shipping_doc_url, status: 'done' });
+                }
+                this.extraImages.set(
+                    (res.data.header.extra_images ?? []).map((img: any) => ({
+                        id:     img.id,
+                        url:    img.url,
+                        status: 'done' as DocUploadStatus
+                    }))
+                );
+
+                this.precacheOrderImages(res.data.header);
             },
             error: () => {
                 this.loading.set(false);
@@ -139,7 +217,19 @@ export class OrderDetail implements OnInit {
         });
     }
 
-    // ── Documentos ────────────────────────────────────────────────
+    private precacheOrderImages(header: any): void {
+        const urls: string[] = [
+            header.voucher_url,
+            header.shipping_doc_url,
+            ...(header.extra_images ?? []).map((img: any) => img.url)
+        ].filter(Boolean);
+
+        urls.forEach(url => {
+            fetch(url, { mode: 'no-cors', cache: 'force-cache' }).catch(() => {});
+        });
+    }
+
+    // ── Documentos ────────────────────────────────────────
 
     toggleDocs(): void {
         this.docsOpen.update(v => !v);
@@ -149,53 +239,79 @@ export class OrderDetail implements OnInit {
         const orderno = this.orderno();
         if (!orderno) return;
 
-        const input       = document.createElement('input');
-        input.type        = 'file';
-        input.accept      = 'image/*,application/pdf';
-        input.capture     = 'environment';
+        const input         = document.createElement('input');
+        input.type          = 'file';
+        input.accept        = 'image/*,application/pdf';
+        input.capture       = 'environment';
         input.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
 
         document.body.appendChild(input);
 
-        input.onchange = (e: any) => {
-            const file = e.target.files[0];
-            document.body.removeChild(input);
-            if (!file) return;
+        input.onchange = async (e: any) => {
+        const file = e.target.files[0];
+        document.body.removeChild(input);
+        if (!file) return;
 
-            if (type === 'voucher') {
-                this.uploadingVoucher.set(true);
-                this.apis.uploadOrderVoucher(orderno, file).subscribe({
-                    next: (res) => {
-                        this.uploadingVoucher.set(false);
-                        this.header.update(h => ({ ...h, voucher_url: res.data.voucher_url }));
-                        this.showSuccess('Comprobante subido correctamente');
-                    },
-                    error: (err) => {
-                        this.uploadingVoucher.set(false);
-                        this.actionError.set(err?.error?.mensaje || 'Error al subir comprobante');
-                    }
-                });
+        const previewUrl = URL.createObjectURL(file);
+        let queued = false; // ← declarado aquí, en el scope del archivo
+
+        if (!navigator.onLine) {
+            queued = true;
+            await this.enqueueDoc(type, orderno, file, previewUrl);
+            return;
+        }
+
+        // Online → subir directamente
+        const upload$ = type === 'voucher'
+            ? this.apis.uploadOrderVoucher(orderno, file)
+            : this.apis.uploadOrderShippingDoc(orderno, file);
+
+        upload$.subscribe({
+            next: (res) => {
+            /* ... tu código actual ... */
+            },
+            error: async (err) => {
+            if (queued) return; // ← guard: imposible llegar aquí con queue activo, pero por si acaso
+
+            if (!navigator.onLine) {
+                queued = true;
+                await this.enqueueDoc(type, orderno, file, previewUrl);
             } else {
-                this.uploadingShippingDoc.set(true);
-                this.apis.uploadOrderShippingDoc(orderno, file).subscribe({
-                    next: (res) => {
-                        this.uploadingShippingDoc.set(false);
-                        this.header.update(h => ({ ...h, shipping_doc_url: res.data.shipping_doc_url }));
-                        this.showSuccess('Guía de despacho subida correctamente');
-                    },
-                    error: (err) => {
-                        this.uploadingShippingDoc.set(false);
-                        this.actionError.set(err?.error?.mensaje || 'Error al subir guía');
-                    }
-                });
+                const errDoc: OrderDoc = { url: previewUrl, status: 'error' };
+                if (type === 'voucher') this.voucherDoc.set(errDoc);
+                else this.shippingDoc.set(errDoc);
+                this.actionError.set(err?.error?.mensaje || 'Error al subir archivo');
             }
+            }
+        });
         };
 
         input.oncancel = () => { document.body.removeChild(input); };
         input.click();
     }
 
-    // ── Picking ───────────────────────────────────────────────────
+    private async enqueueDoc(
+        type: 'voucher' | 'shipping-doc',
+        orderno: number,
+        file: File,
+        previewUrl: string
+    ): Promise<void> {
+        const uploadType = type === 'voucher' ? 'order-voucher' : 'order-shipping-doc';
+        const queueId = await this.uploadQueue.enqueue({
+            type: uploadType,
+            blob: file,
+            filename: file.name,
+            meta: { orderno }
+        });
+
+        const queued: OrderDoc = { url: previewUrl, status: 'queued', queueId };
+        if (type === 'voucher') this.voucherDoc.set(queued);
+        else this.shippingDoc.set(queued);
+
+        this.showSuccess('📶 Sin conexión — se subirá automáticamente al recuperar la señal');
+    }
+
+    // ── Picking ───────────────────────────────────────────
 
     pickLine(lineno: number): void {
         const orderno = this.orderno();
@@ -242,7 +358,7 @@ export class OrderDetail implements OnInit {
         });
     }
 
-    // ── Menú 3 puntos ─────────────────────────────────────────────
+    // ── Menú 3 puntos ─────────────────────────────────────
 
     toggleLineMenu(lineno: number): void {
         this.openMenuLineno.update(v => v === lineno ? null : lineno);
@@ -252,7 +368,7 @@ export class OrderDetail implements OnInit {
         this.openMenuLineno.set(null);
     }
 
-    // ── Modal editar línea ────────────────────────────────────────
+    // ── Modal editar línea ────────────────────────────────
 
     openEditModal(line: any): void {
         this.editingLine.set(line);
@@ -265,43 +381,42 @@ export class OrderDetail implements OnInit {
     }
 
     confirmEdit(): void {
-    const line    = this.editingLine();
-    const orderno = this.orderno();
-    if (!line || !orderno) return;
+        const line    = this.editingLine();
+        const orderno = this.orderno();
+        if (!line || !orderno) return;
 
-    this.loadingAction.set(true);
-    this.actionError.set('');
+        this.loadingAction.set(true);
+        this.actionError.set('');
 
-    this.apis.updateOrderLine(orderno, line.orderlineno, {
-        quantity:        this.editQty(),
-        unitprice:       line.unitprice,
-        discountpercent: line.discountpercent
-    }).subscribe({
-        next: (res) => {
-            this.loadingAction.set(false);
-            if (!res.exito) { this.actionError.set(res.mensaje || 'Error al actualizar'); return; }
-            this.lines.update(lines =>
-                lines.map(l => l.orderlineno === line.orderlineno
-                    ? {
-                        ...l,
-                        quantity:   this.editQty(),
-                        // unitprice ya tiene IVA (viene del detail original), no tocar
-                        line_total: Number((this.editQty() * l.unitprice * (1 - l.discountpercent)).toFixed(2))
-                      }
-                    : l
-                )
-            );
-            this.closeEditModal();
-            this.showSuccess('Cantidad actualizada');
-        },
-        error: (err) => {
-            this.loadingAction.set(false);
-            this.actionError.set(err?.error?.mensaje || 'Error al conectar');
-        }
-    });
-}
+        this.apis.updateOrderLine(orderno, line.orderlineno, {
+            quantity:        this.editQty(),
+            unitprice:       line.unitprice,
+            discountpercent: line.discountpercent
+        }).subscribe({
+            next: (res) => {
+                this.loadingAction.set(false);
+                if (!res.exito) { this.actionError.set(res.mensaje || 'Error al actualizar'); return; }
+                this.lines.update(lines =>
+                    lines.map(l => l.orderlineno === line.orderlineno
+                        ? {
+                            ...l,
+                            quantity:   this.editQty(),
+                            line_total: Number((this.editQty() * l.unitprice * (1 - l.discountpercent)).toFixed(2))
+                          }
+                        : l
+                    )
+                );
+                this.closeEditModal();
+                this.showSuccess('Cantidad actualizada');
+            },
+            error: (err) => {
+                this.loadingAction.set(false);
+                this.actionError.set(err?.error?.mensaje || 'Error al conectar');
+            }
+        });
+    }
 
-    // ── Eliminar línea ────────────────────────────────────────────
+    // ── Eliminar línea ────────────────────────────────────
 
     deleteLine(lineno: number): void {
         const orderno = this.orderno();
@@ -326,7 +441,7 @@ export class OrderDetail implements OnInit {
         });
     }
 
-    // ── Agregar producto ──────────────────────────────────────────
+    // ── Agregar producto ──────────────────────────────────
 
     openProductPicker(): void {
         this.showProductPicker.set(true);
@@ -490,7 +605,107 @@ export class OrderDetail implements OnInit {
         this.addLineError.set(remaining < 0 ? '⚠️ La suma no puede superar la cantidad solicitada' : '');
     }
 
-    // ── Helpers ───────────────────────────────────────────────────
+    // ── Imágenes adicionales ──────────────────────────────
+
+    triggerExtraImageUpload(): void {
+  const orderno = this.orderno();
+  if (!orderno) return;
+
+  const input = document.createElement('input');
+  input.type  = 'file';
+  input.accept = 'image/*,application/pdf';
+  input.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+  document.body.appendChild(input);
+
+  input.onchange = async (e: any) => {
+    const file = e.target.files[0];
+    document.body.removeChild(input);
+    if (!file) return;
+
+    const previewUrl = URL.createObjectURL(file);
+    let alreadyQueued = false; // ← flag anti-doble-enqueue
+
+    if (!navigator.onLine) {
+      alreadyQueued = true;
+      const queueId = await this.uploadQueue.enqueue({
+        type: 'order-extra-image',
+        blob: file,
+        filename: file.name,
+        meta: { orderno }
+      });
+      this.extraImages.update(imgs => [
+        ...imgs,
+        { url: previewUrl, status: 'queued', queueId }
+      ]);
+      this.showSuccess('📶 Sin conexión — se subirá automáticamente al recuperar la señal');
+      return;
+    }
+
+    this.extraImages.update(imgs => [...imgs, { url: previewUrl, status: 'uploading' }]);
+
+    this.apis.uploadOrderExtraImage(orderno, file).subscribe({
+      next: (res) => {
+        this.extraImages.update(imgs =>
+          imgs.map(img =>
+            img.url === previewUrl
+              ? { id: res.data.id, url: res.data.url, status: 'done' }
+              : img
+          )
+        );
+        this.showSuccess('Imagen agregada correctamente');
+      },
+      error: async (err) => {
+        if (alreadyQueued) return; // ← guard: ya fue encolado, no duplicar
+
+        if (!navigator.onLine) {
+          alreadyQueued = true;
+          const queueId = await this.uploadQueue.enqueue({
+            type: 'order-extra-image',
+            blob: file,
+            filename: file.name,
+            meta: { orderno }
+          });
+          this.extraImages.update(imgs =>
+            imgs.map(img =>
+              img.url === previewUrl
+                ? { url: previewUrl, status: 'queued', queueId }
+                : img
+            )
+          );
+          this.showSuccess('📶 Sin conexión — se subirá automáticamente al recuperar la señal');
+        } else {
+          this.extraImages.update(imgs =>
+            imgs.map(img =>
+              img.url === previewUrl ? { ...img, status: 'error' } : img
+            )
+          );
+          this.actionError.set(err?.error?.mensaje || 'Error al subir imagen');
+        }
+      }
+    });
+  };
+
+  input.oncancel = () => { document.body.removeChild(input); };
+  input.click();
+}
+
+    deleteExtraImage(imageId: number): void {
+        const orderno = this.orderno();
+        if (!orderno) return;
+        if (!confirm('¿Eliminar esta imagen?')) return;
+
+        this.apis.deleteOrderExtraImage(orderno, imageId).subscribe({
+            next: () => {
+                this.extraImages.update(imgs => imgs.filter(i => i.id !== imageId));
+                this.showSuccess('Imagen eliminada');
+            },
+            error: (err) => {
+                this.actionError.set(err?.error?.mensaje || 'Error al eliminar imagen');
+            }
+        });
+    }
+
+    // ── Helpers ───────────────────────────────────────────
 
     private showSuccess(message: string): void {
         this.successMessage.set(message);
@@ -508,11 +723,11 @@ export class OrderDetail implements OnInit {
     }
 
     goBack(): void {
-    const from = this.route.snapshot.queryParamMap.get('from');
-    this.router.navigate(['/order-list'], {
-        queryParams: from === 'history' ? { tab: 'history' } : {}
-    });
-}
+        const from = this.route.snapshot.queryParamMap.get('from');
+        this.router.navigate(['/order-list'], {
+            queryParams: from === 'history' ? { tab: 'history' } : {}
+        });
+    }
 
     goToInvoice(): void {
         const orderno = this.orderno();
@@ -539,57 +754,4 @@ export class OrderDetail implements OnInit {
     fileName(url: string): string {
         return url.split('/').pop()?.split('?')[0] ?? url;
     }
-
-    // ── Imágenes adicionales ──────────────────────────────────────────
-
-    triggerExtraImageUpload(): void {
-    const orderno = this.orderno();
-    if (!orderno) return;
-
-    const input         = document.createElement('input');
-    input.type          = 'file';
-    input.accept        = 'image/*,application/pdf';
-    input.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
-
-    document.body.appendChild(input);
-
-    input.onchange = (e: any) => {
-        const file = e.target.files[0];
-        document.body.removeChild(input);
-        if (!file) return;
-
-        this.uploadingExtra.set(true);
-        this.apis.uploadOrderExtraImage(orderno, file).subscribe({
-            next: (res) => {
-                this.uploadingExtra.set(false);
-                this.extraImages.update(imgs => [...imgs, res.data]);
-                this.showSuccess('Imagen agregada correctamente');
-            },
-            error: (err) => {
-                this.uploadingExtra.set(false);
-                this.actionError.set(err?.error?.mensaje || 'Error al subir imagen');
-            }
-        });
-    };
-
-    input.oncancel = () => { document.body.removeChild(input); };
-    input.click();
-}
-
-    deleteExtraImage(imageId: number): void {
-        const orderno = this.orderno();
-        if (!orderno) return;
-        if (!confirm('¿Eliminar esta imagen?')) return;
-
-        this.apis.deleteOrderExtraImage(orderno, imageId).subscribe({
-            next: () => {
-                this.extraImages.update(imgs => imgs.filter(i => i.id !== imageId));
-                this.showSuccess('Imagen eliminada');
-            },
-            error: (err) => {
-                this.actionError.set(err?.error?.mensaje || 'Error al eliminar imagen');
-            }
-        });
-    }
-
 }
