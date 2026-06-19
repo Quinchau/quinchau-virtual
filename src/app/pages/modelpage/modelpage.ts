@@ -17,6 +17,9 @@ interface ModeloData {
   idmodelo?: number | string;
 }
 
+const OFFERS_OG_IMAGE = 'https://quinchau.com/weberp/img/m/ofertas-preview.jpg';
+const DEFAULT_MODEL_IMAGE = 'https://quinchau.com/weberp/img/m/image-model7.jpg';
+
 @Component({
   selector: 'app-modelpage',
   standalone: true,
@@ -87,7 +90,7 @@ export class Modelpage implements OnDestroy {
   if (this.isOffersPage) {
     const pageTitle   = 'Ofertas en Repuestos de Motos | Quinchau';
     const pageDesc    = 'Descubre las mejores ofertas en repuestos para motos. Carburadores, pistones, frenos y más. Envíos a todo el país.';
-    const imagenUrl   = 'https://quinchau.com/weberp/img/m/image-model7.jpg';
+    const imagenUrl   =  OFFERS_OG_IMAGE;
     const urlCompleta = 'https://quinchau.com/ofertas';
 
     this.title.setTitle(pageTitle);
@@ -135,7 +138,7 @@ if (isFaqRoute) {
     }
   }
   if (!imagenUrl) {
-    imagenUrl = 'https://quinchau.com/weberp/img/m/image-model7.jpg';
+    imagenUrl = DEFAULT_MODEL_IMAGE;
   }
 }
 

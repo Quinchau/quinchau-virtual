@@ -12,6 +12,8 @@ import { finalize, catchError, of } from 'rxjs';
 
 type PendingAction = 'cart' | 'waitlist' | null;
 
+const DEFAULT_OG_IMAGE = 'https://quinchau.com/assets/og-default.jpg'; // TODO: reemplazar por la imagen default real del sitio
+
 @Component({
   selector: 'app-product-page',
   standalone: true,
@@ -106,27 +108,53 @@ export class ProductPage implements OnInit {
   });
 }
 
+  // ─────────────────────────────────────────────────────────────
+  // META TAGS (OG / Twitter)
+  // CAMBIOS:
+  // 1) El precio y el stock van AL PRINCIPIO de la descripción,
+  //    porque WhatsApp corta el texto a pocos caracteres y el
+  //    nombre del producto ya está cubierto por el og:title.
+  // 2) Fallback seguro para og:image: si no hay `cover_image`
+  //    (URL completa), NO usamos `cover_image_id` (es solo un
+  //    número/ID, no una URL válida) — usamos una imagen default.
+  // ─────────────────────────────────────────────────────────────
   private setMetaTags(p: Product): void {
     const titleText = `${p.description} | Quinchau`;
-    const description = `Compra ${p.description} (${p.stockid}) por $${p.price_with_tax.toFixed(2)}. ${p.total_quantity > 0 ? p.total_quantity + ' unidades disponibles.' : 'Consulta disponibilidad.'}`;
-    const image = p.cover_image || p.cover_image_id;
+
+    const precioTexto = `$${p.price_with_tax.toFixed(2)}`;
+    const stockTexto = p.total_quantity > 0
+      ? `${p.total_quantity} disponibles`
+      : 'Consulta disponibilidad';
+
+    const description = `${precioTexto} | ${stockTexto} | ${p.description} (${p.stockid})`;
+
+    const image = p.cover_image || DEFAULT_OG_IMAGE;
     const url = `https://quinchau.com/producto/${p.stockid}/${this.toSlug(p.description)}`;
 
     this.title.setTitle(titleText);
     this.meta.updateTag({ name: 'description', content: description });
     this.meta.updateTag({ property: 'og:title', content: titleText });
     this.meta.updateTag({ property: 'og:description', content: description });
-    this.meta.updateTag({ property: 'og:image', content: image || '' });
+    this.meta.updateTag({ property: 'og:image', content: image });
     this.meta.updateTag({ property: 'og:url', content: url });
     this.meta.updateTag({ property: 'og:type', content: 'product' });
     this.meta.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
     this.meta.updateTag({ name: 'twitter:title', content: titleText });
     this.meta.updateTag({ name: 'twitter:description', content: description });
-    this.meta.updateTag({ name: 'twitter:image', content: image || '' });
+    this.meta.updateTag({ name: 'twitter:image', content: image });
   }
 
+  // ─────────────────────────────────────────────────────────────
+  // JSON-LD (Schema.org Product) — para Rich Snippets de Google
+  // CAMBIO: se eliminó el guard `if (!isPlatformBrowser(...)) return;`
+  // que existía antes. Ese guard impedía que este bloque se generara
+  // durante el renderizado SSR, que es justamente el único momento
+  // que le importa a Googlebot (lee el HTML inicial, no espera la
+  // hidratación en el navegador). El `document` en SSR de Angular
+  // Universal está disponible (DOM emulado), así que esto corre bien
+  // en ambos entornos sin necesidad de ese chequeo.
+  // ─────────────────────────────────────────────────────────────
   private setJsonLd(p: Product): void {
-    if (!isPlatformBrowser(this.platformId)) return;
     const existing = document.getElementById('product-jsonld');
     if (existing) existing.remove();
 
@@ -135,7 +163,7 @@ export class ProductPage implements OnInit {
       '@type': 'Product',
       name: p.description,
       sku: p.stockid,
-      image: p.images?.length ? [p.cover_image, ...p.images].filter(Boolean) : [p.cover_image || p.cover_image_id],
+      image: p.images?.length ? [p.cover_image, ...p.images].filter(Boolean) : [p.cover_image || DEFAULT_OG_IMAGE],
       offers: {
         '@type': 'Offer',
         priceCurrency: 'USD',
@@ -181,7 +209,7 @@ export class ProductPage implements OnInit {
 goBack(): void {
   if (isPlatformBrowser(this.platformId)) {
     const referrer = document.referrer;
-    
+
     const vieneDeMiSitio = referrer.includes('quinchau.com') || referrer.includes('localhost');
 
     if (vieneDeMiSitio && window.history.length > 1) {
@@ -189,7 +217,7 @@ goBack(): void {
       return;
     }
   }
-  
+
   // En cualquier otro caso (falsos positivos, URLs directas, tráfico externo o SSR), al Home
   this.router.navigate(['/home']);
 }
