@@ -9,5 +9,7 @@ export const environment = {
   imgBannersUrl: 'https://quinchau.com/weberp/img/b',
   imgProductsUrl: 'https://quinchau.com/weberp/img/p',
   chatbotUrl: 'https://chatbot.quinchau.com',
+  imgModelsUrl: 'https://quinchau.com/weberp/img/m',
+  siteUrl: 'https://quinchau.com',
   wsUrl: 'wss://chatbot-api.quinchau.com',
 };

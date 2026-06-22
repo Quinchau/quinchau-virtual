@@ -3,13 +3,14 @@ import { Component, computed, inject, signal, viewChild, ElementRef, OnDestroy, 
 import { RouterLink } from '@angular/router';
 import { ManagerState } from '../../services/manager-state';
 import { AuthService } from '../../services/auth';
-import { SearchService } from '../../services/search.service'; // <-- Importamos
+import { SearchService } from '../../services/search.service';
 import { ChatBridgeService } from '../../services/chat-bridge';
+import { LoadingBar } from '../loading-bar/loading-bar';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [RouterLink], // <-- Removemos SearchBox de imports
+  imports: [RouterLink, LoadingBar],
   templateUrl: './header.html',
 })
 export class Header implements OnDestroy {

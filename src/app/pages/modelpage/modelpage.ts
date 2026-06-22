@@ -1,12 +1,18 @@
 // src/app/pages/modelpage/modelpage.ts
 
-import { Component, inject, signal, computed, OnDestroy, effect } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, signal, computed, OnDestroy, effect, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { map } from 'rxjs';
 import { ActivatedRoute, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { ManagerState } from '../../services/manager-state';
 import { Title, Meta } from '@angular/platform-browser';
 import { FaqsComponent } from '../faqs/faqs';
 import { FormsModule } from '@angular/forms';
+import { environment } from '../../../environments/environment';
+
+const OFFERS_OG_IMAGE = `${environment.imgModelsUrl}/ofertas-preview.jpg`;
+const DEFAULT_MODEL_IMAGE = `${environment.imgModelsUrl}/image-model7.jpg`;
 
 interface ModeloData {
   modeldescrip?: string;
@@ -17,8 +23,6 @@ interface ModeloData {
   idmodelo?: number | string;
 }
 
-const OFFERS_OG_IMAGE = 'https://quinchau.com/weberp/img/m/ofertas-preview.jpg';
-const DEFAULT_MODEL_IMAGE = 'https://quinchau.com/weberp/img/m/image-model7.jpg';
 
 @Component({
   selector: 'app-modelpage',
@@ -29,17 +33,28 @@ const DEFAULT_MODEL_IMAGE = 'https://quinchau.com/weberp/img/m/image-model7.jpg'
 export class Modelpage implements OnDestroy {
 
   private route        = inject(ActivatedRoute);
+  private platformId = inject(PLATFORM_ID);
   private router       = inject(Router);
   private title        = inject(Title);
   private meta         = inject(Meta);
   public  managerState = inject(ManagerState);
 
   public readonly isOffersPage   = this.route.snapshot.data['offersOnly'] === true;
-  private readonly idFromSlug   = this.route.snapshot.paramMap.get('modelo')?.split('-').pop() ?? '';
-  private readonly slugCompleto = this.route.snapshot.paramMap.get('modelo') ?? '';
-  private readonly marcaSlug    = this.route.snapshot.paramMap.get('marca')  ?? '';
+  private paramMap = toSignal(this.route.paramMap, {
+  initialValue: this.route.snapshot.paramMap,
+});
 
-  public onlyStock = signal(false);
+  private slugCompleto = computed(() => this.paramMap().get('modelo') ?? '');
+  private marcaSlug    = computed(() => this.paramMap().get('marca')  ?? '');
+  private idFromSlug   = computed(() => this.slugCompleto().split('-').pop() ?? '');
+  public copiado = signal(false);
+
+  public onlyStock = toSignal(
+    this.route.queryParamMap.pipe(
+      map(params => params.get('stock') === '1')
+    ),
+    { initialValue: this.route.snapshot.queryParamMap.get('stock') === '1' }
+  );
 
   public filteredProducts = computed(() => {
     const list = this.managerState.products() ?? [];
@@ -53,7 +68,7 @@ export class Modelpage implements OnDestroy {
       if (this.isOffersPage) {
         this.managerState.setOffersOnly(true);
       } else {
-        this.managerState.setModeloId(this.idFromSlug);
+        this.managerState.setModeloId(this.idFromSlug());
       }
       this.updateMetaTags();
     });
@@ -68,7 +83,11 @@ export class Modelpage implements OnDestroy {
   }
 
   public toggleOnlyStock(): void {
-    this.onlyStock.update(v => !v);
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { stock: this.onlyStock() ? null : '1' },
+      queryParamsHandling: 'merge',
+    });
   }
 
   public handleProductSelection(producto: any): void {
@@ -83,6 +102,15 @@ export class Modelpage implements OnDestroy {
       .replace(/^-|-$/g, '');
   }
 
+  public copiarUrl(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+      this.copiado.set(true);
+      setTimeout(() => this.copiado.set(false), 2000);
+    });
+  }
+
   private updateMetaTags(): void {
   const childRoute = this.route.firstChild?.snapshot.routeConfig?.path;
   const isFaqRoute = childRoute === 'faq' || childRoute === 'faq/:faqId';
@@ -91,7 +119,7 @@ export class Modelpage implements OnDestroy {
     const pageTitle   = 'Ofertas en Repuestos de Motos | Quinchau';
     const pageDesc    = 'Descubre las mejores ofertas en repuestos para motos. Carburadores, pistones, frenos y más. Envíos a todo el país.';
     const imagenUrl   =  OFFERS_OG_IMAGE;
-    const urlCompleta = 'https://quinchau.com/ofertas';
+    const urlCompleta = `${environment.siteUrl}/ofertas`;
 
     this.title.setTitle(pageTitle);
     this.meta.updateTag({ name: 'description',              content: pageDesc });
@@ -124,13 +152,14 @@ export class Modelpage implements OnDestroy {
 let modeloEncontrado = modelo;
 
 if (isFaqRoute) {
-  imagenUrl = 'https://quinchau.com/weberp/img/m/faq-preview.png';
+  imagenUrl = `${environment.imgModelsUrl}/faq-preview.png`;
 } else {
   imagenUrl = modelo?.img_url ?? '';
   if (!imagenUrl) {
     const destacados = this.managerState.modelosDestacados?.() || [];
     const encontrado = destacados.find((m: any) =>
-      m.idmodelo?.toString() === this.idFromSlug
+      m.idmodelo?.toString() === this.idFromSlug()
+
     );
     if (encontrado?.img_url) {
       imagenUrl = encontrado.img_url;
@@ -138,17 +167,17 @@ if (isFaqRoute) {
     }
   }
   if (!imagenUrl) {
-    imagenUrl = DEFAULT_MODEL_IMAGE;
+    imagenUrl = `${environment.imgModelsUrl}/faq-preview.png`;
   }
 }
 
-  const nombreSlug = this.slugCompleto
+  const nombreSlug = this.slugCompleto()
     .replace(/-\d+$/, '')
     .replace(/-/g, ' ')
     .replace(/\b\w/g, c => c.toUpperCase());
 
   const nombreModelo = modeloEncontrado?.modeldescrip ?? nombreSlug;
-  const nombreMarca  = modeloEncontrado?.marcadescrip ?? this.marcaSlug.replace(/-/g, ' ').toUpperCase();
+  const nombreMarca  = modeloEncontrado?.marcadescrip ?? this.marcaSlug().replace(/-/g, ' ').toUpperCase();
   const seoNote      = modeloEncontrado?.seo_note ?? `Encuentra repuestos originales y genéricos para ${nombreMarca} ${nombreModelo}. Carburadores, pistones, frenos, transmisión y más. Envíos a todo el país.`;
 
   // ✅ Títulos, descripciones y URL según si es ruta FAQ o modelo
@@ -161,8 +190,8 @@ if (isFaqRoute) {
     : seoNote;
 
   const urlCompleta = isFaqRoute
-    ? `https://quinchau.com/repuestos-motos/${this.marcaSlug}/${this.slugCompleto}/faq`
-    : `https://quinchau.com/repuestos-motos/${this.marcaSlug}/${this.slugCompleto}`;
+  ? `${environment.siteUrl}/repuestos-motos/${this.marcaSlug()}/${this.slugCompleto()}/faq`
+  : `${environment.siteUrl}/repuestos-motos/${this.marcaSlug()}/${this.slugCompleto()}`;
 
   const ogType = isFaqRoute ? 'website' : 'product.group';
 

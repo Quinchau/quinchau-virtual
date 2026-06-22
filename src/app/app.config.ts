@@ -17,6 +17,7 @@ import {
 import { routes } from './app.routes';
 import { authInterceptor } from './services/auth.interceptor';
 import { provideServiceWorker } from '@angular/service-worker';
+import { connectionStatusInterceptor } from './interceptors/connection-status.interceptor';
 
 
 export const appConfig: ApplicationConfig = {
@@ -27,7 +28,8 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(
       withFetch(),
       withInterceptors([
-        authInterceptor 
+        authInterceptor,
+        connectionStatusInterceptor, 
       ]) 
     ),
 

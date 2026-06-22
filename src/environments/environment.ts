@@ -8,6 +8,8 @@ export const environment = {
   websocketUrl: 'wss://ws.quinchau.com',
   imgBannersUrl: 'https://quinchau.com/weberp/img/b',
   imgProductsUrl: 'https://quinchau.com/weberp/img/p',
+  imgModelsUrl: 'https://quinchau.com/weberp/img/m',
+  siteUrl: 'https://quinchau.com',
   chatbotUrl: 'https://chatbot.quinchau.com',
   wsUrl: 'wss://chatbot-api.quinchau.com',
 };

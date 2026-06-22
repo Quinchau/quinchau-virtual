@@ -1,0 +1,25 @@
+<!-- loading-bar.html -->
+@if (conn.visible()) {
+  <div class="absolute bottom-0 left-0 w-full h-[3px] bg-black/5 dark:bg-white/5 overflow-hidden">
+    <div
+      class="h-full transition-[width] duration-300 ease-out"
+      [class.bg-blue-500]="conn.status() === 'loading'"
+      [class.bg-amber-500]="conn.status() === 'waiting'"
+      [class.bg-red-600]="conn.status() === 'offline'"
+      [class.animate-pulse]="conn.status() === 'waiting' || conn.status() === 'offline'"
+      [style.width.%]="conn.progress()">
+    </div>
+  </div>
+}
+
+@if (conn.status() === 'waiting') {
+  <div class="absolute top-full left-0 mt-0.5 px-2 text-[11px] font-medium text-amber-600 dark:text-amber-400 whitespace-nowrap z-50">
+    Conexión lenta — esperando respuesta...
+  </div>
+}
+
+@if (conn.status() === 'offline') {
+  <div class="absolute top-full left-0 mt-0.5 px-2 text-[11px] font-semibold text-red-600 dark:text-red-400 whitespace-nowrap z-50">
+    Sin conexión a internet
+  </div>
+}
