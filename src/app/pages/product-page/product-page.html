@@ -140,10 +140,10 @@
 </div>
 
 <div
-  [class.hidden]="!nav.isLayerPresent('checkout')"
+  [class.hidden]="!registroAbierto()"
   class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
   <app-exe-order
-    (close)="nav.back()"
+    (close)="cerrarModalRegistro()"
     (registroCompleto)="onRegistroCompleto($event)" />
 </div>
 
@@ -173,7 +173,7 @@
           class="w-full py-3 rounded-lg bg-orange-500 text-white font-medium hover:bg-orange-600 transition-colors">
           Ir al Carrito
         </button>
-        <button (click)="cartSuccess.set(false); goBack()"
+        <button (click)="seguirComprando()"
           class="w-full py-3 rounded-lg bg-slate-100 text-slate-700 font-medium hover:bg-slate-200 transition-colors">
           Seguir Comprando
         </button>

@@ -3,7 +3,7 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TerminosService } from '../../services/terminos.service';
-import { Termino, AliasItem } from '../../models/terminos.model';
+import { Termino, AliasItem, Entidad } from '../../models/terminos.model';
 import { ManagerApis } from '../../services/manager-apis';
 
 @Component({
@@ -19,6 +19,7 @@ export class TerminosComponent implements OnInit {
 
   // Estado
   terminos = signal<Termino[]>([]);
+  entidades = signal<Entidad[]>([]);
   loading = signal(false);
   error = signal<string | null>(null);
   searchTerm = signal('');
@@ -31,6 +32,7 @@ export class TerminosComponent implements OnInit {
   showCreateModal = signal(false);
   newTerminoName = signal('');
   newTerminoAliases = signal<string[]>([]);
+  newTerminoEntidad = signal<number | null>(null);
   tempAliasInput = signal('');
   
   // Computed
@@ -48,6 +50,7 @@ export class TerminosComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadTerminos();
+    this.loadEntidades();
   }
 
   async loadTerminos(): Promise<void> {
@@ -55,8 +58,9 @@ export class TerminosComponent implements OnInit {
     this.error.set(null);
     
     try {
-      // CORREGIDO: getAll() ya retorna Termino[] directamente
       const terminos = await this.service.getAll(this.soloActivos()).toPromise();
+      console.log('📊 Términos recibidos:', terminos);
+      console.log('🔍 Primer término:', terminos?.[0]);
       this.terminos.set(terminos || []);
     } catch (err: any) {
       this.error.set(err.message || 'Error al cargar términos');
@@ -93,7 +97,10 @@ export class TerminosComponent implements OnInit {
     if (!termino) return;
     
     try {
-      const updated = await this.service.update(termino.id, { termino: termino.termino }).toPromise();
+      const updated = await this.service.update(termino.id, { termino: termino.termino, id_entidad: termino.id_entidad || undefined }).toPromise();
+  console.log('📊 Término actualizado:', updated);
+    console.log('🔍 entidad_nombre:', updated?.entidad_nombre);
+
       if (updated) {
         this.terminos.update(list =>
           list.map(t => t.id === termino.id ? updated : t)
@@ -196,6 +203,15 @@ export class TerminosComponent implements OnInit {
     }
   }
 
+  async loadEntidades(): Promise<void> {
+  try {
+    const entidades = await this.managerApis.getEntidades().toPromise();
+    this.entidades.set(entidades || []);
+  } catch (err: any) {
+    console.error('Error al cargar entidades:', err);
+  }
+}
+
   async createTermino(): Promise<void> {
   const name = this.newTerminoName().trim();
   if (!name) {
@@ -214,6 +230,7 @@ export class TerminosComponent implements OnInit {
       this.showCreateModal.set(false);
       this.newTerminoName.set('');
       this.newTerminoAliases.set([]);
+      this.newTerminoEntidad.set(null);
       
       setTimeout(() => {
         this.openAccordionId.set(newTermino.id);
@@ -265,4 +282,22 @@ export class TerminosComponent implements OnInit {
     });
   }
 }
+
+  getEntidadNombre(id: number | null | undefined): string {
+    if (!id) return 'Sin asignar';
+    const entidad = this.entidades().find(e => e.id === id);
+    return entidad ? entidad.nombre : 'Desconocida';
+  }
+
+  onEditEntidadChange(event: Event): void {
+  const termino = this.editingTermino();
+  if (!termino) return;
+  const select = event.target as HTMLSelectElement;
+  const value = select.value;
+  this.editingTermino.set({ 
+    ...termino, 
+    id_entidad: value ? parseInt(value, 10) : null 
+  });
+}
+
 }

@@ -94,29 +94,49 @@
             (click)="toggleAccordion(termino.id)"
             class="p-5 flex items-center justify-between cursor-pointer hover:bg-surface-container transition-colors">
             
-            <div class="flex-1">
+            <div class="flex-1 min-w-0">
               @if (editingTermino()?.id === termino.id) {
-                <div class="flex gap-2" (click)="$event.stopPropagation()">
-                  <input 
-                    [(ngModel)]="editingTermino()!.termino"
-                    (keyup.enter)="saveTerminoEdit()"
-                    (keyup.escape)="cancelEditTermino()"
-                    class="flex-1 bg-white border border-primary rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    autofocus
-                  />
-                  <button (click)="saveTerminoEdit()" class="p-2 text-success hover:bg-success/10 rounded-lg transition-colors">
-                    <span class="material-symbols-outlined text-[20px]">check</span>
-                  </button>
-                  <button (click)="cancelEditTermino()" class="p-2 text-error hover:bg-error/10 rounded-lg transition-colors">
-                    <span class="material-symbols-outlined text-[20px]">close</span>
-                  </button>
+                <div class="flex flex-col gap-2" (click)="$event.stopPropagation()">
+                  <div class="flex gap-2">
+                    <input 
+                      [(ngModel)]="editingTermino()!.termino"
+                      (keyup.enter)="saveTerminoEdit()"
+                      (keyup.escape)="cancelEditTermino()"
+                      class="flex-1 bg-white border border-primary rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      autofocus
+                    />
+                    <button (click)="saveTerminoEdit()" class="p-2 text-success hover:bg-success/10 rounded-lg transition-colors">
+                      <span class="material-symbols-outlined text-[20px]">check</span>
+                    </button>
+                    <button (click)="cancelEditTermino()" class="p-2 text-error hover:bg-error/10 rounded-lg transition-colors">
+                      <span class="material-symbols-outlined text-[20px]">close</span>
+                    </button>
+                  </div>
+                  <!-- Selector de entidad en edición -->
+                  <select 
+                    [(ngModel)]="editingTermino()!.id_entidad"
+                    (change)="onEditEntidadChange($event)"
+                    class="w-full bg-white border border-outline-variant rounded-xl py-2 px-3 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all appearance-none"
+                  >
+                    <option [ngValue]="null">Sin asignar</option>
+                    @for (entidad of entidades(); track entidad.id) {
+                      <option [ngValue]="entidad.id">{{ entidad.nombre }}</option>
+                    }
+                  </select>
                 </div>
               } @else {
-                <span class="text-base font-bold font-headline text-on-background">{{ termino.termino }}</span>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-base font-bold font-headline text-on-background">{{ termino.termino }}</span>
+                  @if (termino.id_entidad) {
+                    <span class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary-container/50 text-on-primary-container truncate max-w-[100px]">
+                      {{ termino.entidad_nombre || 'Sin asignar' }}
+                    </span>
+                  }
+                </div>
               }
             </div>
             
-            <div class="flex items-center gap-4" (click)="$event.stopPropagation()">
+            <div class="flex items-center gap-4 flex-shrink-0" (click)="$event.stopPropagation()">
               <!-- Toggle -->
               <label class="relative inline-flex items-center cursor-pointer">
                 <input 
@@ -145,6 +165,15 @@
           <!-- Accordion Content -->
           @if (openAccordionId() === termino.id) {
             <div class="p-5 pt-2 space-y-3 border-t border-surface-container-high">
+              
+              <!-- Info: Entidad -->
+              <div class="flex items-center gap-2 text-sm text-outline">
+                <span class="material-symbols-outlined text-[18px]">label</span>
+                <span>Tipo:</span>
+                <span class="font-medium text-on-surface">
+                  {{ termino.id_entidad ? getEntidadNombre(termino.id_entidad) : 'Sin asignar' }}
+                </span>
+              </div>
               
               <!-- Aliases list -->
               <div class="space-y-2">
@@ -239,6 +268,21 @@
               class="w-full bg-white border border-outline-variant rounded-xl py-2.5 px-4 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
               autofocus
             />
+          </div>
+          
+          <!-- Tipo de Entidad -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-on-surface mb-2">Tipo de Entidad</label>
+            <select 
+              [(ngModel)]="newTerminoEntidad"
+              class="w-full bg-white border border-outline-variant rounded-xl py-2.5 px-4 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all appearance-none"
+            >
+              <option [value]="null">Seleccionar...</option>
+              @for (entidad of entidades(); track entidad.id) {
+                <option [value]="entidad.id">{{ entidad.nombre }}</option>
+              }
+            </select>
+            <p class="text-xs text-outline mt-1">Define si este término es un modelo, producto, cantidad, etc.</p>
           </div>
           
           <!-- Aliases iniciales -->

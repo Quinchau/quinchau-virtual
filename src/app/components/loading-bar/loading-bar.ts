@@ -13,7 +13,5 @@ import { ConnectionStatus } from '../../services/connection-status';
 export class LoadingBar {
   conn = inject(ConnectionStatus);
 
-  constructor() {
-    console.log('LoadingBar montado');
-  }
+  constructor() {}
 }

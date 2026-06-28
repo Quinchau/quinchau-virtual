@@ -1,5 +1,6 @@
-import { Component, OnInit, inject, signal, computed, effect, PLATFORM_ID } from '@angular/core';
-import { ActivatedRoute, Router} from '@angular/router';
+import { Component, OnInit, inject, signal, computed, PLATFORM_ID } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Meta, Title } from '@angular/platform-browser';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -7,12 +8,11 @@ import { ManagerState } from '../../services/manager-state';
 import { ManagerApis } from '../../services/manager-apis';
 import { Product } from '../../models/transfer.model';
 import { ExeOrderComponent } from '../exe-order/exe-order';
-import { LayerHistoryService } from '../../services/LayerHistoryService';
 import { finalize, catchError, of } from 'rxjs';
 
 type PendingAction = 'cart' | 'waitlist' | null;
 
-const DEFAULT_OG_IMAGE = 'https://quinchau.com/assets/og-default.jpg'; // TODO: reemplazar por la imagen default real del sitio
+const DEFAULT_OG_IMAGE = 'https://quinchau.com/assets/og-default.jpg';
 
 @Component({
   selector: 'app-product-page',
@@ -27,10 +27,8 @@ export class ProductPage implements OnInit {
   private title = inject(Title);
   private apis = inject(ManagerApis);
   public state = inject(ManagerState);
-  public nav = inject(LayerHistoryService);
   private platformId = inject(PLATFORM_ID);
 
-  // Estado local de la página
   public product = signal<Product | null>(null);
   public loading = signal(true);
   public error = signal(false);
@@ -39,6 +37,8 @@ export class ProductPage implements OnInit {
   private pendingAction = signal<PendingAction>(null);
   public copiado = signal(false);
   public cartSuccess = signal(false);
+
+  public registroAbierto = signal(false);
 
   public readonly inWaitlist = computed(() => {
     const stockid = this.product()?.stockid;
@@ -57,7 +57,6 @@ export class ProductPage implements OnInit {
     this.product.set({ ...p, qty_in_order: v });
   }
 
-  // Genera el slug SEO a partir de la descripción
   public toSlug(text: string): string {
     return text.toLowerCase()
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -66,13 +65,13 @@ export class ProductPage implements OnInit {
   }
 
   public copiarUrl(): void {
-  if (!isPlatformBrowser(this.platformId)) return;
-  const url = window.location.href;
-  navigator.clipboard.writeText(url).then(() => {
-    this.copiado.set(true);
-    setTimeout(() => this.copiado.set(false), 2000);
-  });
-}
+    if (!isPlatformBrowser(this.platformId)) return;
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+      this.copiado.set(true);
+      setTimeout(() => this.copiado.set(false), 2000);
+    });
+  }
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(params => {
@@ -86,38 +85,28 @@ export class ProductPage implements OnInit {
   }
 
   private loadProduct(stockid: string): void {
-  this.loading.set(true);
-  this.error.set(false);
-  this.selectedImage.set(null);
+    this.loading.set(true);
+    this.error.set(false);
+    this.selectedImage.set(null);
 
-  this.apis.getProductBySlug(stockid).pipe(
-    finalize(() => this.loading.set(false)),
-    catchError(() => {
-      this.error.set(true);
-      return of(null);
-    })
-  ).subscribe((res: any) => {
-    const p = res?.productos?.[0] ?? res;
-    if (!p || !p.stockid) {
-      this.error.set(true);
-      return;
-    }
-    this.product.set({ ...p, qty_in_order: p.qty_in_order || 1 });
-    this.setMetaTags(p);
-    this.setJsonLd(p);
-  });
-}
+    this.apis.getProductBySlug(stockid).pipe(
+      finalize(() => this.loading.set(false)),
+      catchError(() => {
+        this.error.set(true);
+        return of(null);
+      })
+    ).subscribe((res: any) => {
+      const p = res?.productos?.[0] ?? res;
+      if (!p || !p.stockid) {
+        this.error.set(true);
+        return;
+      }
+      this.product.set({ ...p, qty_in_order: p.qty_in_order || 1 });
+      this.setMetaTags(p);
+      this.setJsonLd(p);
+    });
+  }
 
-  // ─────────────────────────────────────────────────────────────
-  // META TAGS (OG / Twitter)
-  // CAMBIOS:
-  // 1) El precio y el stock van AL PRINCIPIO de la descripción,
-  //    porque WhatsApp corta el texto a pocos caracteres y el
-  //    nombre del producto ya está cubierto por el og:title.
-  // 2) Fallback seguro para og:image: si no hay `cover_image`
-  //    (URL completa), NO usamos `cover_image_id` (es solo un
-  //    número/ID, no una URL válida) — usamos una imagen default.
-  // ─────────────────────────────────────────────────────────────
   private setMetaTags(p: Product): void {
     const titleText = `${p.description} | Quinchau`;
 
@@ -144,17 +133,11 @@ export class ProductPage implements OnInit {
     this.meta.updateTag({ name: 'twitter:image', content: image });
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // JSON-LD (Schema.org Product) — para Rich Snippets de Google
-  // CAMBIO: se eliminó el guard `if (!isPlatformBrowser(...)) return;`
-  // que existía antes. Ese guard impedía que este bloque se generara
-  // durante el renderizado SSR, que es justamente el único momento
-  // que le importa a Googlebot (lee el HTML inicial, no espera la
-  // hidratación en el navegador). El `document` en SSR de Angular
-  // Universal está disponible (DOM emulado), así que esto corre bien
-  // en ambos entornos sin necesidad de ese chequeo.
-  // ─────────────────────────────────────────────────────────────
   private setJsonLd(p: Product): void {
+    // FIX: document no existe durante SSR. Sin este guard, setJsonLd revienta
+    // en el proceso de Node con "document is not defined".
+    if (!isPlatformBrowser(this.platformId)) return;
+
     const existing = document.getElementById('product-jsonld');
     if (existing) existing.remove();
 
@@ -190,36 +173,42 @@ export class ProductPage implements OnInit {
   decrement() { this.quantity = this.quantity - 1; }
 
   confirm(): void {
-  const p = this.product();
-  if (!p || this.quantity < 1) return;
-  this.state.currentProductCard.set(p);
-  this.state.addCurrentProductToCart().subscribe({
-    next: () => {
-      this.cartSuccess.set(true);
-    },
-    error: (err) => {
-      if (err?.requiere_registro) {
-        this.pendingAction.set('cart');
-        this.abrirModalRegistro();
+    const p = this.product();
+    if (!p || this.quantity < 1) return;
+    this.state.currentProductCard.set(p);
+    this.state.addCurrentProductToCart().subscribe({
+      next: () => {
+        this.cartSuccess.set(true);
+      },
+      error: (err) => {
+        if (err?.requiere_registro) {
+          this.pendingAction.set('cart');
+          this.abrirModalRegistro();
+        }
       }
-    }
-  });
-}
-
-goBack(): void {
-  if (isPlatformBrowser(this.platformId)) {
-    const referrer = document.referrer;
-
-    const vieneDeMiSitio = referrer.includes('quinchau.com') || referrer.includes('localhost');
-
-    if (vieneDeMiSitio && window.history.length > 1) {
-      window.history.back();
-      return;
-    }
+    });
   }
 
-  // En cualquier otro caso (falsos positivos, URLs directas, tráfico externo o SSR), al Home
+  goBack(): void {
+  if (!isPlatformBrowser(this.platformId)) {
+    this.router.navigate(['/home']);
+    return;
+  }
+
+  if (window.history.length > 1) {
+    window.history.back();
+    return;
+  }
+
   this.router.navigate(['/home']);
+}
+
+  seguirComprando(): void {
+  // 1. Apagamos el modal de éxito de forma local
+  this.cartSuccess.set(false);
+  
+  // CORRECCIÓN: Delegamos la salida al método goBack(), asegurando que el usuario regrese a /modelo (Caso 1) o vaya a /home (Caso 2) de forma limpia.
+  this.goBack();
 }
 
   notifyMe(): void {
@@ -239,28 +228,35 @@ goBack(): void {
   }
 
   abrirModalRegistro(): void {
-    if (!isPlatformBrowser(this.platformId)) return;
-    this.nav.push('checkout', window.location.pathname + '?registro=true');
-  }
+  if (!isPlatformBrowser(this.platformId)) return;
+  this.registroAbierto.set(true);
+}
+
+cerrarModalRegistro(): void {
+  this.registroAbierto.set(false);
+}
 
   onRegistroCompleto(datos: any): void {
-    if (this.pendingAction() === 'waitlist') {
-      this.pendingAction.set(null);
-      const stockid = this.product()?.stockid;
-      if (stockid) {
-        this.state.subscribeToWaitlist(stockid, datos).subscribe({
-          next: () => this.notifySuccess.set(true)
-        });
-      }
-    } else {
-      this.pendingAction.set(null);
-      const p = this.product();
-      if (p) {
-        this.state.currentProductCard.set(p);
-        this.state.addCurrentProductToCart(datos).subscribe({
-          next: () => this.router.navigate(['/checkout'])
-        });
-      }
+  // Ocultamos la capa visual del login localmente
+  this.cerrarModalRegistro();
+
+  const stockid = this.product()?.stockid;
+  if (this.pendingAction() === 'waitlist') {
+    this.pendingAction.set(null);
+    if (stockid) {
+      this.state.subscribeToWaitlist(stockid, datos).subscribe({
+        next: () => this.notifySuccess.set(true)
+      });
+    }
+  } else {
+    this.pendingAction.set(null);
+    const p = this.product();
+    if (p) {
+      this.state.currentProductCard.set(p);
+      this.state.addCurrentProductToCart(datos).subscribe({
+        next: () => this.cartSuccess.set(true)
+      });
     }
   }
+}
 }

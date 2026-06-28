@@ -720,5 +720,16 @@ listOrdersHistory(): Observable<{ exito: boolean; data: any[] }> {
     );
   }
 
+  public getEntidades(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.nodeBaseUrl}/entidades`, {
+      withCredentials: true
+    }).pipe(
+      catchError(error => {
+        console.error('Error al obtener entidades:', error);
+        return throwError(() => new Error('No se pudieron cargar las entidades'));
+      })
+    );
+  }
+
 
 }

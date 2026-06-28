@@ -5,7 +5,7 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { isPlatformServer } from '@angular/common';
-import { Termino, CreateTerminoInput, UpdateTerminoInput, AliasItem, ApiResponse } from '../models/terminos.model';
+import { Termino, CreateTerminoInput, UpdateTerminoInput, AliasItem, ApiResponse, Entidad } from '../models/terminos.model';
 
 @Injectable({
   providedIn: 'root'
@@ -150,4 +150,17 @@ export class TerminosService {
       })
     );
   }
+
+  getEntidades(): Observable<Entidad[]> {
+  return this.http.get<Entidad[]>(
+    `${this.nodeBaseUrl}/entidades`,
+    { withCredentials: true }
+  ).pipe(
+    catchError(err => {
+      console.error('Error al obtener entidades:', err);
+      return throwError(() => new Error('No se pudieron cargar las entidades'));
+    })
+  );
+}
+
 }

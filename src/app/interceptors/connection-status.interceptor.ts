@@ -14,7 +14,6 @@ const EXCLUDED_PATTERNS = [
 
 export const connectionStatusInterceptor: HttpInterceptorFn = (req, next) => {
   const platformId = inject(PLATFORM_ID);
-  console.log('interceptor corriendo, isBrowser:', isPlatformBrowser(platformId)); // ← prueba 3
   if (!isPlatformBrowser(platformId)) return next(req);
 
   const isExcluded = EXCLUDED_PATTERNS.some(p => req.url.includes(p));
