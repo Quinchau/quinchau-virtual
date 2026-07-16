@@ -20,6 +20,7 @@ import { Orders } from './pages/orders/orders';
 import { OrderInvoice } from './pages/order-invoice/order-invoice';
 import { Modelpage } from './pages/modelpage/modelpage';
 import { FaqsComponent } from './pages/faqs/faqs';
+import { FaqsNegocioComponent } from './pages/faqs-negocio/faqs-negocio';
 
 export const routes: Routes = [
   // === RUTAS PÚBLICAS ===
@@ -31,6 +32,10 @@ export const routes: Routes = [
   { path: 'home', component: Home },
   { path: 'checkout', component: CartComponent },
   { path: 'downloader', component: Downloaders },
+  { 
+    path: 'faqs-negocio', 
+    component: FaqsNegocioComponent 
+  },
   { 
     path: 'privacy-policy', 
     loadComponent: () => import('./pages/privacy-policy/privacy-policy').then(m => m.PrivacyPolicy) 

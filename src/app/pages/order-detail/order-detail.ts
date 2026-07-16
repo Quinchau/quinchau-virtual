@@ -398,11 +398,7 @@ export class OrderDetail implements OnInit, OnDestroy {
                 if (!res.exito) { this.actionError.set(res.mensaje || 'Error al actualizar'); return; }
                 this.lines.update(lines =>
                     lines.map(l => l.orderlineno === line.orderlineno
-                        ? {
-                            ...l,
-                            quantity:   this.editQty(),
-                            line_total: Number((this.editQty() * l.unitprice * (1 - l.discountpercent)).toFixed(2))
-                          }
+                        ? { ...l, ...res.data }   // usa el line_total que calculó el backend, con IVA
                         : l
                     )
                 );

@@ -136,8 +136,8 @@
           <span class="material-symbols-outlined text-xl">local_offer</span>
           <span class="text-sm font-bold uppercase tracking-wide">Ofertas</span>
           <span class="ml-auto bg-orange-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">NEW</span>
-        </a>      
-
+        </a>
+        
         <a [routerLink]="['/checkout']" (click)="toggleMenu()"
           class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
           <span class="material-symbols-outlined text-xl">shopping_cart</span>
@@ -209,6 +209,15 @@
               <span class="text-sm font-bold uppercase tracking-wide">Ordenes</span>
             </a>
           }
+
+          <!-- FAQs de negocio-->
+        @if (canSeeFaqs()) {
+          <a [routerLink]="['/faqs-negocio']" (click)="toggleMenu()"
+            class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
+            <span class="material-symbols-outlined text-xl">help</span>
+            <span class="text-sm font-bold uppercase tracking-wide">FAQs</span>
+          </a>
+        }
 
           <!-- INVOICE -->
           @if (canSeeInvoice()) {
