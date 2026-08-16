@@ -166,6 +166,12 @@
             <span class="text-sm font-bold uppercase tracking-wide">Productos</span>
           </a>
 
+          <a [routerLink]="['/mercadolibre']" (click)="toggleMenu()"
+            class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
+            <span class="material-symbols-outlined text-xl">sync</span>
+            <span class="text-sm font-bold uppercase tracking-wide">Mercado Libre</span>
+          </a>
+
           <a [routerLink]="['/terminos']" (click)="toggleMenu()"
             class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
             <span class="material-symbols-outlined text-xl">tag</span>
@@ -192,6 +198,16 @@
             <span class="text-sm font-bold uppercase tracking-wide">Dashboard</span>
           </a>
 
+          <!-- CAMPAÑAS -->
+          @if (canSeeCampanas()) {
+            <a [routerLink]="['/campanas']" (click)="toggleMenu()"
+              class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
+              <span class="material-symbols-outlined text-xl">campaign</span>
+              <span class="text-sm font-bold uppercase tracking-wide">Campañas</span>
+              <span class="ml-auto bg-green-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full animate-pulse">NUEVO</span>
+            </a>
+          }
+
           <!-- CUSTOMER -->
           @if (canSeeCustomer()) {
             <a [routerLink]="['/customer']" (click)="toggleMenu()"
@@ -207,6 +223,15 @@
               class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
               <span class="material-symbols-outlined text-xl">badge</span>
               <span class="text-sm font-bold uppercase tracking-wide">Ordenes</span>
+            </a>
+          }
+
+          <!-- CARRITOS -->
+          @if (canSeeInvoice()) {
+            <a [routerLink]="['/carts']" (click)="toggleMenu()"
+              class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-orange-50 dark:hover:bg-zinc-800 hover:text-orange-600 transition-all font-medium">
+              <span class="material-symbols-outlined text-xl">shopping_cart_checkout</span>
+              <span class="text-sm font-bold uppercase tracking-wide">Carritos</span>
             </a>
           }
 

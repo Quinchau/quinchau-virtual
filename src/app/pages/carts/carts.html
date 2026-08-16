@@ -1,0 +1,309 @@
+<!-- src/app/pages/carts/carts.html -->
+<div class="max-w-5xl mx-auto px-4 mt-8 space-y-6">
+
+    <!-- Page Title -->
+    <div class="mb-10">
+        <span class="text-[#944a00] font-bold tracking-widest text-xs uppercase mb-2 block">Operaciones de Venta</span>
+        <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-[#1b1c1c] leading-none">Carritos</h1>
+        <div class="h-1 w-24 bg-[#fb923c] mt-4"></div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         TABS
+    ═══════════════════════════════════════════ -->
+    <div class="flex gap-2 border-b border-[#dbc1b2]/30">
+        <button (click)="switchTab('abandonados')"
+            class="px-5 py-3 text-sm font-bold uppercase tracking-wide transition-all border-b-2 -mb-px flex items-center gap-2"
+            [class.border-[#944a00]]="activeTab() === 'abandonados'"
+            [class.text-[#944a00]]="activeTab() === 'abandonados'"
+            [class.border-transparent]="activeTab() !== 'abandonados'"
+            [class.text-slate-400]="activeTab() !== 'abandonados'">
+            <span class="material-symbols-outlined text-base">person_off</span>
+            Abandonados
+            @if (abandonedCount() > 0) {
+                <span class="bg-[#fb923c] text-[#301400] text-[10px] font-black px-2 py-0.5 rounded-full">
+                    {{ abandonedCount() }}
+                </span>
+            }
+        </button>
+
+        <button (click)="switchTab('exitosos')"
+            class="px-5 py-3 text-sm font-bold uppercase tracking-wide transition-all border-b-2 -mb-px flex items-center gap-2"
+            [class.border-[#944a00]]="activeTab() === 'exitosos'"
+            [class.text-[#944a00]]="activeTab() === 'exitosos'"
+            [class.border-transparent]="activeTab() !== 'exitosos'"
+            [class.text-slate-400]="activeTab() !== 'exitosos'">
+            <span class="material-symbols-outlined text-base">task_alt</span>
+            Exitosos
+            @if (successfulOrdersCount() > 0) {
+                <span class="bg-green-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                    {{ successfulOrdersCount() }}
+                </span>
+            }
+        </button>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         TAB: ABANDONADOS
+    ═══════════════════════════════════════════ -->
+    @if (activeTab() === 'abandonados') {
+        <section class="fade-in space-y-4">
+
+            <!-- Header de sección -->
+            <div class="flex items-center justify-between">
+                <p class="text-sm text-slate-500">
+                    Carritos sin cliente formal que siguen sin resolver. Márcalos como abandonados tras un intento de recuperación sin éxito.
+                </p>
+                <button (click)="refreshAbandoned()" [disabled]="loadingAbandoned()"
+                    class="shrink-0 flex items-center gap-2 text-xs font-bold text-[#944a00] hover:underline disabled:opacity-50">
+                    <span class="material-symbols-outlined text-sm" [class.animate-spin]="loadingAbandoned()">refresh</span>
+                    Actualizar
+                </button>
+            </div>
+
+            <!-- Loading -->
+            @if (loadingAbandoned()) {
+                <div class="flex items-center justify-center py-16 text-slate-400">
+                    <span class="material-symbols-outlined text-3xl animate-spin">refresh</span>
+                </div>
+            }
+
+            <!-- Error -->
+            @if (!loadingAbandoned() && abandonedError()) {
+                <div class="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg p-4 flex items-center justify-between">
+                    <span>{{ abandonedError() }}</span>
+                    <button (click)="refreshAbandoned()" class="font-bold text-xs uppercase hover:underline">Reintentar</button>
+                </div>
+            }
+
+            <!-- Vacío -->
+            @if (!loadingAbandoned() && !abandonedError() && abandonedCarts().length === 0) {
+                <div class="text-center py-16 text-slate-400 bg-white rounded-xl border border-[#dbc1b2]/15">
+                    <span class="material-symbols-outlined text-4xl block mb-2" style="font-variation-settings:'FILL' 0">shopping_cart_off</span>
+                    <p class="text-sm">No hay carritos abandonados por ahora</p>
+                </div>
+            }
+
+            <!-- Lista de carritos abandonados -->
+            @if (!loadingAbandoned() && !abandonedError() && abandonedCarts().length > 0) {
+                <div class="space-y-3">
+                    @for (cart of abandonedCarts(); track cart.cotizacion_id) {
+                        <div class="bg-white border border-[#dbc1b2]/30 rounded-xl p-4 fade-in">
+
+                            <!-- Header del carrito: visitante + fecha + id -->
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#dbc1b2]/20">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-2 rounded-full bg-[#f0eded] text-slate-400">
+                                        <span class="material-symbols-outlined text-lg">person</span>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-[#1b1c1c] text-sm">{{ visitanteLabel(cart) }}</p>
+                                        <p class="text-xs text-slate-500">
+                                            @if (visitanteTelefono(cart); as tel) {
+                                                {{ tel }}
+                                            } @else {
+                                                Sin teléfono registrado
+                                            }
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-[10px] font-mono font-bold text-[#944a00] bg-orange-50 px-2 py-0.5 rounded">
+                                        Carrito #{{ cart.cotizacion_id }}
+                                    </span>
+                                    <p class="text-[11px] text-slate-400 mt-1">{{ formatDate(cart.date) }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Items -->
+                            <div class="py-3 space-y-2">
+                                @for (item of cart.items; track item.stockid) {
+                                    <div class="flex items-center gap-3">
+                                        <img [src]="item.cover_image || '/assets/placeholder-part.svg'"
+                                             [alt]="item.description || item.stockid"
+                                             class="w-10 h-10 object-contain bg-[#f6f3f2] rounded shrink-0"/>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-xs font-bold text-[#1b1c1c] truncate">
+                                                {{ item.description || 'Producto sin descripción' }}
+                                            </p>
+                                            <p class="text-[10px] text-slate-400 font-mono">{{ item.stockid }}</p>
+                                        </div>
+                                        <p class="text-xs text-slate-500 shrink-0">x{{ item.quantity }}</p>
+                                        <p class="text-xs font-bold text-[#944a00] shrink-0 w-16 text-right">
+                                            {{ formatCurrency(item.price * item.quantity * (1 + item.taxrate)) }}
+                                        </p>
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- Footer: total + acción -->
+                            <div class="flex items-center justify-between pt-3 border-t border-[#dbc1b2]/20">
+                                <div>
+                                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                                        {{ cartItemCount(cart) }} unidades
+                                    </p>
+                                    <p class="text-lg font-black text-[#944a00]">{{ formatCurrency(cartTotal(cart)) }}</p>
+                                </div>
+                                <button (click)="markAsAbandoned(cart)"
+                                    [disabled]="markingId() === cart.cotizacion_id"
+                                    class="flex items-center gap-2 bg-[#944a00] text-white px-4 py-2 rounded-lg font-bold text-xs uppercase shadow-sm hover:brightness-110 active:scale-95 transition-all disabled:opacity-50">
+                                    @if (markingId() === cart.cotizacion_id) {
+                                        <span class="material-symbols-outlined text-sm animate-spin">refresh</span>
+                                        Marcando...
+                                    } @else {
+                                        <span class="material-symbols-outlined text-sm">block</span>
+                                        Marcar abandonado
+                                    }
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </section>
+    }
+
+    <!-- ═══════════════════════════════════════════
+         TAB: EXITOSOS
+    ═══════════════════════════════════════════ -->
+    @if (activeTab() === 'exitosos') {
+        <section class="fade-in space-y-4">
+
+            <div class="flex items-center justify-between">
+                <p class="text-sm text-slate-500">
+                    Carritos con checkout completado (cliente asignado). El badge indica si el vendedor ya lo cerró o sigue pendiente de gestión.
+                </p>
+                <button (click)="refreshSuccessful()" [disabled]="loadingSuccessful()"
+                    class="shrink-0 flex items-center gap-2 text-xs font-bold text-[#944a00] hover:underline disabled:opacity-50">
+                    <span class="material-symbols-outlined text-sm" [class.animate-spin]="loadingSuccessful()">refresh</span>
+                    Actualizar
+                </button>
+            </div>
+
+            <!-- Loading -->
+            @if (loadingSuccessful()) {
+                <div class="flex items-center justify-center py-16 text-slate-400">
+                    <span class="material-symbols-outlined text-3xl animate-spin">refresh</span>
+                </div>
+            }
+
+            <!-- Error -->
+            @if (!loadingSuccessful() && successfulError()) {
+                <div class="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg p-4 flex items-center justify-between">
+                    <span>{{ successfulError() }}</span>
+                    <button (click)="refreshSuccessful()" class="font-bold text-xs uppercase hover:underline">Reintentar</button>
+                </div>
+            }
+
+            <!-- Vacío -->
+            @if (!loadingSuccessful() && !successfulError() && successfulClients().length === 0) {
+                <div class="text-center py-16 text-slate-400 bg-white rounded-xl border border-[#dbc1b2]/15">
+                    <span class="material-symbols-outlined text-4xl block mb-2" style="font-variation-settings:'FILL' 0">task_alt</span>
+                    <p class="text-sm">Todavía no hay carritos cerrados</p>
+                </div>
+            }
+
+            <!-- Lista agrupada por cliente -->
+            @if (!loadingSuccessful() && !successfulError() && successfulClients().length > 0) {
+                <div class="space-y-4">
+                    @for (client of successfulClients(); track client.client_id) {
+                        <div class="bg-white border border-[#dbc1b2]/30 rounded-xl overflow-hidden fade-in">
+
+                            <!-- Header cliente -->
+                            <div class="p-4 bg-green-50/60 border-b border-green-100 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-2 rounded-full bg-green-100 text-green-700">
+                                        <span class="material-symbols-outlined text-lg">verified</span>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-[#1b1c1c] text-sm">{{ client.client_name || 'Cliente sin nombre' }}</p>
+                                        <p class="text-xs text-slate-500">{{ client.orders.length }} carrito(s) cerrado(s)</p>
+                                    </div>
+                                </div>
+                                <p class="text-lg font-black text-green-700">{{ formatCurrency(clientTotal(client)) }}</p>
+                            </div>
+
+                            <!-- Carritos del cliente -->
+                            <div class="divide-y divide-[#dbc1b2]/15">
+                                @for (order of client.orders; track order.cotizacion_id) {
+                                    <div class="p-4">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-[10px] font-mono font-bold text-[#944a00] bg-orange-50 px-2 py-0.5 rounded">
+                                                    Carrito #{{ order.cotizacion_id }}
+                                                </span>
+                                                @if (order.status === 'Cerrado') {
+                                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                                                        <span class="material-symbols-outlined text-xs">check_circle</span>
+                                                        Cerrado
+                                                    </span>
+                                                } @else if (order.status === 'Pendiente') {
+                                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                                                        <span class="material-symbols-outlined text-xs">pending</span>
+                                                        Pendiente de cierre
+                                                    </span>
+                                                } @else {
+                                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
+                                                        {{ order.status }}
+                                                    </span>
+                                                }
+                                            </div>
+                                            <p class="text-[11px] text-slate-400">{{ formatDate(order.date) }}</p>
+                                        </div>
+
+                                        <div class="space-y-2">
+                                            @for (item of order.items; track item.stockid) {
+                                                <div class="flex items-center gap-3">
+                                                    <img [src]="item.cover_image || '/assets/placeholder-part.svg'"
+                                                         [alt]="item.description || item.stockid"
+                                                         class="w-9 h-9 object-contain bg-[#f6f3f2] rounded shrink-0"/>
+                                                    <div class="min-w-0 flex-1">
+                                                        <p class="text-xs font-bold text-[#1b1c1c] truncate">
+                                                            {{ item.description || 'Producto sin descripción' }}
+                                                        </p>
+                                                        <p class="text-[10px] text-slate-400 font-mono">{{ item.stockid }}</p>
+                                                    </div>
+                                                    <p class="text-xs text-slate-500 shrink-0">x{{ item.quantity }}</p>
+                                                    <p class="text-xs font-bold text-[#944a00] shrink-0 w-16 text-right">
+                                                        {{ formatCurrency(item.price * item.quantity * (1 + item.taxrate)) }}
+                                                    </p>
+                                                </div>
+                                            }
+                                        </div>
+
+                                        <div class="text-right mt-2">
+                                            <span class="text-xs font-bold text-[#1b1c1c]">
+                                                Total: {{ formatCurrency(cartTotal(order)) }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </section>
+    }
+
+</div>
+
+<!-- Estilos adicionales -->
+<style>
+    .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        display: inline-block;
+        line-height: 1;
+        text-transform: none;
+        letter-spacing: normal;
+        word-wrap: normal;
+        white-space: nowrap;
+        direction: ltr;
+    }
+
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(12px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeInUp 0.3s ease forwards; }
+</style>

@@ -53,6 +53,16 @@ export const routes: Routes = [
     canActivate: [adminGuard]
   },
   {
+    path: 'campanas',
+    loadComponent: () => import('./pages/campanas/campanas').then(m => m.Campanas)
+  },
+  {
+  path: 'mercadolibre',
+  loadComponent: () =>
+    import('./pages/mercadolibre-update/mercadolibre-update').then(m => m.MercadolibreUpdate),
+  canActivate: [adminGuard]
+  },
+  {
     path: 'product-create',
     loadComponent: () => import('./pages/product-create/product-create').then(m => m.ProductCreatePage),
     canActivate: [adminGuard]
@@ -61,6 +71,12 @@ export const routes: Routes = [
     path: 'product-edit/:stockId',
     loadComponent: () => import('./pages/product-edit/product-edit').then(m => m.ProductEditPage),
     canActivate: [adminGuard]
+  },
+  {
+  path: 'carts',
+  loadComponent: () =>
+    import('./pages/carts/carts').then(m => m.Carts),
+  canActivate: [adminGuard]
   },
   {
     path: 'terminos',

@@ -1,0 +1,300 @@
+<!-- src/app/pages/campanas/campanas.html -->
+
+<div class="max-w-5xl mx-auto px-4 mt-8 space-y-6">
+
+  <!-- Header -->
+  <div class="mb-10 flex items-start justify-between">
+    <div>
+      <span class="text-[#944a00] font-bold tracking-widest text-xs uppercase mb-2 block">Marketing</span>
+      <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-[#1b1c1c] leading-none">Campañas WhatsApp</h1>
+      <div class="h-1 w-24 bg-[#fb923c] mt-4"></div>
+    </div>
+    <div class="flex items-center gap-3">
+      <!-- Botón refrescar manual -->
+      <button 
+        (click)="refrescarManual()" 
+        [disabled]="loadingList() || updatingActivas()"
+        class="p-2 rounded-lg hover:bg-zinc-100 transition-colors disabled:opacity-50"
+        title="Refrescar datos">
+        <span class="material-symbols-outlined text-slate-500" 
+              [class.animate-spin]="loadingList() || updatingActivas()">
+          refresh
+        </span>
+      </button>
+      <!-- Última actualización -->
+      @if (lastUpdate()) {
+        <span class="text-xs text-slate-400">
+          {{ lastUpdate() | date:'HH:mm:ss' }}
+        </span>
+      }
+      <button (click)="showCrearPanel.set(true)"
+        class="bg-[#944a00] text-white px-6 h-11 rounded-md font-bold text-sm shadow-md hover:brightness-110 active:scale-95 transition-all">
+        + Nueva campaña
+      </button>
+    </div>
+  </div>
+
+  <!-- SECCIÓN: Activas -->
+  <section class="bg-white shadow-sm rounded-xl overflow-hidden border border-[#dbc1b2]/15">
+    <div class="p-6 border-l-4 border-[#944a00] flex items-center gap-4">
+      <div class="p-2 rounded-lg bg-[#fb923c] text-white">
+        <span class="material-symbols-outlined">campaign</span>
+      </div>
+      <div class="flex-1">
+        <h2 class="text-lg font-bold">Campañas activas</h2>
+        <p class="text-sm text-slate-500">En pausa o enviando ahora mismo</p>
+      </div>
+      <!-- Indicador de actualización en vivo -->
+      <div class="flex items-center gap-2">
+        @if (updatingActivas()) {
+          <span class="material-symbols-outlined text-sm text-blue-500 animate-spin">refresh</span>
+          <span class="text-xs text-slate-400">Actualizando...</span>
+        } @else if (activas().length > 0) {
+          <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+          <span class="text-xs text-green-600">En vivo</span>
+        }
+      </div>
+    </div>
+
+    <div class="p-6 space-y-3">
+      @if (loadingList()) {
+        <div class="flex justify-center py-6">
+          <span class="material-symbols-outlined animate-spin text-slate-400">refresh</span>
+          <span class="text-sm text-slate-400 ml-2">Cargando...</span>
+        </div>
+      } @else if (errorList()) {
+        <p class="text-sm text-red-500">{{ errorList() }}</p>
+      } @else if (activas().length === 0) {
+        <p class="text-sm text-slate-400 text-center py-6">No hay campañas activas.</p>
+      } @else {
+        @for (c of activas(); track c.id_campana) {
+          <div class="bg-white border border-[#dbc1b2]/30 rounded-xl p-4 flex flex-col sm:flex-row gap-4 hover:shadow-md transition-shadow fade-in">
+            <!-- Contenido izquierdo (clic para detalle) -->
+            <div class="flex-1 min-w-0 cursor-pointer" (click)="verDetalle(c)">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
+                  [class.bg-amber-100]="c.estado === 'en_pausa'"
+                  [class.text-amber-700]="c.estado === 'en_pausa'"
+                  [class.bg-green-100]="c.estado === 'en_proceso'"
+                  [class.text-green-700]="c.estado === 'en_proceso'">
+                  {{ c.estado === 'en_pausa' ? 'EN PAUSA' : 'ENVIANDO' }}
+                </span>
+                <span class="text-[10px] text-slate-400 font-mono">#{{ c.id_campana }}</span>
+                @if (c.updated_at !== c.created_at) {
+                  <span class="text-[10px] text-slate-400">
+                    actualizado: {{ formatFecha(c.updated_at) }}
+                  </span>
+                }
+              </div>
+              <h3 class="font-bold text-[#1b1c1c] text-sm mt-1">{{ c.modelo_descrip }}</h3>
+              <p class="text-xs text-slate-500">{{ c.plantilla }}</p>
+
+              <div class="flex gap-4 mt-2 text-xs flex-wrap">
+                <span class="text-slate-500">Total: <strong>{{ c.total_destinatarios }}</strong></span>
+                <span class="text-green-600">Enviados: <strong>{{ c.enviados }}</strong></span>
+                <span class="text-red-500">Fallidos: <strong>{{ c.fallidos }}</strong></span>
+                <span class="text-amber-600">Pendientes: <strong>{{ c.pendientes }}</strong></span>
+              </div>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="flex sm:flex-col gap-2 justify-end">
+              @if (c.estado === 'en_pausa') {
+                <button (click)="onArrancar(c)" [disabled]="loadingAction() === c.id_campana"
+                  class="px-4 h-9 rounded-md bg-green-600 text-white text-xs font-bold hover:brightness-110 disabled:opacity-50 transition-all">
+                  @if (loadingAction() === c.id_campana) {
+                    <span class="material-symbols-outlined text-base animate-spin">refresh</span>
+                  } @else {
+                    Arrancar
+                  }
+                </button>
+              } @else {
+                <button (click)="onPausar(c)" [disabled]="loadingAction() === c.id_campana"
+                  class="px-4 h-9 rounded-md bg-amber-500 text-white text-xs font-bold hover:brightness-110 disabled:opacity-50 transition-all">
+                  @if (loadingAction() === c.id_campana) {
+                    <span class="material-symbols-outlined text-base animate-spin">refresh</span>
+                  } @else {
+                    Pausar
+                  }
+                </button>
+              }
+              <button (click)="onCancelar(c)" [disabled]="loadingAction() === c.id_campana"
+                class="px-4 h-9 rounded-md border border-red-300 text-red-600 text-xs font-bold hover:bg-red-50 disabled:opacity-50 transition-all">
+                Cancelar
+              </button>
+            </div>
+          </div>
+        }
+      }
+    </div>
+  </section>
+
+  <!-- SECCIÓN: Historial -->
+  <section class="bg-white shadow-sm rounded-xl overflow-hidden border border-[#dbc1b2]/15">
+    <div class="p-6 border-l-4 border-[#dbc1b2] flex items-center gap-4">
+      <div class="p-2 rounded-lg bg-[#f0eded] text-slate-400">
+        <span class="material-symbols-outlined">history</span>
+      </div>
+      <div>
+        <h2 class="text-lg font-bold">Historial</h2>
+        <p class="text-sm text-slate-500">Campañas terminadas</p>
+      </div>
+      <div class="flex-1"></div>
+      <span class="text-xs text-slate-400">{{ historial().length }} campañas</span>
+    </div>
+
+    <div class="p-6 space-y-3">
+      @if (historial().length === 0) {
+        <p class="text-sm text-slate-400 text-center py-6">Sin campañas terminadas todavía.</p>
+      } @else {
+        @for (c of historial(); track c.id_campana) {
+          <div class="bg-white border border-[#dbc1b2]/30 rounded-xl p-4 flex flex-col sm:flex-row gap-4 hover:shadow-md transition-shadow fade-in">
+            <!-- Contenido izquierdo (clic para detalle) -->
+            <div class="flex-1 min-w-0 cursor-pointer" (click)="verDetalle(c)">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
+                  [class.bg-green-100]="obtenerResultadoFinal(c) === 'exitosa'"
+                  [class.text-green-700]="obtenerResultadoFinal(c) === 'exitosa'"
+                  [class.bg-amber-100]="obtenerResultadoFinal(c) === 'con_fallos'"
+                  [class.text-amber-700]="obtenerResultadoFinal(c) === 'con_fallos'"
+                  [class.bg-slate-100]="obtenerResultadoFinal(c) === 'cancelada'"
+                  [class.text-slate-600]="obtenerResultadoFinal(c) === 'cancelada'">
+                  {{
+                    obtenerResultadoFinal(c) === 'exitosa' ? 'COMPLETADA' :
+                    obtenerResultadoFinal(c) === 'con_fallos' ? 'CON FALLOS' : 'CANCELADA'
+                  }}
+                </span>
+                <span class="text-[10px] text-slate-400 font-mono">#{{ c.id_campana }}</span>
+                @if (c.finalizada_en) {
+                  <span class="text-[10px] text-slate-400">
+                    finalizada: {{ formatFecha(c.finalizada_en) }}
+                  </span>
+                }
+              </div>
+              <h3 class="font-bold text-[#1b1c1c] text-sm mt-1">{{ c.modelo_descrip }}</h3>
+              <p class="text-xs text-slate-500">{{ c.plantilla }}</p>
+
+              <div class="flex gap-4 mt-2 text-xs flex-wrap">
+                <span class="text-slate-500">Total: <strong>{{ c.total_destinatarios }}</strong></span>
+                <span class="text-green-600">Enviados: <strong>{{ c.enviados }}</strong></span>
+                <span class="text-red-500">Fallidos: <strong>{{ c.fallidos }}</strong></span>
+                <span class="text-amber-600">Pendientes: <strong>{{ c.pendientes }}</strong></span>
+              </div>
+            </div>
+          </div>
+        }
+      }
+    </div>
+  </section>
+
+  <!-- MODAL: Crear campaña -->
+  @if (showCrearPanel()) {
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 fade-in"
+      (click)="showCrearPanel.set(false)">
+      <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl p-6" (click)="onCrearPanelClick($event)">
+        <h3 class="text-lg font-bold text-[#1b1c1c] mb-4">Nueva campaña</h3>
+
+        <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">Modelo</label>
+        <select [ngModel]="modeloSeleccionado()" (ngModelChange)="modeloSeleccionado.set($event)"
+          class="w-full h-11 bg-[#f6f3f2] border-none rounded-lg mb-4 text-sm px-3">
+          <option [ngValue]="null" disabled>Seleccione un modelo...</option>
+          @for (m of modelos(); track m.typeid) {
+            <option [ngValue]="m.typeid">{{ m.typename }}</option>
+          }
+        </select>
+
+        <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">Plantilla</label>
+        <input [ngModel]="plantilla()" (ngModelChange)="plantilla.set($event)"
+          class="w-full h-11 bg-[#f6f3f2] border-none rounded-lg mb-4 text-sm px-3"
+          placeholder="aprobacion_envio_catalogo" />
+
+        <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">
+          Teléfono de prueba (opcional)
+        </label>
+        <input [ngModel]="testPhone()" (ngModelChange)="testPhone.set($event)"
+          placeholder="+584123219451"
+          class="w-full h-11 bg-[#f6f3f2] border-none rounded-lg mb-4 text-sm px-3" />
+        <p class="text-xs text-slate-400 -mt-3 mb-4">
+          Si se completa, la campaña se crea con este único destinatario (modo prueba).
+        </p>
+
+        @if (crearError()) {
+          <p class="text-xs text-red-500 mb-4">{{ crearError() }}</p>
+        }
+
+        <div class="flex gap-3">
+          <button (click)="showCrearPanel.set(false)" class="flex-1 py-3 rounded-lg bg-slate-100 text-slate-600 font-bold text-sm">
+            Cancelar
+          </button>
+          <button (click)="crearCampana()" [disabled]="creando()"
+            class="flex-1 py-3 rounded-lg bg-gradient-to-r from-[#944a00] to-[#fb923c] text-white font-bold text-sm disabled:opacity-50 transition-all">
+            @if (creando()) { 
+              <span class="material-symbols-outlined text-base animate-spin">refresh</span>
+              Creando... 
+            } @else { 
+              Crear (queda en pausa) 
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: Detalle de campaña -->
+  @if (detalleAbierto(); as d) {
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 fade-in"
+      (click)="cerrarDetalle()">
+      <div class="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto shadow-2xl" (click)="$event.stopPropagation()">
+        <div class="sticky top-0 bg-white p-5 border-b flex justify-between items-start">
+          <div>
+            <h3 class="text-lg font-bold">#{{ d.id_campana }} — {{ d.modelo_descrip }}</h3>
+            <p class="text-xs text-slate-500">
+              {{ d.plantilla }} · {{ d.estado }}
+              @if (d.finalizada_en) {
+                · Finalizada: {{ formatFecha(d.finalizada_en) }}
+              }
+            </p>
+          </div>
+          <button (click)="cerrarDetalle()" class="p-1 text-slate-400 hover:text-slate-700">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        @if (loadingDetalle()) {
+          <div class="p-4 text-center text-slate-400">
+            <span class="material-symbols-outlined animate-spin">refresh</span>
+            Cargando detalle...
+          </div>
+        } @else {
+          <div class="divide-y">
+            @for (item of d.detalle; track item.telefono) {
+              <div class="p-3 flex justify-between items-center text-sm">
+                <div>
+                  <p class="font-bold">{{ item.nombre }}</p>
+                  <p class="text-xs text-slate-400">{{ item.telefono }}</p>
+                  @if (item.error) {
+                    <p class="text-xs text-red-500 mt-1">{{ item.error }}</p>
+                  }
+                  @if (item.enviado_en) {
+                    <p class="text-xs text-slate-400">Enviado: {{ formatFecha(item.enviado_en) }}</p>
+                  }
+                </div>
+                <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
+                  [class.bg-amber-100]="item.estado === 'pendiente'"
+                  [class.text-amber-700]="item.estado === 'pendiente'"
+                  [class.bg-green-100]="item.estado === 'enviado'"
+                  [class.text-green-700]="item.estado === 'enviado'"
+                  [class.bg-red-100]="item.estado === 'fallido'"
+                  [class.text-red-600]="item.estado === 'fallido'">
+                  {{ item.estado }}
+                </span>
+              </div>
+            } @empty {
+              <div class="p-4 text-center text-slate-400">Sin destinatarios</div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

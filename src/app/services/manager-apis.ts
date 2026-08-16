@@ -18,6 +18,8 @@ import { OnDemandListResponse } from '../models/on-demand-model';
 import { StockAvailabilityResponse, WarehouseOption } from '../models/orders.models';
 import { AliasItem, Termino } from '../models/terminos.model';
 import { CreateFaqDto, FaqDeleteResponse, FaqListResponse, FaqSingleResponse, UpdateFaqDto } from '../models/faqs.models';
+import { Campana, CampanaConDetalle, CrearCampanaPayload, CrearCampanaResult, TransicionResult } from '../models/campanas.model';
+import { AbandonedCartsResponse, MarkAbandonedResponse, SuccessfulCartsResponse } from '../models/cart.models';
 
 @Injectable({
   providedIn: 'root',
@@ -731,5 +733,95 @@ listOrdersHistory(): Observable<{ exito: boolean; data: any[] }> {
     );
   }
 
+  // --- CAMPAÑAS ---
+
+public getCampanas(): Observable<{ success: boolean; data: Campana[] }> {
+  return this.http.get<{ success: boolean; data: Campana[] }>(
+    `${this.nodeBaseUrl}/campanas`
+  );
+}
+
+public getCampanaDetalle(id: number): Observable<{ success: boolean; data: CampanaConDetalle }> {
+  return this.http.get<{ success: boolean; data: CampanaConDetalle }>(
+    `${this.nodeBaseUrl}/campanas/${id}`
+  );
+}
+
+public crearCampana(payload: CrearCampanaPayload): Observable<{ success: boolean; data: CrearCampanaResult }> {
+  return this.http.post<{ success: boolean; data: CrearCampanaResult }>(
+    `${this.nodeBaseUrl}/campanas/mensajes`,
+    payload
+  );
+}
+
+public arrancarCampana(id: number): Observable<{ success: boolean; data: TransicionResult }> {
+  return this.http.patch<{ success: boolean; data: TransicionResult }>(
+    `${this.nodeBaseUrl}/campanas/${id}/arrancar`,
+    {}
+  );
+}
+
+public pausarCampana(id: number): Observable<{ success: boolean; data: TransicionResult }> {
+  return this.http.patch<{ success: boolean; data: TransicionResult }>(
+    `${this.nodeBaseUrl}/campanas/${id}/pausar`,
+    {}
+  );
+}
+
+public cancelarCampana(id: number): Observable<{ success: boolean; data: TransicionResult }> {
+  return this.http.patch<{ success: boolean; data: TransicionResult }>(
+    `${this.nodeBaseUrl}/campanas/${id}/cancelar`,
+    {}
+  );
+}
+
+public updateMercadolibreStock(file: File, porcentaje: number, precioMinimo: number): Observable<Blob> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('porcentaje', porcentaje.toString());
+  formData.append('precio_minimo', precioMinimo.toString());
+  return this.http.post(`${this.nodeBaseUrl}/mercadolibre/update-stock`, formData, {
+    withCredentials: true,
+    responseType: 'blob'
+  });
+}
+
+/**
+ * Lista carritos huérfanos (sin cotizacion_cliente_id) que siguen en
+ * estatus 'Pendiente'. Vista de negocio de "abandonados".
+ * GET /api/cart/abandonados
+ */
+public getAbandonedCarts(): Observable<AbandonedCartsResponse> {
+    return this.http.get<AbandonedCartsResponse>(
+        `${this.nodeBaseUrl}/cart/abandonados`,
+        { withCredentials: true }
+    );
+}
+ 
+/**
+ * Marca manualmente un carrito como 'Abandonado'.
+ * No es un toggle: no existe acción inversa (ver doc sección 4).
+ * POST /api/cart/:cotizacionId/abandonar
+ */
+public markCartAsAbandoned(cotizacionId: number): Observable<MarkAbandonedResponse> {
+    return this.http.post<MarkAbandonedResponse>(
+        `${this.nodeBaseUrl}/cart/${cotizacionId}/abandonar`,
+        {},
+        { withCredentials: true }
+    );
+}
+ 
+/**
+ * Lista carritos con checkout completado (cotizacion_cliente_id != NULL),
+ * agrupados por cliente. Puede incluir carritos aún 'Pendiente' de cierre
+ * por el vendedor y carritos ya 'Cerrado' — cada order trae su `status`.
+ * GET /api/cart/exitosos
+ */
+public getSuccessfulCarts(): Observable<SuccessfulCartsResponse> {
+    return this.http.get<SuccessfulCartsResponse>(
+        `${this.nodeBaseUrl}/cart/exitosos`,
+        { withCredentials: true }
+    );
+}
 
 }
