@@ -167,6 +167,12 @@ public readonly homeResource = rxResource<HomeData, unknown>({
 });
 
 public setModeloId(id: string): void {
+  // Solución: Comparamos el ID contra productModelFilter y verificamos que existan productos cargados
+  if (this.productModelFilter() === id && (this.products()?.length ?? 0) > 0) {
+    return;
+  }
+
+  // Nota: Actualizamos la Signal pública que alimenta las peticiones de productsResource
   this.productModelFilter.set(id);
 }
 

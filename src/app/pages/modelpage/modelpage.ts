@@ -75,11 +75,9 @@ export class Modelpage implements OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.dataLoadInterval) {
-      clearInterval(this.dataLoadInterval);
-    }
-    this.managerState.setModeloId('');
-    this.managerState.setOffersOnly(false);
+  if (this.dataLoadInterval) {
+    clearInterval(this.dataLoadInterval);
+  }
   }
 
   public toggleOnlyStock(): void {

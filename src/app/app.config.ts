@@ -5,7 +5,7 @@ import {
   importProvidersFrom, 
   isDevMode
 } from '@angular/core';
-import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from '@angular/router';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { ReactiveFormsModule } from '@angular/forms';
 import { 
@@ -43,7 +43,10 @@ export const appConfig: ApplicationConfig = {
 
     provideRouter(
       routes,
-      withComponentInputBinding()
+      withComponentInputBinding(),
+      withInMemoryScrolling({
+        scrollPositionRestoration: 'enabled'
+      })
     ),
 
     importProvidersFrom(ReactiveFormsModule),
