@@ -1,7 +1,12 @@
 // src/app/models/cart.models.ts
 // Basado en la doc técnica "API de Carritos (Cotizaciones)".
 
-export type CotizacionEstatus = 'Pendiente' | 'Abandonado' | 'Cerrado' | 'Cancelado';
+export type CotizacionEstatus =
+    | 'Pendiente'
+    | 'En espera de Pago'
+    | 'Abandonado'
+    | 'Cerrado'
+    | 'Cancelado';
 
 export interface CartItem {
     stockid: string;
@@ -17,6 +22,7 @@ export interface CartOrder {
     cotizacion_id: number;
     typeabbrev: string;
     status: CotizacionEstatus;
+    status_actualizado_por: string | null;
     date: string; // ISO 8601
     items: CartItem[];
 }
@@ -54,4 +60,26 @@ export interface ClientWithOrders {
 export interface SuccessfulCartsResponse {
     error: false;
     clients: ClientWithOrders[];
+}
+
+/** PATCH /api/cotizaciones/:cotizacionId/status */
+export interface UpdateStatusResponse {
+    error: false;
+    message: string;
+    status: CotizacionEstatus;
+    status_actualizado_por: string;
+}
+
+/** Una entrada del historial de cambios de estatus de una cotización */
+export interface StatusHistorialEntry {
+    historial_id: number;
+    status_nuevo: CotizacionEstatus;
+    actualizado_por: string;
+    actualizado_en: string;
+}
+
+/** GET /api/cotizaciones/:cotizacionId/status-historial */
+export interface StatusHistorialResponse {
+    error: false;
+    historial: StatusHistorialEntry[];
 }

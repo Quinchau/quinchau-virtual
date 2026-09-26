@@ -39,6 +39,8 @@ export class ProductAdminPage implements OnInit {
   
   searchTerm = '';
   selectedCategory = '';
+  selectedModel = '';
+  models = signal<{ idmodelo: number; modeldescrip: string }[]>([]);
   
   currentPage = 1;
   limit = 25;
@@ -47,6 +49,7 @@ export class ProductAdminPage implements OnInit {
 
   ngOnInit() {
     this.loadCategories();
+    this.loadModels();
     this.loadProducts();
   }
 
@@ -59,12 +62,20 @@ export class ProductAdminPage implements OnInit {
     });
   }
 
+  loadModels() {
+    this.apis.getModels().subscribe({
+      next: (res: any) => this.models.set(res),
+      error: (err: any) => console.error('Error al cargar modelos:', err)
+    });
+  }
+
   loadProducts() {
     this.loading.set(true);
     
     const params = {
       search: this.searchTerm,
       stockCat: this.selectedCategory,
+      model: this.selectedModel,
       page: this.currentPage,
       limit: this.limit
     };
@@ -88,6 +99,11 @@ export class ProductAdminPage implements OnInit {
         this.loading.set(false);
       }
     });
+  }
+
+  onModelChange() {
+    this.currentPage = 1;
+    this.loadProducts();
   }
 
   onSearch() {

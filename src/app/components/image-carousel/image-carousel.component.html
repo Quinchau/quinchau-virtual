@@ -1,0 +1,86 @@
+<!-- Fondo superpuesto con desenfoque -->
+<div 
+  class="fixed inset-0 z-[100] flex flex-col justify-start items-center bg-black/95 backdrop-blur-md p-4 select-none pt-4 overflow-y-auto"
+  (click)="onClose()">
+
+  <!-- Cabecera: Contador y Botón Cierre -->
+  <div 
+    class="w-full max-w-5xl flex items-center justify-between text-white shrink-0 mb-3 z-10"
+    (click)="$event.stopPropagation()">
+    
+    <span class="text-xs font-semibold tracking-wide bg-white/10 px-3 py-1 rounded-full border border-white/10">
+      {{ currentIndex() + 1 }} / {{ images().length }}
+    </span>
+
+    <button 
+      type="button"
+      (click)="onClose()"
+      class="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors focus:outline-none"
+      aria-label="Cerrar visor">
+      <span class="material-symbols-outlined text-xl block">close</span>
+    </button>
+  </div>
+
+  <!-- Bloque Contenedor (Imagen + Miniaturas agrupadas arriba) -->
+  <div 
+    class="w-full max-w-2xl flex flex-col items-center justify-start gap-3 z-10"
+    (click)="$event.stopPropagation()">
+
+    <!-- Marco Delimitador de Imagen (overflow-hidden asegura zoom interno) -->
+    <div 
+      class="relative w-full h-[50vh] md:h-[55vh] flex items-center justify-center overflow-hidden rounded-lg bg-black/20 border border-white/10 touch-none"
+      (touchstart)="onTouchStart($event)"
+      (touchmove)="onTouchMove($event)"
+      (touchend)="onTouchEnd($event)">
+
+      <!-- Controles flotantes de Zoom / Lupa -->
+      <div class="absolute top-3 right-3 z-20 flex gap-1 bg-black/60 backdrop-blur-md p-1 rounded-lg border border-white/10">
+        <button 
+          type="button" 
+          (click)="zoomIn()" 
+          [disabled]="scale() >= 3"
+          class="p-1.5 text-white hover:text-orange-400 disabled:opacity-30 transition-colors">
+          <span class="material-symbols-outlined text-lg block">zoom_in</span>
+        </button>
+        <button 
+          type="button" 
+          (click)="zoomOut()" 
+          [disabled]="scale() <= 1"
+          class="p-1.5 text-white hover:text-orange-400 disabled:opacity-30 transition-colors">
+          <span class="material-symbols-outlined text-lg block">zoom_out</span>
+        </button>
+        @if (scale() > 1) {
+          <button 
+            type="button" 
+            (click)="resetZoom()" 
+            class="p-1.5 text-orange-400 hover:text-white transition-colors">
+            <span class="material-symbols-outlined text-lg block">restart_alt</span>
+          </button>
+        }
+      </div>
+
+      <!-- Imagen con Transformación Compuesta (Scale + Translate) -->
+      <img 
+        [src]="images()[currentIndex()]" 
+        alt="Imagen ampliada"
+        [style.transform]="'translate(' + translateX() + 'px, ' + translateY() + 'px) scale(' + scale() + ')'"
+        class="max-h-full max-w-full object-contain transition-transform duration-75 ease-out origin-center cursor-grab active:cursor-grabbing">
+    </div>
+
+    <!-- Miniaturas (Inmediatamente debajo del marco de imagen) -->
+    @if (images().length > 1) {
+      <div class="flex items-center justify-center gap-2 overflow-x-auto py-1 w-full">
+        @for (img of images(); track $index) {
+          <img 
+            [src]="img" 
+            alt="Miniatura" 
+            (click)="selectIndex($index)"
+            [class.ring-2]="currentIndex() === $index"
+            [class.opacity-100]="currentIndex() === $index"
+            [class.opacity-40]="currentIndex() !== $index"
+            class="w-14 h-14 shrink-0 object-contain rounded-lg border border-white/20 cursor-pointer ring-orange-500 ring-offset-2 ring-offset-black bg-white/10 transition-all" />
+        }
+      </div>
+    }
+  </div>
+</div>

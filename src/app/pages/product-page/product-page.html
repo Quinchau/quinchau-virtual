@@ -14,6 +14,7 @@
 
   @if (!loading() && product(); as p) {
     
+    <!-- Contenedor Imagen Principal -->
     <div class="relative w-full mb-2">
       <button (click)="copiarUrl()"
         class="absolute top-4 right-4 z-10 p-2 rounded-full bg-slate-100/80 backdrop-blur-sm hover:bg-orange-50 hover:text-orange-500 transition-colors shadow-sm">
@@ -24,20 +25,26 @@
         }
       </button>
 
+      <!-- Click para abrir el carrusel modal en la posición actual -->
       <img
         [src]="selectedImage() || p.cover_image || p.cover_image_id"
         [alt]="p.description"
-        class="w-full h-64 object-contain rounded-t-lg border-b border-slate-100">
+        (click)="openCarousel(allImages().indexOf(selectedImage() || p.cover_image || ''))"
+        class="w-full h-64 object-contain rounded-t-lg border-b border-slate-100 cursor-zoom-in transition-transform duration-200 hover:scale-[1.02]">
     </div>
 
+    <!-- Galería de Miniaturas -->
     @if (p.images && p.images.length > 0) {
       <div class="flex gap-2 overflow-x-auto pb-2 mb-4">
+        <!-- Portada -->
         <img
           [src]="p.cover_image || p.cover_image_id"
           [alt]="p.description"
           (click)="p.cover_image && selectImage(p.cover_image)"
           [class.ring-2]="(selectedImage() || p.cover_image) === (p.cover_image || p.cover_image_id)"
           class="w-16 h-16 shrink-0 object-contain rounded-lg border cursor-pointer ring-orange-400 ring-offset-1" />
+
+        <!-- Galería de imágenes secundarias -->
         @for (img of p.images; track img) {
           <img
             [src]="img"
@@ -139,6 +146,7 @@
   }
 </div>
 
+<!-- Modal de Registro -->
 <div
   [class.hidden]="!registroAbierto()"
   class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -147,6 +155,7 @@
     (registroCompleto)="onRegistroCompleto($event)" />
 </div>
 
+<!-- Modal Notificación Exitosa -->
 @if (notifySuccess()) {
   <div class="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
     <div class="bg-white rounded-xl shadow-lg p-8 max-w-sm w-full text-center space-y-4">
@@ -161,6 +170,7 @@
   </div>
 }
 
+<!-- Modal Carrito Exitoso -->
 @if (cartSuccess()) {
   <div class="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
     <div class="bg-white rounded-xl shadow-lg p-8 max-w-sm w-full text-center space-y-4">
@@ -180,4 +190,12 @@
       </div>
     </div>
   </div>
+}
+
+<!-- Modal Carrusel/Lightbox Agnóstico -->
+@if (isCarouselOpen()) {
+  <app-image-carousel
+    [images]="allImages()"
+    [initialIndex]="carouselIndex()"
+    (close)="closeCarousel()" />
 }

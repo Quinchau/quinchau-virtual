@@ -3,7 +3,12 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ManagerApis } from '../../services/manager-apis';
-import { AbandonedCart, ClientWithOrders } from '../../models/cart.models';
+import {
+    AbandonedCart,
+    ClientWithOrders,
+    CotizacionEstatus,
+    StatusHistorialEntry,
+} from '../../models/cart.models';
 
 type CartsTab = 'abandonados' | 'exitosos';
 
@@ -45,6 +50,33 @@ export class Carts implements OnInit {
     readonly successfulOrdersCount = computed(() =>
         this.successfulClients().reduce((sum, c) => sum + c.orders.length, 0)
     );
+
+    // ============================================
+    // EXITOSOS — fila expandida (detalle de items + historial)
+    // ============================================
+
+    /** cotizacion_id actualmente expandido. Solo uno a la vez. */
+    readonly expandedOrderId = signal<number | null>(null);
+
+    readonly loadingHistory = signal(false);
+    readonly historyEntries = signal<StatusHistorialEntry[]>([]);
+
+    // ============================================
+    // EXITOSOS — cambio de status (combo)
+    // ============================================
+    readonly statusOptions: CotizacionEstatus[] = [
+        'Pendiente',
+        'En espera de Pago',
+        'Abandonado',
+        'Cerrado',
+        'Cancelado',
+    ];
+
+    /** cotizacion_id cuyo combo de status está abierto actualmente */
+    readonly editingStatusFor = signal<number | null>(null);
+
+    /** cotizacion_id que tiene un cambio de status en vuelo (evita doble submit) */
+    readonly updatingStatusId = signal<number | null>(null);
 
     // ============================================
     // LIFECYCLE
@@ -167,6 +199,80 @@ export class Carts implements OnInit {
     }
 
     // ============================================
+    // EXITOSOS — expandir/colapsar fila
+    // ============================================
+
+    /**
+     * Expande/colapsa el detalle (items + historial) de un carrito.
+     * Solo un carrito puede estar expandido a la vez; al expandir uno nuevo
+     * se cierra el anterior. Carga el historial la primera vez que se expande.
+     */
+    toggleOrderExpand(cotizacionId: number): void {
+        if (this.expandedOrderId() === cotizacionId) {
+            this.expandedOrderId.set(null);
+            return;
+        }
+        this.expandedOrderId.set(cotizacionId);
+        this.loadHistory(cotizacionId);
+    }
+
+    private loadHistory(cotizacionId: number): void {
+        this.loadingHistory.set(true);
+        this.historyEntries.set([]);
+        this.apis.getStatusHistory(cotizacionId).subscribe({
+            next: (res) => {
+                this.loadingHistory.set(false);
+                this.historyEntries.set(res.historial ?? []);
+            },
+            error: () => {
+                this.loadingHistory.set(false);
+                this.historyEntries.set([]);
+            }
+        });
+    }
+
+    // ============================================
+    // EXITOSOS — cambio de status (combo)
+    // ============================================
+
+    toggleStatusEditor(cotizacionId: number): void {
+        if (this.updatingStatusId() !== null) return;
+        this.editingStatusFor.update(current => current === cotizacionId ? null : cotizacionId);
+    }
+
+    changeStatus(clientId: number, cotizacionId: number, newStatus: CotizacionEstatus): void {
+        this.editingStatusFor.set(null);
+        this.updatingStatusId.set(cotizacionId);
+
+        this.apis.updateCartStatus(cotizacionId, newStatus).subscribe({
+            next: (res) => {
+                this.updatingStatusId.set(null);
+                this.successfulClients.update(clients =>
+                    clients.map(client => {
+                        if (client.client_id !== clientId) return client;
+                        return {
+                            ...client,
+                            orders: client.orders.map(order =>
+                                order.cotizacion_id === cotizacionId
+                                    ? { ...order, status: res.status, status_actualizado_por: res.status_actualizado_por }
+                                    : order
+                            ),
+                        };
+                    })
+                );
+                // Si el detalle de este carrito está expandido, refrescamos su historial.
+                if (this.expandedOrderId() === cotizacionId) {
+                    this.loadHistory(cotizacionId);
+                }
+            },
+            error: (err) => {
+                this.updatingStatusId.set(null);
+                alert(err?.error?.message || 'No se pudo actualizar el estatus del carrito');
+            }
+        });
+    }
+
+    // ============================================
     // HELPERS DE VISTA
     // ============================================
 
@@ -211,4 +317,27 @@ export class Carts implements OnInit {
             minute: '2-digit'
         });
     }
+
+    getStatusClasses(status: CotizacionEstatus | string): string {
+    const normalizeStatus = status?.trim().toLowerCase();
+
+    switch (normalizeStatus) {
+        case 'cerrado':
+            return 'bg-emerald-100 text-emerald-800 border-emerald-300';
+        
+        case 'pendiente':
+        case 'pendiente de cierre':
+        case 'en espera de pago':
+            return 'bg-amber-100 text-amber-800 border-amber-300';
+        
+        case 'abandonado':
+            return 'bg-orange-100 text-orange-800 border-orange-300';
+        
+        case 'cancelado':
+            return 'bg-red-100 text-red-800 border-red-300';
+            
+        default:
+            return 'bg-slate-100 text-slate-700 border-slate-300';
+    }
+}
 }

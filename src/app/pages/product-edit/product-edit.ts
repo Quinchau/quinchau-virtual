@@ -1,6 +1,6 @@
 import { ChangeDetectorRef, Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ManagerApis } from '../../services/manager-apis';
 import { ProductImageUploaderComponent, ImageItem } from '../../pages/product-image-uploader/product-image-uploader';
@@ -9,7 +9,7 @@ import { environment } from '../../../environments/environment';
 @Component({
   selector: 'app-product-edit',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, ProductImageUploaderComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterLink, ProductImageUploaderComponent],
   templateUrl: './product-edit.html'
 })
 export class ProductEditPage implements OnInit {
@@ -28,9 +28,18 @@ export class ProductEditPage implements OnInit {
   taxCategories: any[] = [];
   images: ImageItem[] = [];
 
+  // Tags / Modelos (independiente del productForm, se actualiza en vivo contra el backend)
+  modelos: string[] = [];
+  availableModels: string[] = [];
+  selectedNewModel = '';
+  savingTag = signal(false);
+  removingTag = signal<string | null>(null);
+  selectedTagForDelete = signal<string | null>(null);
+
   sections: Record<string, boolean> = {
     descripcion: true,
     clasificacion: true,
+    tags: false,
     precios: false,
     logistica: false,
     flags: false,
@@ -81,6 +90,13 @@ export class ProductEditPage implements OnInit {
 
   removeFabricanteUrl(index: number) {
     this.fabricante_urlArray.removeAt(index);
+  }
+
+  // Modelos disponibles para agregar (excluye los ya vinculados)
+  get availableModelsToAdd(): string[] {
+    return this.availableModels
+      .filter(m => !this.modelos.includes(m))
+      .sort((a, b) => a.localeCompare(b));
   }
 
   // Métodos para calcular márgenes
@@ -187,6 +203,10 @@ export class ProductEditPage implements OnInit {
             }
           });
         }
+
+        // Tags / Modelos
+        this.modelos = res.modelos || [];
+        this.availableModels = res.available_models || [];
         
         this.images = res.images.map((img: any) => ({
           id: img.id_image,
@@ -210,6 +230,67 @@ export class ProductEditPage implements OnInit {
   onImagesChanged(images: ImageItem[]) {
     this.images = [...images];
     this.cdr.detectChanges();
+  }
+
+  // Agregar modelo/tag — se refleja de inmediato, fuera del flujo de "Guardar cambios"
+  addModel() {
+    if (!this.selectedNewModel || this.savingTag()) return;
+    const modelo = this.selectedNewModel;
+
+    this.savingTag.set(true);
+    this.apis.addProductModel(this.stockId, modelo).subscribe({
+      next: () => {
+        this.modelos = [...this.modelos, modelo];
+        this.selectedNewModel = '';
+        this.savingTag.set(false);
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        this.savingTag.set(false);
+        alert(err.error?.error || 'Error al vincular modelo');
+      }
+    });
+  }
+
+  // Selecciona/deselecciona un tag como candidato a eliminar (tap-to-select, mejor para móvil)
+  toggleTagSelection(modelo: string) {
+    if (this.removingTag()) return;
+    this.selectedTagForDelete.set(this.selectedTagForDelete() === modelo ? null : modelo);
+  }
+
+  cancelTagSelection() {
+    this.selectedTagForDelete.set(null);
+  }
+
+  // Confirmación antes de eliminar (paso 2: el usuario ya seleccionó el tag en el paso 1)
+  confirmRemoveModel() {
+    const modelo = this.selectedTagForDelete();
+    if (!modelo || this.removingTag()) return;
+
+    if (!confirm(`¿Eliminar el modelo "${modelo}" de este producto?`)) {
+      return;
+    }
+
+    this.removeModel(modelo);
+  }
+
+  // Quitar modelo/tag — se refleja de inmediato, fuera del flujo de "Guardar cambios"
+  removeModel(modelo: string) {
+    if (this.removingTag()) return;
+
+    this.removingTag.set(modelo);
+    this.apis.removeProductModel(this.stockId, modelo).subscribe({
+      next: () => {
+        this.modelos = this.modelos.filter(m => m !== modelo);
+        this.removingTag.set(null);
+        this.selectedTagForDelete.set(null);
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        this.removingTag.set(null);
+        alert(err.error?.error || 'Error al desvincular modelo');
+      }
+    });
   }
 
   onSubmit() {

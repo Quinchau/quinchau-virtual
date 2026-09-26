@@ -1,5 +1,4 @@
 import { Component, OnInit, inject, signal, computed, PLATFORM_ID } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Meta, Title } from '@angular/platform-browser';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
@@ -9,6 +8,7 @@ import { ManagerApis } from '../../services/manager-apis';
 import { Product } from '../../models/transfer.model';
 import { ExeOrderComponent } from '../exe-order/exe-order';
 import { finalize, catchError, of } from 'rxjs';
+import { ImageCarouselComponent } from '../../components/image-carousel/image-carousel.component';
 
 type PendingAction = 'cart' | 'waitlist' | null;
 
@@ -17,10 +17,12 @@ const DEFAULT_OG_IMAGE = 'https://quinchau.com/assets/og-default.jpg';
 @Component({
   selector: 'app-product-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, ExeOrderComponent],
+  imports: [ImageCarouselComponent, CommonModule, FormsModule, ExeOrderComponent],
   templateUrl: './product-page.html',
 })
 export class ProductPage implements OnInit {
+  public readonly isCarouselOpen = signal<boolean>(false);
+  public readonly carouselIndex = signal<number>(0);
   private route = inject(ActivatedRoute);
   public router = inject(Router);
   private meta = inject(Meta);
@@ -45,6 +47,29 @@ export class ProductPage implements OnInit {
     if (!stockid) return false;
     return this.state.waitlist().includes(stockid);
   });
+
+  public readonly allImages = computed<string[]>(() => {
+    const p = this.product();
+    if (!p) return [];
+    
+    const list: string[] = [];
+    if (p.cover_image) list.push(p.cover_image);
+    if (p.images && p.images.length > 0) {
+      p.images.forEach(img => {
+        if (img && !list.includes(img)) list.push(img);
+      });
+    }
+    return list;
+  });
+
+  public openCarousel(index: number = 0): void {
+    this.carouselIndex.set(index);
+    this.isCarouselOpen.set(true);
+  }
+
+  public closeCarousel(): void {
+    this.isCarouselOpen.set(false);
+  }
 
   get quantity(): number {
     return this.product()?.qty_in_order || 1;

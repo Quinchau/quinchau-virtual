@@ -19,7 +19,7 @@ import { StockAvailabilityResponse, WarehouseOption } from '../models/orders.mod
 import { AliasItem, Termino } from '../models/terminos.model';
 import { CreateFaqDto, FaqDeleteResponse, FaqListResponse, FaqSingleResponse, UpdateFaqDto } from '../models/faqs.models';
 import { Campana, CampanaConDetalle, CrearCampanaPayload, CrearCampanaResult, TransicionResult } from '../models/campanas.model';
-import { AbandonedCartsResponse, MarkAbandonedResponse, SuccessfulCartsResponse } from '../models/cart.models';
+import { AbandonedCartsResponse, CotizacionEstatus, MarkAbandonedResponse, StatusHistorialEntry, StatusHistorialResponse, SuccessfulCartsResponse, UpdateStatusResponse } from '../models/cart.models';
 
 @Injectable({
   providedIn: 'root',
@@ -512,10 +512,15 @@ public getOrderDetail(orderno: number): Observable<{ exito: boolean; data: any }
     }
 
     // Productos Admin - Listado
-getProductsAdmin(params: { search?: string; stockCat?: string; page: number; limit: number }) {
+getProductsAdmin(params: { search?: string; stockCat?: string; model?: string; page: number; limit: number }) {
   const queryParams = new URLSearchParams();
+  
   if (params.search) queryParams.set('search', params.search);
   if (params.stockCat) queryParams.set('stockCat', params.stockCat);
+  
+  // Condición añadida para anexar el modelo a la URL si existe
+  if (params.model) queryParams.set('model', params.model); 
+  
   queryParams.set('page', params.page.toString());
   queryParams.set('limit', params.limit.toString());
   
@@ -822,6 +827,33 @@ public getSuccessfulCarts(): Observable<SuccessfulCartsResponse> {
         `${this.nodeBaseUrl}/cart/exitosos`,
         { withCredentials: true }
     );
+}
+
+updateCartStatus(cotizacionId: number, status: CotizacionEstatus) {
+    return this.http.patch<UpdateStatusResponse>(
+        `${this.nodeBaseUrl}/cart/${cotizacionId}/status`,
+        { status }
+    );
+}
+
+getStatusHistory(cotizacionId: number) {
+    return this.http.get<StatusHistorialResponse>(
+        `${this.nodeBaseUrl}/cart/${cotizacionId}/status-historial`
+    );
+}
+
+getModels() {
+    return this.http.get<{ idmodelo: number; modeldescrip: string }[]>(
+      `${this.nodeBaseUrl}/products/models`
+    );
+  }
+
+addProductModel(stockId: string, modelo: string) {
+  return this.http.post(`${this.nodeBaseUrl}/products/${stockId}/models`, { modelo });
+}
+
+removeProductModel(stockId: string, modelo: string) {
+  return this.http.delete(`${this.nodeBaseUrl}/products/${stockId}/models/${encodeURIComponent(modelo)}`);
 }
 
 }
