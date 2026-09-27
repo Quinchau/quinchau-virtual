@@ -20,6 +20,7 @@ import { AliasItem, Termino } from '../models/terminos.model';
 import { CreateFaqDto, FaqDeleteResponse, FaqListResponse, FaqSingleResponse, UpdateFaqDto } from '../models/faqs.models';
 import { Campana, CampanaConDetalle, CrearCampanaPayload, CrearCampanaResult, TransicionResult } from '../models/campanas.model';
 import { AbandonedCartsResponse, CotizacionEstatus, MarkAbandonedResponse, StatusHistorialEntry, StatusHistorialResponse, SuccessfulCartsResponse, UpdateStatusResponse } from '../models/cart.models';
+import { ColumnMapping, MLAttribute } from '../models/mercadolibre.model';
 
 @Injectable({
   providedIn: 'root',
@@ -854,6 +855,37 @@ addProductModel(stockId: string, modelo: string) {
 
 removeProductModel(stockId: string, modelo: string) {
   return this.http.delete(`${this.nodeBaseUrl}/products/${stockId}/models/${encodeURIComponent(modelo)}`);
+}
+
+public getMLAttributes(): Observable<MLAttribute[]> {
+  return this.http.get<MLAttribute[]>(`${this.nodeBaseUrl}/mercadolibre/attributes`);
+}
+
+/**
+ * Sincroniza productos con Mercado Libre según un mapeo dinámico de columnas.
+ * Devuelve un CSV (Blob) listo para reimportar en ML.
+ * POST /api/mercadolibre/sync-products
+ */
+public syncMLProducts(
+  file: File,
+  mapping: ColumnMapping[],
+  porcentaje?: number,
+  precioMinimo?: number
+): Observable<Blob> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('mapping', JSON.stringify(mapping));
+  if (porcentaje !== undefined) {
+    formData.append('porcentaje', porcentaje.toString());
+  }
+  if (precioMinimo !== undefined) {
+    formData.append('precio_minimo', precioMinimo.toString());
+  }
+ 
+  return this.http.post(`${this.nodeBaseUrl}/mercadolibre/sync-products`, formData, {
+    withCredentials: true,
+    responseType: 'blob'
+  });
 }
 
 }

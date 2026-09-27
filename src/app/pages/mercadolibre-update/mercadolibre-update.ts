@@ -1,14 +1,17 @@
 import { Component, inject, signal, computed } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { FormsModule } from '@angular/forms';
+import * as XLSX from 'xlsx';
 import { ManagerApis } from '../../services/manager-apis';
+import { ColumnMapping, ColumnMappingRow, MLAttribute } from '../../models/mercadolibre.model';
 
 type UploadStatus = 'idle' | 'loading' | 'success' | 'error';
+
+const NOMBRE_ARCHIVO_SALIDA = 'resultado-mercadolibre.csv';
 
 @Component({
   selector: 'app-mercadolibre-update',
   standalone: true,
-  imports: [FormsModule],
+  imports: [],
   templateUrl: './mercadolibre-update.html',
   styles: `
     :host { display: block; }
@@ -17,36 +20,68 @@ type UploadStatus = 'idle' | 'loading' | 'success' | 'error';
 export class MercadolibreUpdate {
   private api = inject(ManagerApis);
 
+  // --- Archivo y drag & drop ---
   selectedFile = signal<File | null>(null);
-  porcentaje = signal<number>(0);
+  isDragging = signal<boolean>(false);
+  fileError = signal<string>('');
+
+  // --- Atributos disponibles y mapeo de columnas ---
+  attributes = signal<MLAttribute[]>([]);
+  loadingAttributes = signal<boolean>(true);
+  columns = signal<ColumnMappingRow[]>([]);
+
+  // --- Ajuste de precio (solo aplica si se mapea "precio") ---
+  porcentaje = signal<number>(15);
   precioMinimo = signal<number>(0);
 
+  // --- Estado de envío ---
   status = signal<UploadStatus>('idle');
   errorMessage = signal<string>('');
-  isDragging = signal<boolean>(false);
 
+  precioMapeado = computed(() => this.columns().some(c => c.campo === 'precio'));
+  skuMapeado = computed(() => this.columns().some(c => c.campo === 'sku'));
+  columnasMapeadas = computed(() => this.columns().filter(c => c.campo).length);
+
+  // Extrae los SKUs de un mensaje de error tipo: "Error: stockids 999-999, 888-777 no existen"
   missingCodes = computed<string[]>(() => {
     const msg = this.errorMessage();
-    const match = msg.match(/^Error:\s*(.+?)\s*no encontrados?$/i);
+    const match = msg.match(/^Error:\s*stockids?\s+(.+?)\s+no\s+existen?$/i);
     if (!match) return [];
     return match[1].split(',').map(c => c.trim()).filter(Boolean);
   });
 
-  // Validador computado para asegurar que los campos numéricos sean válidos antes de procesar
+  // Validador computado: archivo con columnas mapeadas, "sku" presente y, si corresponde, precio válido
   isFormValid = computed(() => {
     const file = this.selectedFile();
-    const pct = this.porcentaje();
-    const minPrice = this.precioMinimo();
+    if (!file || this.columns().length === 0 || !this.skuMapeado()) return false;
 
-    return (
-      file !== null &&
-      pct !== null &&
-      !isNaN(pct) &&
-      minPrice !== null &&
-      !isNaN(minPrice) &&
-      minPrice >= 0
-    );
+    if (this.precioMapeado()) {
+      const pct = this.porcentaje();
+      const min = this.precioMinimo();
+      if (pct === null || isNaN(pct) || pct < 0 || pct >= 99.99) return false;
+      if (min === null || isNaN(min) || min < 0) return false;
+    }
+
+    return this.status() !== 'loading';
   });
+
+  constructor() {
+    this.cargarAtributos();
+  }
+
+  private cargarAtributos(): void {
+    this.loadingAttributes.set(true);
+    this.api.getMLAttributes().subscribe({
+      next: (attrs) => {
+        this.attributes.set(attrs);
+        this.loadingAttributes.set(false);
+      },
+      error: () => {
+        this.fileError.set('No se pudieron cargar los atributos disponibles. Reintentá más tarde.');
+        this.loadingAttributes.set(false);
+      },
+    });
+  }
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -75,19 +110,83 @@ export class MercadolibreUpdate {
   private handleFile(file: File | null): void {
     if (!file) return;
 
-    if (!file.name.toLowerCase().endsWith('.csv')) {
-      this.status.set('error');
-      this.errorMessage.set('El archivo debe ser un .csv');
+    const nombre = file.name.toLowerCase();
+    if (!nombre.endsWith('.xls') && !nombre.endsWith('.xlsx')) {
+      this.fileError.set('El archivo debe ser un .xls o .xlsx');
       return;
     }
 
-    this.selectedFile.set(file);
+    this.fileError.set('');
     this.status.set('idle');
     this.errorMessage.set('');
+    this.selectedFile.set(file);
+    this.leerColumnas(file);
+  }
+
+  /** Lee el header (fila 1) del Excel en el navegador para armar la grilla de mapeo */
+  private leerColumnas(file: File): void {
+    this.columns.set([]);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1, defval: '' });
+        const headerRow = rows[0] ?? [];
+
+        const headers = headerRow.map(h => String(h).trim()).filter(h => h.length > 0);
+
+        if (headers.length === 0) {
+          this.fileError.set('El archivo no tiene columnas en la primera fila.');
+          return;
+        }
+
+        this.columns.set(headers.map(columna => ({ columna, campo: this.sugerirCampo(columna) })));
+      } catch {
+        this.fileError.set('No se pudo leer el archivo. Verificá que sea un .xls o .xlsx válido.');
+      }
+    };
+    reader.onerror = () => this.fileError.set('No se pudo leer el archivo seleccionado.');
+    reader.readAsArrayBuffer(file);
+  }
+
+  /** Preselecciona el campo cuando el nombre de la columna coincide con un atributo conocido */
+  private sugerirCampo(columna: string): string {
+    const normalizado = columna.trim().toLowerCase();
+    const match = this.attributes().find(a => a.label.toLowerCase() === normalizado);
+    return match ? match.campo : '';
+  }
+
+  /** Atributos disponibles para una fila: excluye los ya usados en otras filas */
+  opcionesPara(campoActual: string): MLAttribute[] {
+    const usadosEnOtrasFilas = new Set(
+      this.columns().filter(c => c.campo && c.campo !== campoActual).map(c => c.campo)
+    );
+    return this.attributes().filter(a => !usadosEnOtrasFilas.has(a.campo));
+  }
+
+  actualizarCampo(index: number, campo: string): void {
+    this.columns.update(cols => {
+      const copia = [...cols];
+      copia[index] = { ...copia[index], campo };
+      return copia;
+    });
+  }
+
+  actualizarPorcentaje(valor: string): void {
+    this.porcentaje.set(Number(valor));
+  }
+
+  actualizarPrecioMinimo(valor: string): void {
+    this.precioMinimo.set(Number(valor));
   }
 
   removeFile(): void {
     this.selectedFile.set(null);
+    this.columns.set([]);
+    this.fileError.set('');
     this.status.set('idle');
     this.errorMessage.set('');
   }
@@ -96,10 +195,17 @@ export class MercadolibreUpdate {
     const file = this.selectedFile();
     if (!file || !this.isFormValid()) return;
 
+    const mapping: ColumnMapping[] = this.columns()
+      .filter(c => c.campo)
+      .map(({ columna, campo }) => ({ columna, campo }));
+
     this.status.set('loading');
     this.errorMessage.set('');
 
-    this.api.updateMercadolibreStock(file, this.porcentaje(), this.precioMinimo()).subscribe({
+    const porcentaje = this.precioMapeado() ? this.porcentaje() : undefined;
+    const precioMinimo = this.precioMapeado() ? this.precioMinimo() : undefined;
+
+    this.api.syncMLProducts(file, mapping, porcentaje, precioMinimo).subscribe({
       next: (blob) => {
         this.descargarCsv(blob);
         this.status.set('success');
@@ -116,7 +222,7 @@ export class MercadolibreUpdate {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'actualizacion-mercadolibre.csv';
+    a.download = NOMBRE_ARCHIVO_SALIDA;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);

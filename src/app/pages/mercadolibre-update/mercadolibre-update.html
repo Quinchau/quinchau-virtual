@@ -1,135 +1,142 @@
-<section class="bg-surface-container-lowest rounded-xl p-6 md:p-8 max-w-xl">
+<div class="max-w-3xl mx-auto p-6 space-y-6">
+  <header>
+    <h1 class="text-xl font-semibold text-gray-900">Sincronizar con Mercado Libre</h1>
+    <p class="text-sm text-gray-500 mt-1">
+      Subí el archivo exportado desde ML, indicá qué representa cada columna y descargá el CSV listo para reimportar.
+    </p>
+  </header>
 
-  <div class="flex items-center gap-3 mb-1">
-    <div class="p-2 bg-primary-container/10 rounded-lg text-primary">
-      <span class="material-symbols-outlined text-2xl">sync</span>
-    </div>
-    <h3 class="text-xl font-headline font-bold text-on-surface">Actualizar stock y precios (Mercado Libre)</h3>
-  </div>
-  <p class="text-sm text-on-surface-variant mb-6 ml-1">
-    Subí el CSV con la columna de códigos MLC y configurá los valores de ajuste.
-  </p>
+  <!-- Zona de drag & drop -->
+  <section
+    class="border-2 border-dashed rounded-lg p-8 text-center transition-colors"
+    [class.border-blue-400]="isDragging()"
+    [class.bg-blue-50]="isDragging()"
+    [class.border-gray-300]="!isDragging()"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave($event)"
+    (drop)="onDrop($event)"
+  >
+    @if (!selectedFile()) {
+      <label class="cursor-pointer block">
+        <span class="text-sm text-gray-600">Arrastrá el archivo acá, o</span>
+        <span class="text-sm text-blue-600 font-medium ml-1">elegilo desde tu computadora</span>
+        <input type="file" accept=".xls,.xlsx" class="hidden" (change)="onFileSelected($event)" />
+      </label>
+    } @else {
+      <div class="flex items-center justify-center gap-3">
+        <span class="text-sm text-gray-800 truncate">{{ selectedFile()!.name }}</span>
+        <button
+          type="button"
+          (click)="removeFile()"
+          class="text-sm text-red-600 hover:underline"
+        >
+          Quitar
+        </button>
+      </div>
+    }
 
-  <!-- Zona de drop / selección -->
-  @if (!selectedFile()) {
-    <label
-      (dragover)="onDragOver($event)"
-      (dragleave)="onDragLeave($event)"
-      (drop)="onDrop($event)"
-      [class.border-primary]="isDragging()"
-      [class.bg-primary-container/5]="isDragging()"
-      class="group flex flex-col items-center justify-center gap-2 border-2 border-dashed border-outline-variant/30 rounded-lg py-10 px-6 cursor-pointer transition-colors hover:border-primary/50"
-    >
-      <span class="material-symbols-outlined text-4xl text-outline group-hover:text-primary transition-colors">
-        upload_file
-      </span>
-      <span class="text-sm text-on-surface-variant">
-        Arrastrá el archivo acá o <span class="text-primary font-bold">buscalo en tu equipo</span>
-      </span>
-      <span class="text-xs text-outline">Solo archivos .csv</span>
-      <input type="file" accept=".csv" class="hidden" (change)="onFileSelected($event)" />
-    </label>
+    @if (fileError()) {
+      <p class="text-sm text-red-600 mt-3">{{ fileError() }}</p>
+    }
+  </section>
+
+  <!-- Mapeo de columnas -->
+  @if (columns().length > 0) {
+    <section class="border border-gray-200 rounded-lg p-4 space-y-3">
+      <h2 class="text-sm font-medium text-gray-700">
+        Mapeo de columnas ({{ columnasMapeadas() }} de {{ columns().length }})
+      </h2>
+
+      @if (loadingAttributes()) {
+        <p class="text-sm text-gray-500">Cargando atributos disponibles…</p>
+      } @else {
+        <div class="divide-y divide-gray-100">
+          @for (col of columns(); track col.columna; let i = $index) {
+            <div class="flex items-center gap-3 py-2">
+              <span class="flex-1 text-sm text-gray-800 truncate" [title]="col.columna">{{ col.columna }}</span>
+              <select
+                class="text-sm border border-gray-300 rounded-md px-2 py-1.5 min-w-[220px]"
+                [value]="col.campo"
+                (change)="actualizarCampo(i, $any($event.target).value)"
+              >
+                <option value="">No mapear</option>
+                @for (attr of opcionesPara(col.campo); track attr.campo) {
+                  <option [value]="attr.campo">{{ attr.label }}</option>
+                }
+              </select>
+            </div>
+          }
+        </div>
+
+        @if (!skuMapeado()) {
+          <p class="text-sm text-amber-600">Tenés que mapear una columna al campo "SKU" para poder continuar.</p>
+        }
+      }
+    </section>
   }
 
-  <!-- Archivo seleccionado y configuración de parámetros -->
-  @if (selectedFile(); as file) {
-    <div class="flex items-center justify-between gap-3 bg-surface-container rounded-lg px-4 py-3 mb-4">
-      <div class="flex items-center gap-3 min-w-0">
-        <span class="material-symbols-outlined text-primary">description</span>
-        <div class="min-w-0">
-          <p class="text-sm font-bold text-on-surface truncate">{{ file.name }}</p>
-          <p class="text-xs text-on-surface-variant">{{ (file.size / 1024).toFixed(1) }} KB</p>
+  <!-- Ajuste de precio -->
+  @if (precioMapeado()) {
+    <section class="border border-gray-200 rounded-lg p-4 space-y-3">
+      <h2 class="text-sm font-medium text-gray-700">Ajuste de precio</h2>
+      <p class="text-xs text-gray-500">
+        El precio final se calcula como <code>base / (1 - porcentaje / 100)</code>, con un piso mínimo.
+      </p>
+      <div class="flex gap-4">
+        <div class="flex-1">
+          <label class="block text-xs text-gray-600 mb-1">Comisión ML (%)</label>
+          <input
+            type="number"
+            min="0"
+            max="99.99"
+            step="0.01"
+            [value]="porcentaje()"
+            (input)="actualizarPorcentaje($any($event.target).value)"
+            class="w-full text-sm border border-gray-300 rounded-md px-2 py-1.5"
+          />
+        </div>
+        <div class="flex-1">
+          <label class="block text-xs text-gray-600 mb-1">Precio mínimo</label>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            [value]="precioMinimo()"
+            (input)="actualizarPrecioMinimo($any($event.target).value)"
+            class="w-full text-sm border border-gray-300 rounded-md px-2 py-1.5"
+          />
         </div>
       </div>
-      @if (status() !== 'loading') {
-        <button
-          (click)="removeFile()"
-          class="text-outline hover:text-on-surface transition-colors cursor-pointer"
-          aria-label="Quitar archivo"
-        >
-          <span class="material-symbols-outlined">close</span>
-        </button>
-      }
-    </div>
+    </section>
+  }
 
-    <!-- Nuevos campos: Porcentaje y Precio Mínimo -->
-    <div class="grid grid-cols-2 gap-4 mb-4">
-      <div>
-        <label for="porcentaje" class="block text-xs font-bold text-on-surface-variant mb-1">
-          Porcentaje (%)
-        </label>
-        <input
-          id="porcentaje"
-          type="number"
-          [(ngModel)]="porcentaje"
-          placeholder="0"
-          class="w-full bg-surface-container rounded-lg px-3 py-2 text-sm text-on-surface border border-outline-variant/30 focus:border-primary focus:outline-none transition-colors"
-        />
-      </div>
-
-      <div>
-        <label for="precioMinimo" class="block text-xs font-bold text-on-surface-variant mb-1">
-          Precio Mínimo ($)
-        </label>
-        <input
-          id="precioMinimo"
-          type="number"
-          [(ngModel)]="precioMinimo"
-          placeholder="0"
-          class="w-full bg-surface-container rounded-lg px-3 py-2 text-sm text-on-surface border border-outline-variant/30 focus:border-primary focus:outline-none transition-colors"
-        />
-      </div>
-    </div>
-
+  <!-- Acción principal -->
+  <section class="flex items-center gap-3">
     <button
+      type="button"
+      [disabled]="!isFormValid()"
       (click)="procesar()"
-      [disabled]="status() === 'loading' || !isFormValid()"
-      class="w-full bg-gradient-to-r from-primary to-primary-container text-on-primary font-bold py-3 px-4 rounded-md text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-md cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
+      class="px-4 py-2 text-sm font-medium rounded-md bg-blue-600 text-white disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-blue-700"
     >
-      @if (status() === 'loading') {
-        <span class="material-symbols-outlined text-lg animate-spin">progress_activity</span>
-        Procesando...
-      } @else {
-        <span class="material-symbols-outlined text-lg">sync</span>
-        Generar CSV actualizado
-      }
+      {{ status() === 'loading' ? 'Procesando…' : 'Sincronizar' }}
     </button>
-  }
+  </section>
 
-  <!-- Éxito -->
+  <!-- Estados de resultado -->
   @if (status() === 'success') {
-    <div class="mt-4 flex items-start gap-3 bg-green-50 border border-green-200 rounded-lg px-4 py-3">
-      <span class="material-symbols-outlined text-green-600">check_circle</span>
-      <div>
-        <p class="text-sm font-bold text-green-800">Archivo generado</p>
-        <p class="text-xs text-green-700">La descarga debería haber comenzado automáticamente.</p>
-      </div>
-    </div>
+    <p class="text-sm text-green-700">Sincronización completada. La descarga del CSV comenzó automáticamente.</p>
   }
 
-  <!-- Error -->
   @if (status() === 'error') {
-    <div class="mt-4 flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
-      <span class="material-symbols-outlined text-red-600">error</span>
-      <div class="min-w-0">
-        <p class="text-sm font-bold text-red-800">No se pudo generar el archivo</p>
-
-        @if (missingCodes().length > 0) {
-          <p class="text-xs text-red-700 mt-1 mb-2">
-            {{ missingCodes().length }} código(s) sin coincidencia en el sistema:
-          </p>
-          <ul class="flex flex-wrap gap-1.5">
-            @for (code of missingCodes(); track code) {
-              <li class="text-[11px] font-mono bg-red-100 text-red-800 px-2 py-0.5 rounded">
-                {{ code }}
-              </li>
-            }
-          </ul>
-        } @else {
-          <p class="text-xs text-red-700">{{ errorMessage() }}</p>
-        }
-      </div>
+    <div class="space-y-2">
+      <p class="text-sm text-red-600">{{ errorMessage() }}</p>
+      @if (missingCodes().length > 0) {
+        <ul class="text-sm text-red-600 list-disc list-inside">
+          @for (code of missingCodes(); track code) {
+            <li>{{ code }}</li>
+          }
+        </ul>
+      }
     </div>
   }
-
-</section>
+</div>
